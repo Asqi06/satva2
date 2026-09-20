@@ -75,10 +75,13 @@ export async function listAdminOrders(opts: {
     Order.countDocuments(filter),
     Order.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean<LeanOrder[]>(),
   ]);
-  const userIds = [...new Set(docs.map((d) => d.userId.toString()))];
-  const users = await User.find({ _id: { $in: userIds } })
-    .select("email name")
-    .lean<{ _id: Types.ObjectId; email: string; name?: string }[]>();
+  const userIds = [...new Set(docs.map((d) => d.userId?.toString()).filter(Boolean) as string[])];
+  const users =
+    userIds.length > 0
+      ? await User.find({ _id: { $in: userIds.map((id) => new Types.ObjectId(id)) } })
+          .select("email name")
+          .lean<{ _id: Types.ObjectId; email: string; name?: string }[]>()
+      : [];
   const byId = new Map(users.map((u) => [u._id.toString(), u]));
   return {
     orders: docs.map((d) => ({
@@ -89,8 +92,8 @@ export async function listAdminOrders(opts: {
       orderStatus: d.orderStatus,
       createdAt: d.createdAt.toISOString(),
       customer: {
-        email: byId.get(d.userId.toString())?.email ?? "unknown",
-        name: byId.get(d.userId.toString())?.name,
+        email: d.userId ? (byId.get(d.userId.toString())?.email ?? "unknown") : "unknown",
+        name: d.userId ? byId.get(d.userId.toString())?.name : undefined,
       },
     })),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
