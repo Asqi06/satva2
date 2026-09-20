@@ -1,10 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ProductListItem } from "@/services/product-service";
+import { cloudinaryResize } from "@/utils/cloudinary-url";
 import { formatINR } from "@/utils/format";
 
 /** Storefront product card — editorial minimal, hover lift with image zoom. Server-safe. */
-export function ProductCard({ product }: { product: ProductListItem }) {
+export function ProductCard({
+  product,
+  eager = false,
+}: {
+  product: ProductListItem;
+  eager?: boolean;
+}) {
   const cover = product.images[0];
   return (
     <article className="group relative overflow-hidden bg-white/70 border border-ink/[0.07] transition-shadow hover:shadow-[0_8px_40px_rgba(10,10,10,0.10)]">
@@ -13,10 +20,12 @@ export function ProductCard({ product }: { product: ProductListItem }) {
         <span className="relative block aspect-[3/4] overflow-hidden bg-[#f0ebe3]">
           {cover ? (
             <Image
-              src={cover.secureUrl}
+              src={cloudinaryResize(cover.secureUrl, 600)}
               alt={cover.alt}
               fill
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+              loading={eager ? "eager" : "lazy"}
+              decoding="async"
               className="object-cover transition-transform duration-500 will-change-transform group-hover:scale-[1.06]"
             />
           ) : (

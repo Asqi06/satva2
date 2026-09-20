@@ -30,12 +30,38 @@
    Base
 ───────────────────────────────────────────── */
 html {
-  scroll-behavior: smooth;
+  /* Native smooth scrolling fights Lenis' virtual scroll and makes
+     the page feel laggy / stop part-way. Lenis handles smoothing. */
+  scroll-behavior: auto;
+}
+
+/* Required Lenis styles — without these Lenis miscalculates the
+   scroll limit and the page can stop scrolling part-way down.
+   See https://lenis.darkroom.engineering/layout */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  /* Translated-off-screen panels (cart drawer) and the full-width
+     marquee track must never create a horizontal scrollbar that
+     traps vertical scrolling on some browsers. */
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

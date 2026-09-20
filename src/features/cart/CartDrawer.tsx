@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useBag } from "./CartProvider";
+import { cloudinaryResize } from "@/utils/cloudinary-url";
 import { formatINR } from "@/utils/format";
 
 /** Slide-over bag. Works for guests (local) and members (server). */
@@ -13,6 +14,7 @@ export function CartDrawer() {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   // Escape closes; focus lands on the close button when opened.
+  // Background scroll stays locked while open (body + Lenis).
   useEffect(() => {
     if (!drawerOpen) return;
     closeRef.current?.focus();
@@ -20,7 +22,15 @@ export function CartDrawer() {
       if (e.key === "Escape") setDrawerOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const lenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis;
+    lenis?.stop();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      lenis?.start();
+    };
   }, [drawerOpen, setDrawerOpen]);
 
   return (
@@ -71,7 +81,7 @@ export function CartDrawer() {
         )}
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-6 py-5" data-lenis-prevent>
           {loading ? (
             <p className="text-sm text-ink/50">Loading your bag…</p>
           ) : lines.length === 0 ? (
@@ -106,10 +116,12 @@ export function CartDrawer() {
                     <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-[#f0ebe3]">
                       {line.image ? (
                         <Image
-                          src={line.image.secureUrl}
+                          src={cloudinaryResize(line.image.secureUrl, 200)}
                           alt=""
                           fill
                           sizes="64px"
+                          loading="lazy"
+                          decoding="async"
                           className="object-cover"
                         />
                       ) : (
