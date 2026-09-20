@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useFieldArray, useForm, type FieldErrors } from "react-hook-form";
 import { z } from "zod";
-import { productInputSchema, type ProductInput } from "@/schemas/product";
+import { productBaseSchema, productInputSchema, type ProductInput } from "@/schemas/product";
 
 /** Form shape: tags edited as comma text, image alt auto-filled from name. */
 const formImageSchema = z.object({
@@ -18,7 +18,7 @@ const formImageSchema = z.object({
   isThumbnail: z.boolean().default(false),
 });
 
-const formSchema = productInputSchema
+const formSchema = productBaseSchema
   .omit({ tags: true })
   .extend({ images: z.array(formImageSchema).min(1, "At least one image is required").max(12), tagsText: z.string().default("") });
 

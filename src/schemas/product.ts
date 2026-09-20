@@ -30,33 +30,34 @@ const variantSchema = z.object({
 const shortText = z.string().trim().max(120).optional();
 const tagList = z.array(z.string().trim().min(1).max(40)).max(20).default([]);
 
-export const productInputSchema = z
-  .object({
-    name: z.string().trim().min(1, "Name is required").max(160),
-    slug: slugSchema.optional(),
-    description: z.string().trim().min(1, "Description is required").max(20000),
-    shortDescription: z.string().trim().max(280).optional(),
-    categoryId: objectIdSchema,
-    subcategory: z.string().trim().max(120).optional(),
-    images: z.array(imageSchema).min(1, "At least one image is required").max(MAX_IMAGES),
-    videos: z.array(videoSchema).max(4).default([]),
-    price: z.number().int("Price must be whole rupees").min(0),
-    compareAtPrice: z.number().int().min(0).optional(),
-    sku: z.string().trim().min(1, "SKU is required").max(64),
-    variants: z.array(variantSchema).max(MAX_VARIANTS).default([]),
-    material: shortText,
-    color: z.string().trim().max(64).optional(),
-    size: z.string().trim().max(64).optional(),
-    dimensions: z.string().trim().max(120).optional(),
-    weight: z.string().trim().max(64).optional(),
-    tags: tagList,
-    stock: z.number().int().min(0),
-    lowStockThreshold: z.number().int().min(0).default(5),
-    isPublished: z.boolean().default(false),
-    isFeatured: z.boolean().default(false),
-    seoTitle: z.string().trim().max(160).optional(),
-    seoDescription: z.string().trim().max(320).optional(),
-  })
+export const productBaseSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(160),
+  slug: slugSchema.optional(),
+  description: z.string().trim().min(1, "Description is required").max(20000),
+  shortDescription: z.string().trim().max(280).optional(),
+  categoryId: objectIdSchema,
+  subcategory: z.string().trim().max(120).optional(),
+  images: z.array(imageSchema).min(1, "At least one image is required").max(MAX_IMAGES),
+  videos: z.array(videoSchema).max(4).default([]),
+  price: z.number().int("Price must be whole rupees").min(0),
+  compareAtPrice: z.number().int().min(0).optional(),
+  sku: z.string().trim().min(1, "SKU is required").max(64),
+  variants: z.array(variantSchema).max(MAX_VARIANTS).default([]),
+  material: shortText,
+  color: z.string().trim().max(64).optional(),
+  size: z.string().trim().max(64).optional(),
+  dimensions: z.string().trim().max(120).optional(),
+  weight: z.string().trim().max(64).optional(),
+  tags: tagList,
+  stock: z.number().int().min(0),
+  lowStockThreshold: z.number().int().min(0).default(5),
+  isPublished: z.boolean().default(false),
+  isFeatured: z.boolean().default(false),
+  seoTitle: z.string().trim().max(160).optional(),
+  seoDescription: z.string().trim().max(320).optional(),
+});
+
+export const productInputSchema = productBaseSchema
   .refine((v) => v.compareAtPrice === undefined || v.compareAtPrice > v.price, {
     message: "Compare-at price must be higher than price",
     path: ["compareAtPrice"],
