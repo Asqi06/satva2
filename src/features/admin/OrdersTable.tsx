@@ -76,7 +76,39 @@ export function OrdersTable() {
         </p>
       )}
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-ink/10 bg-white/60">
+      {/* Mobile cards — fulfilment at a glance, no horizontal scroll */}
+      <ul className="mt-4 space-y-3 md:hidden">
+        {rows.map((r) => (
+          <li key={r.id} className="rounded-2xl border border-ink/10 bg-white/60 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <Link href={`/admin/orders/${r.id}`} className="font-mono text-sm underline underline-offset-4">
+                {r.id.slice(-8).toUpperCase()}
+              </Link>
+              <span className="font-mono text-sm font-semibold">{formatINR(r.total)}</span>
+            </div>
+            <p className="mt-1 truncate text-sm text-ink/60">
+              {r.customer.name ?? r.customer.email} · {r.itemCount} item{r.itemCount === 1 ? "" : "s"} ·{" "}
+              {new Date(r.createdAt).toLocaleDateString("en-IN")}
+            </p>
+            <p className="mt-2 flex flex-wrap gap-1.5">
+              <StatusPill status={r.orderStatus} />
+              <StatusPill status={r.paymentStatus} />
+            </p>
+          </li>
+        ))}
+        {rows.length === 0 && !loading && (
+          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+            No orders match.
+          </li>
+        )}
+        {loading && (
+          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+            Loading…
+          </li>
+        )}
+      </ul>
+
+      <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-ink/10 bg-white/60 md:block">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
             <tr className="border-b border-ink/10 text-ink/60">

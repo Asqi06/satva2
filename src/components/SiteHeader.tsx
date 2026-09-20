@@ -72,8 +72,8 @@ export function SiteHeader() {
   return (
     <>
       {/* Festive announcement bar — trust-first for Indian shoppers */}
-      <div className="bg-[#0a0a0a] text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c8a96e]">
-        <p className="mx-auto max-w-7xl px-6 py-2 sm:px-10">
+      <div className="bg-[#0a0a0a] text-center text-[10px] font-semibold uppercase leading-5 tracking-[0.14em] text-[#c8a96e] sm:text-[11px] sm:tracking-[0.22em]">
+        <p className="mx-auto max-w-7xl px-4 py-2 sm:px-10">
           Free shipping over ₹399 ✦ UPI, cards & netbanking ✦ 7-day easy cover
         </p>
       </div>

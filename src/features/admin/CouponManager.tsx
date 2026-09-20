@@ -214,7 +214,49 @@ export function CouponManager() {
         </div>
       </form>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-ink/10 bg-white/60">
+      {/* Mobile cards — no horizontal scroll */}
+      <ul className="mt-4 space-y-3 md:hidden">
+        {rows.map((r) => (
+          <li key={r.id} className="rounded-2xl border border-ink/10 bg-white/60 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono font-semibold">{r.code}</span>
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${r.isActive ? "bg-green-800/10 text-green-800" : "bg-ink/10 text-ink/50"}`}>
+                {r.isActive ? "Active" : "Disabled"}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-ink/70">
+              {r.type === "PERCENTAGE" ? `${r.value}%` : formatINR(r.value)}
+              {r.maximumDiscount !== undefined && r.type === "PERCENTAGE" && (
+                <span> up to {formatINR(r.maximumDiscount)}</span>
+              )}
+              <span className="text-ink/50"> · {r.usageCount}{r.usageLimit !== undefined && ` / ${r.usageLimit}`} used</span>
+            </p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4">
+                Edit
+              </button>
+              <button type="button" onClick={() => void toggleActive(r)} className="underline underline-offset-4">
+                {r.isActive ? "Disable" : "Enable"}
+              </button>
+              <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-clay">
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+        {rows.length === 0 && !loading && (
+          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+            No coupons yet.
+          </li>
+        )}
+        {loading && (
+          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+            Loading…
+          </li>
+        )}
+      </ul>
+
+      <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-ink/10 bg-white/60 md:block">
         <table className="w-full min-w-[680px] text-left text-sm">
           <thead>
             <tr className="border-b border-ink/10 text-ink/60">

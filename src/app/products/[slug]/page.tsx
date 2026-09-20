@@ -174,7 +174,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
               {product.category.name}
             </p>
-            <h1 className="mt-2 font-display italic text-5xl leading-[1.08] tracking-tight sm:text-6xl">
+            <h1 className="mt-2 font-display italic text-4xl leading-[1.1] tracking-tight sm:text-6xl">
               {product.name}
             </h1>
 

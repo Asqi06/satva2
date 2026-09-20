@@ -89,11 +89,11 @@ export function CartView() {
               {lines.map((line) => (
                 <li
                   key={line.key}
-                  className="flex gap-5 border border-ink/[0.07] bg-white/60 p-4"
+                  className="flex gap-3 border border-ink/[0.07] bg-white/60 p-3 sm:gap-5 sm:p-4"
                 >
                   {/* Thumbnail */}
-                  <Link href={`/products/${line.slug}`} tabIndex={-1} aria-hidden="true">
-                    <span className="relative block h-28 w-24 shrink-0 overflow-hidden bg-[#f0ebe3]">
+                  <Link href={`/products/${line.slug}`} tabIndex={-1} aria-hidden="true" className="shrink-0">
+                    <span className="relative block h-24 w-20 overflow-hidden bg-[#f0ebe3] sm:h-28 sm:w-24">
                       {line.image ? (
                         <Image
                           src={cloudinaryResize(line.image.secureUrl, 200)}

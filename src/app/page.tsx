@@ -105,7 +105,7 @@ export default async function Home() {
                 <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c8a96e] animate-fade-up">
                   Featured
                 </span>
-                <h1 className="max-w-xl font-display italic text-6xl leading-[1.02] tracking-tight sm:text-7xl lg:text-8xl animate-fade-up delay-100">
+                <h1 className="max-w-xl font-display italic text-5xl leading-[1.04] tracking-tight sm:text-7xl lg:text-8xl animate-fade-up delay-100">
                   {hero.title}
                 </h1>
                 {hero.subtitle && (
@@ -149,7 +149,7 @@ export default async function Home() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c8a96e] animate-fade-up">
               Everyday jewellery, made to gift
             </p>
-            <h1 className="mt-4 max-w-4xl font-display italic text-7xl leading-[1.0] tracking-tight sm:text-8xl lg:text-[7rem] animate-fade-up delay-100">
+            <h1 className="mt-4 max-w-4xl font-display italic text-5xl leading-[1.04] tracking-tight sm:text-8xl lg:text-[7rem] animate-fade-up delay-100">
               Pretty things for<br />every-day you.
             </h1>
             <p className="mt-6 max-w-md text-base leading-7 text-ink/55 animate-fade-up delay-200">
@@ -208,7 +208,7 @@ export default async function Home() {
       <section aria-label="Shop by occasion" className="mx-auto w-full max-w-7xl px-6 pt-20 sm:px-10">
         <p className="eyebrow">Occasions</p>
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="section-title mt-1 text-5xl tracking-tight sm:text-6xl">
+          <h2 className="section-title mt-1 text-4xl tracking-tight sm:text-6xl">
             Dress for the moment
           </h2>
           <Link href="/shop" className="text-sm font-medium text-ink/50 underline underline-offset-4 hover:text-ink">
@@ -237,7 +237,7 @@ export default async function Home() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
                 Explore
               </p>
-              <h2 className="mt-1 font-display italic text-5xl tracking-tight sm:text-6xl">
+              <h2 className="mt-1 font-display italic text-4xl tracking-tight sm:text-6xl">
                 Departments
               </h2>
             </div>
@@ -281,7 +281,7 @@ export default async function Home() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
                 Just arrived
               </p>
-              <h2 className="mt-1 font-display italic text-5xl tracking-tight sm:text-6xl">
+              <h2 className="mt-1 font-display italic text-4xl tracking-tight sm:text-6xl">
                 New pieces
               </h2>
             </div>
@@ -319,7 +319,7 @@ export default async function Home() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
                 Community favourites
               </p>
-              <h2 className="mt-1 font-display italic text-5xl tracking-tight sm:text-6xl">
+              <h2 className="mt-1 font-display italic text-4xl tracking-tight sm:text-6xl">
                 Most loved
               </h2>
             </div>
@@ -344,7 +344,7 @@ export default async function Home() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
               What they say
             </p>
-            <h2 className="mt-2 font-display italic text-5xl tracking-tight sm:text-6xl">
+            <h2 className="mt-2 font-display italic text-4xl tracking-tight sm:text-6xl">
               Worn & loved
             </h2>
           </div>
@@ -378,7 +378,7 @@ export default async function Home() {
       {/* ───────── POCKET-FRIENDLY + REASSURANCE ───────── */}
       <section aria-label="Shop by budget" className="mx-auto w-full max-w-7xl px-6 pt-24 sm:px-10">
         <p className="eyebrow">Budgets, respected</p>
-        <h2 className="section-title mt-1 text-5xl tracking-tight sm:text-6xl">
+        <h2 className="section-title mt-1 text-4xl tracking-tight sm:text-6xl">
           Luxe looks, honest prices
         </h2>
         <p className="lede mt-3 max-w-xl text-sm">
@@ -386,18 +386,18 @@ export default async function Home() {
           is the price we thought about.
         </p>
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          <Link href="/shop?maxPrice=499" className="card-lift group bg-white/50 p-7">
-            <span className="font-display italic text-4xl">Under ₹499</span>
+          <Link href="/shop?maxPrice=499" className="card-lift group bg-white/50 p-6 sm:p-7">
+            <span className="font-display italic text-3xl sm:text-4xl">Under ₹499</span>
             <span className="mt-2 block text-sm text-ink/55">Daily steals & first-job gifts</span>
             <span aria-hidden="true" className="mt-4 block text-sm text-ink/40 group-hover:text-[#c8a96e]">Shop →</span>
           </Link>
-          <Link href="/shop?maxPrice=999" className="card-lift group bg-white/50 p-7">
-            <span className="font-display italic text-4xl">Under ₹999</span>
+          <Link href="/shop?maxPrice=999" className="card-lift group bg-white/50 p-6 sm:p-7">
+            <span className="font-display italic text-3xl sm:text-4xl">Under ₹999</span>
             <span className="mt-2 block text-sm text-ink/55">Festive-ready without the splurge</span>
             <span aria-hidden="true" className="mt-4 block text-sm text-ink/40 group-hover:text-[#c8a96e]">Shop →</span>
           </Link>
-          <Link href="/shop?sort=best-selling" className="card-lift group bg-[#0a0a0a] p-7 text-ivory">
-            <span className="font-display italic text-4xl">Most loved</span>
+          <Link href="/shop?sort=best-selling" className="card-lift group bg-[#0a0a0a] p-6 text-ivory sm:p-7">
+            <span className="font-display italic text-3xl sm:text-4xl">Most loved</span>
             <span className="mt-2 block text-sm text-ivory/55">What India is wearing right now</span>
             <span aria-hidden="true" className="mt-4 block text-sm text-[#c8a96e]">Shop →</span>
           </Link>
@@ -412,7 +412,7 @@ export default async function Home() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
                 The Sunday note
               </p>
-              <h2 className="mt-3 font-display italic text-5xl leading-[1.08] tracking-tight sm:text-6xl">
+              <h2 className="mt-3 font-display italic text-4xl leading-[1.1] tracking-tight sm:text-6xl">
                 First dibs,<br />little notes.
               </h2>
               <p className="mt-4 max-w-sm text-sm leading-7 text-ivory/50">

@@ -40,7 +40,7 @@ export default async function AdminHome() {
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">
           Back office · Namaste, admin
         </p>
-        <h1 className="mt-1 font-display italic text-5xl text-ivory">
+        <h1 className="mt-1 font-display italic text-4xl text-ivory sm:text-5xl">
           Dashboard
         </h1>
         <p className="mt-2 max-w-xl text-sm text-ivory/45">
