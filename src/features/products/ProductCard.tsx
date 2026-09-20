@@ -87,7 +87,7 @@ export function ProductCard({
             <s className="text-sm text-ink/35">{formatINR(product.compareAtPrice)}</s>
           )}
         </p>
-        <p className="price-note mt-0.5">Inclusive of all taxes · EMI from {formatINR(Math.round(product.price / 12))}/mo</p>
+        <p className="price-note mt-0.5">Inclusive of all taxes</p>
       </div>
     </article>
   );

@@ -11,7 +11,7 @@ All notable changes to SatvaStones are documented here. Format follows Keep a Ch
 - Footer: trust-badge row, SEO `nav` landmark, `h2` headings, Vapi + ₹/taxes copy.
 - Home: trust strip, "Shop by occasion" (Wedding/Everyday/Gifting/Under ₹499), budget band (Under ₹499/₹999/Most loved), hero trust microcopy, `new`/`bestseller` card badges. Single h1 preserved; Organization + WebSite JSON-LD untouched.
 - Shop: category-aware h1, lede with shipping/payment reassurance, playful empty state.
-- Product: "Good to know" trust panel (delivery, UPI-only-no-COD, gift packing, 7-day cover), EMI + tax-inclusive notes, gallery counter + resized images, warmer purchase panel.
+- Product: "Good to know" trust panel (delivery, UPI-only-no-COD, gift packing, 7-day cover), tax-inclusive notes, gallery counter + resized images, warmer purchase panel.
 - Bag/wishlist: free-shipping progress bar (live threshold), gift/trust notes, `btn` system, lazy resized thumbnails.
 - Checkout: step hints, UPI-first payment copy, server-truth disclaimer, festive confirmation with order tracking link.
 - Account/auth/static: `Namaste` login with trust checklist, eyebrow/section titles, order tracking eyebrows.

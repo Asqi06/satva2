@@ -229,7 +229,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
                 · Free shipping over ₹399 · UPI, cards &amp; netbanking
               </span>
             </p>
-            <p className="price-note mt-1">Price in ₹, inclusive of all taxes · EMI from {formatINR(Math.round(product.price / 12))}/mo on cards</p>
+            <p className="price-note mt-1">Price in ₹, inclusive of all taxes</p>
 
             {/* Short description */}
             {product.shortDescription && (
