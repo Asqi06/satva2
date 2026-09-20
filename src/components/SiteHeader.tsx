@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { BagButton } from "./BagButton";
 
-const NAV_LINKS = [
+const BASE_LINKS = [
   { href: "/shop", label: "Shop" },
   { href: "/about", label: "About" },
   { href: "/wishlist", label: "Wishlist" },
@@ -15,6 +16,9 @@ const NAV_LINKS = [
 /** Scroll-aware, mobile-capable editorial site header. */
 export function SiteHeader() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+  const NAV_LINKS = isAdmin ? [...BASE_LINKS, { href: "/admin", label: "Admin" }] : BASE_LINKS;
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
