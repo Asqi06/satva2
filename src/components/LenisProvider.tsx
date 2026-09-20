@@ -23,12 +23,16 @@ export function LenisProvider() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    // Desktop felt laggy with the previous sine ease + 0.85s duration
+    // (slow start). easeOutCubic + 0.6s is snappier: wheel responds
+    // immediately, then eases out. Multipliers stay at 1x so a
+    // wheel tick moves exactly one tick worth.
     const lenis = new Lenis({
-      duration: 0.85,
-      easing: (t: number) => 1 - Math.cos((t * Math.PI) / 2),
+      duration: 0.6,
+      easing: (t: number) => 1 - Math.pow(1 - t, 3),
       smoothWheel: true,
-      wheelMultiplier: 1.1,
-      touchMultiplier: 1.5,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.2,
       autoRaf: true,
       anchors: true,
     });
