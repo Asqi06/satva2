@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
     ],
   },
+  experimental: {
+    optimizePackageImports: ["zod", "mongoose"],
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+  },
   async headers() {
     return [
       {
@@ -39,6 +45,19 @@ const nextConfig: NextConfig = {
             : []),
         ],
       },
+      // ISR homepage + shop benefit from edge caching without sacrificing freshness.
+      {
+        source: "/",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
+          { key: "CDN-Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=600" },
+        ],
+      },
+      {
+        source: "/shop",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" }],
+      },
+
     ];
   },
 };

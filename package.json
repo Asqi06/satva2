@@ -29,6 +29,12 @@
     "resend": "^6.28.1",
     "zod": "^4.6.5"
   },
+  "browserslist": [
+    "chrome >= 109",
+    "firefox >= 109",
+    "safari >= 16",
+    "edge >= 109"
+  ],
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",

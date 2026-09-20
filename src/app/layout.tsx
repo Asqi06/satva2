@@ -15,18 +15,29 @@ const display = Fraunces({
   style: ["normal", "italic"],
   display: "swap",
   axes: ["SOFT", "WONK"],
+  preload: true,
+  fallback: ["Georgia", "serif"],
+  adjustFontFallback: true,
 });
 
 const sans = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
+  preload: true,
+  fallback: ["system-ui", "Arial", "sans-serif"],
+  adjustFontFallback: true,
 });
 
 const mono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400", "500"],
   display: "swap",
+  preload: false,
+  fallback: ["ui-monospace", "monospace"],
+  adjustFontFallback: false,
 });
 
 const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
