@@ -4,11 +4,11 @@ import type { NextConfig } from "next";
 // looser script/eval permissions. Baseline hardening headers always apply.
 const PROD_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://www.googletagmanager.com https://www.google-analytics.com",
+  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://res.cloudinary.com https://www.google-analytics.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://api.razorpay.com https://*.razorpay.com https://www.google-analytics.com",
+  "connect-src 'self' https://api.razorpay.com https://*.razorpay.com https://www.google-analytics.com https://cloudflareinsights.com",
   "frame-src 'self' https://api.razorpay.com https://*.razorpay.com",
   "object-src 'none'",
   "base-uri 'self'",
