@@ -2,26 +2,59 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useBag } from "@/features/cart/CartProvider";
+import { cloudinaryResize } from "@/utils/cloudinary-url";
 import { formatINR } from "@/utils/format";
 
 /** Full-page bag. Shares live state with the drawer via CartProvider. */
 export function CartView() {
   const { lines, count, subtotal, loading, setQty, remove, notice } = useBag();
+  const [shipThreshold, setShipThreshold] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/settings");
+        const body = (await res.json()) as { success: boolean; data?: { freeShippingThreshold: number } };
+        if (body.success && body.data) setShipThreshold(body.data.freeShippingThreshold);
+      } catch {
+        // Static reassurance copy below covers the fallback.
+      }
+    })();
+  }, []);
+
+  const missing = shipThreshold !== null ? Math.max(0, shipThreshold - subtotal) : null;
+  const progress = shipThreshold !== null && shipThreshold > 0 ? Math.min(100, (subtotal / shipThreshold) * 100) : 0;
 
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       {/* Page header */}
       <div className="border-b border-ink/[0.07]">
         <div className="mx-auto w-full max-w-7xl px-6 pb-10 pt-12 sm:px-10">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-            Your bag
+          <p className="eyebrow">
+            Your bag · Prices in ₹, taxes included
           </p>
-          <h1 className="mt-2 font-display italic text-6xl tracking-tight sm:text-7xl">
+          <h1 className="section-title mt-2 text-6xl tracking-tight sm:text-7xl">
             {count > 0
               ? `${count} piece${count === 1 ? "" : "s"}`
               : "Empty bag"}
           </h1>
+          {missing !== null && missing > 0 && lines.length > 0 && (
+            <div className="mt-5 max-w-md">
+              <p className="text-sm text-ink/60">
+                Add <strong className="text-ink">{formatINR(missing)}</strong> more for <strong className="text-ink">free shipping</strong>
+              </p>
+              <div className="ship-progress mt-2" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Progress to free shipping">
+                <span style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          )}
+          {missing === 0 && lines.length > 0 && (
+            <p className="mt-5 inline-block bg-[#1f4d2e] px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ivory">
+              ✓ You unlocked free shipping
+            </p>
+          )}
         </div>
       </div>
 
@@ -39,15 +72,13 @@ export function CartView() {
         {loading ? (
           <p className="text-sm text-ink/50">Loading your bag…</p>
         ) : lines.length === 0 ? (
-          <div className="mt-4 border border-ink/[0.08] bg-white/50 py-20 text-center">
-            <p className="font-display italic text-4xl">Nothing here yet.</p>
-            <p className="mt-3 text-sm text-ink/50">
-              Pretty things are waiting in the shop.
+          <div className="mt-4 border border-ink/[0.08] bg-white/50 px-6 py-20 text-center">
+            <p className="eyebrow">Empty bag</p>
+            <p className="mt-2 font-display italic text-4xl">Nothing here yet.</p>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-ink/50">
+              Pretty things are waiting in the shop — starting under ₹499, gift-ready always.
             </p>
-            <Link
-              href="/shop"
-              className="mt-7 inline-flex items-center gap-2 bg-[#0a0a0a] px-8 py-4 text-sm font-semibold uppercase tracking-[0.15em] text-ivory transition-colors hover:bg-[#c8a96e] hover:text-[#0a0a0a]"
-            >
+            <Link href="/shop" className="btn-primary mt-7">
               Browse the shop →
             </Link>
           </div>
@@ -65,10 +96,12 @@ export function CartView() {
                     <span className="relative block h-28 w-24 shrink-0 overflow-hidden bg-[#f0ebe3]">
                       {line.image ? (
                         <Image
-                          src={line.image.secureUrl}
+                          src={cloudinaryResize(line.image.secureUrl, 200)}
                           alt=""
                           fill
                           sizes="96px"
+                          loading="lazy"
+                          decoding="async"
                           className="object-cover"
                         />
                       ) : (
@@ -162,13 +195,16 @@ export function CartView() {
                 <span className="font-medium">Estimated total</span>
                 <span className="font-mono text-xl font-semibold">{formatINR(subtotal)}</span>
               </div>
-              <p className="mt-1 text-xs text-ink/35">Taxes calculated at checkout.</p>
+              <p className="mt-1 text-xs text-ink/35">Taxes included. Shipping calculated at checkout.</p>
               <Link
                 href="/checkout"
-                className="mt-6 block border border-[#0a0a0a] bg-[#0a0a0a] px-6 py-4 text-center text-sm font-semibold uppercase tracking-[0.15em] text-ivory transition-colors hover:bg-[#c8a96e] hover:border-[#c8a96e] hover:text-[#0a0a0a]"
+                className="btn-primary mt-6 block text-center"
               >
                 Proceed to checkout
               </Link>
+              <p className="mt-3 text-center text-xs leading-5 text-ink/45">
+                UPI • Cards • Netbanking · 🎁 gift box free · 7-day easy cover
+              </p>
               <Link
                 href="/shop"
                 className="mt-3 block text-center text-xs text-ink/40 underline underline-offset-4 hover:text-ink"

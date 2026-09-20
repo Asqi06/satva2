@@ -71,8 +71,14 @@ export function SiteHeader() {
 
   return (
     <>
+      {/* Festive announcement bar — trust-first for Indian shoppers */}
+      <div className="bg-[#0a0a0a] text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c8a96e]">
+        <p className="mx-auto max-w-7xl px-6 py-2 sm:px-10">
+          Free shipping over ₹399 ✦ UPI, cards & netbanking ✦ 7-day easy cover
+        </p>
+      </div>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`sticky top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-ivory/98 shadow-[0_1px_0_rgba(10,10,10,0.08)] backdrop-blur-md"
             : "bg-ivory/80 backdrop-blur-sm"
@@ -137,9 +143,6 @@ export function SiteHeader() {
           </div>
         </div>
       </header>
-
-      {/* Spacer so content sits below fixed header */}
-      <div className="h-[60px] shrink-0" aria-hidden="true" />
 
       {/* Mobile Menu Overlay */}
       {menuOpen && (

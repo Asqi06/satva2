@@ -14,10 +14,10 @@ export default function AboutPage() {
       {/* Large editorial header */}
       <div className="border-b border-ink/[0.07]">
         <div className="mx-auto w-full max-w-7xl px-6 pb-14 pt-16 sm:px-10">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c8a96e] animate-fade-up">
-            Our story
+          <p className="eyebrow animate-fade-up">
+            Our story · Vapi → all of India
           </p>
-          <h1 className="mt-3 max-w-3xl font-display italic text-7xl leading-[1.01] tracking-tight sm:text-8xl animate-fade-up delay-100">
+          <h1 className="section-title mt-3 max-w-3xl text-7xl leading-[1.01] tracking-tight sm:text-8xl animate-fade-up delay-100">
             Pretty things,<br />honest prices.
           </h1>
         </div>

@@ -12,9 +12,9 @@ export default function ContactPage() {
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">Write to us</p>
-        <h1 className="mt-2 font-display text-5xl tracking-tight">Hello, human.</h1>
-        <p className="mt-3 text-ink/70">We reply within 2 working days — usually faster.</p>
+        <p className="eyebrow">Write to us · Vapi studio</p>
+        <h1 className="section-title mt-2 text-5xl tracking-tight">Hello, human.</h1>
+        <p className="lede mt-3">We reply within 2 working days — usually faster. Orders, sizing, gifting, bulk shaadi orders — all welcome.</p>
         <div className="mt-6">
           <ContactForm />
         </div>

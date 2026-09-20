@@ -90,6 +90,7 @@ export default async function ShopPage({
         }
       : null;
 
+  const heading = categoryName ?? "All jewellery";
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
@@ -99,16 +100,16 @@ export default async function ShopPage({
       {/* Page header */}
       <div className="border-b border-ink/[0.07] bg-ivory">
         <div className="mx-auto w-full max-w-7xl px-6 pb-10 pt-12 sm:px-10">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-            The shop
+          <p className="eyebrow">
+            The shop · Prices in ₹, taxes included
           </p>
-          <h1 className="mt-2 font-display italic text-6xl tracking-tight sm:text-7xl">
-            All jewellery
+          <h1 className="section-title mt-2 text-6xl tracking-tight sm:text-7xl">
+            {heading}
           </h1>
-          <p className="mt-4 text-sm text-ink/50">
+          <p className="lede mt-4 max-w-xl text-sm">
             {pagination.total === 0
               ? "No pieces match — try clearing a filter."
-              : `${pagination.total} piece${pagination.total === 1 ? "" : "s"}`}
+              : `${pagination.total} piece${pagination.total === 1 ? "" : "s"} · Free shipping over ₹399 · UPI, cards & netbanking accepted`}
           </p>
         </div>
       </div>
@@ -132,10 +133,11 @@ export default async function ShopPage({
           </div>
         ) : (
           <div className="mt-8 border border-ink/[0.08] bg-white/50 p-16 text-center">
-            <p className="font-display italic text-3xl">The shelf is empty here.</p>
+            <p className="font-display italic text-3xl">Arre, the shelf is empty here.</p>
+            <p className="mt-2 text-sm text-ink/50">Try a different budget or occasion — pretty things await.</p>
             <Link
               href="/shop"
-              className="mt-5 inline-flex items-center gap-2 text-sm text-ink/50 underline underline-offset-4 hover:text-ink"
+              className="btn-primary mt-6"
             >
               Clear all filters →
             </Link>

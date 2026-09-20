@@ -35,10 +35,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           {/* Brand bar */}
           <div className="border-b border-ivory/[0.06] px-6 py-5">
             <Link href="/" className="font-display italic text-xl text-[#c8a96e]">
-              SatvaStones
+              SatvaStones ✦
             </Link>
             <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-ivory/30">
-              Admin panel
+              Back office · Vapi studio
             </p>
           </div>
 

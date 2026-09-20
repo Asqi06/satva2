@@ -17,13 +17,14 @@ export async function ReviewsSection({ slug }: { slug: string }) {
 
   return (
     <section aria-label="Customer reviews" className="mt-16">
-      <h2 className="font-display text-3xl">Worn & loved</h2>
+      <p className="eyebrow">Verified reviews</p>
+      <h2 className="section-title mt-1 text-3xl">Worn & loved across India</h2>
       {list.count > 0 ? (
         <p className="mt-1 text-sm text-ink/70">
-          ★ {list.average.toFixed(1)} · {list.count} review{list.count === 1 ? "" : "s"}
+          ★ {list.average.toFixed(1)} · {list.count} verified review{list.count === 1 ? "" : "s"} · Only buyers can review
         </p>
       ) : (
-        <p className="mt-1 text-sm text-ink/70">No reviews yet — yours could be first.</p>
+        <p className="mt-1 text-sm text-ink/70">No reviews yet — bought this piece? Yours could be first.</p>
       )}
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">

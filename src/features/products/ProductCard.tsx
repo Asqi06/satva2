@@ -4,17 +4,19 @@ import type { ProductListItem } from "@/services/product-service";
 import { cloudinaryResize } from "@/utils/cloudinary-url";
 import { formatINR } from "@/utils/format";
 
-/** Storefront product card — editorial minimal, hover lift with image zoom. Server-safe. */
+/** Storefront product card — desi-editorial: rupee-first pricing, festive badges. Server-safe. */
 export function ProductCard({
   product,
   eager = false,
+  badge,
 }: {
   product: ProductListItem;
   eager?: boolean;
+  badge?: "bestseller" | "new";
 }) {
   const cover = product.images[0];
   return (
-    <article className="group relative overflow-hidden bg-white/70 border border-ink/[0.07] transition-shadow hover:shadow-[0_8px_40px_rgba(10,10,10,0.10)]">
+    <article className="card-lift group relative overflow-hidden bg-white/70">
       {/* Image */}
       <Link href={`/products/${product.slug}`} aria-label={product.name} tabIndex={-1}>
         <span className="relative block aspect-[3/4] overflow-hidden bg-[#f0ebe3]">
@@ -34,12 +36,14 @@ export function ProductCard({
             </span>
           )}
 
-          {/* Discount badge */}
-          {product.discountPercent > 0 && (
-            <span className="absolute left-0 top-4 bg-[#c8a96e] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#0a0a0a]">
-              −{product.discountPercent}%
-            </span>
-          )}
+          {/* Badges */}
+          <span className="absolute left-0 top-4 flex flex-col items-start gap-1.5">
+            {product.discountPercent > 0 && (
+              <span className="badge-off">−{product.discountPercent}%</span>
+            )}
+            {badge === "bestseller" && <span className="badge-bestseller">★ Bestseller</span>}
+            {badge === "new" && <span className="badge-new">New drop</span>}
+          </span>
 
           {/* Out of stock overlay */}
           {!product.inStock && (
@@ -71,18 +75,19 @@ export function ProductCard({
           <p className="mt-1 text-[11px] text-[#c8a96e]">
             {"★".repeat(Math.round(product.ratingAverage))}
             <span className="ml-1 font-sans text-ink/35">
-              ({product.ratingCount})
+              {product.ratingAverage.toFixed(1)} ({product.ratingCount} review{product.ratingCount === 1 ? "" : "s"})
             </span>
           </p>
         )}
 
-        {/* Price */}
+        {/* Price — rupee-first, taxes included */}
         <p className="mt-2 flex items-baseline gap-2 font-mono">
           <span className="text-base font-semibold">{formatINR(product.price)}</span>
           {product.compareAtPrice !== undefined && product.compareAtPrice > product.price && (
             <s className="text-sm text-ink/35">{formatINR(product.compareAtPrice)}</s>
           )}
         </p>
+        <p className="price-note mt-0.5">Inclusive of all taxes · EMI from {formatINR(Math.round(product.price / 12))}/mo</p>
       </div>
     </article>
   );

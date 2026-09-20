@@ -75,7 +75,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             name="q"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search rings, pearls, oxidised…"
+            placeholder="Search rings, jhumkas, oxidised, gifts under ₹499…"
             className="w-full border border-ink/[0.1] bg-white/70 py-2.5 pl-10 pr-4 text-sm placeholder:text-ink/30 focus:border-[#c8a96e] focus:outline-none focus:ring-0"
           />
         </label>

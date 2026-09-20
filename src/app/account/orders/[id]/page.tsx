@@ -27,8 +27,9 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
       <Link href="/account/orders" className="text-sm underline underline-offset-4">
         ← All orders
       </Link>
+      <p className="eyebrow">Tracked · 5–7 day delivery</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-4xl tracking-tight">Order {order.id.slice(-8).toUpperCase()}</h1>
+        <h1 className="section-title text-4xl tracking-tight">Order {order.id.slice(-8).toUpperCase()}</h1>
         <span className="flex gap-2">
           <StatusPill status={order.orderStatus} />
           <StatusPill status={order.paymentStatus} />
