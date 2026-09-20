@@ -1,0 +1,28 @@
+import { z } from "zod";
+import { requireAdmin } from "@/lib/admin-guard";
+import { errorResponse, successResponse } from "@/lib/errors";
+import { listAdminReviews } from "@/services/review-service";
+
+const querySchema = z.object({
+  hidden: z.enum(["true", "false"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const dynamic = "force-dynamic";
+
+export async function GET(req: Request): Promise<Response> {
+  try {
+    await requireAdmin();
+    const query = querySchema.parse(Object.fromEntries(new URL(req.url).searchParams));
+    return successResponse(
+      await listAdminReviews({
+        hiddenOnly: query.hidden === "true",
+        page: query.page,
+        limit: query.limit,
+      }),
+    );
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
