@@ -42,6 +42,18 @@ export default async function AccountPage() {
           <p className="mt-1 text-sm text-ink/70">{user.email}</p>
         </div>
       </div>
+      {user.role === "ADMIN" && (
+        <div className="mt-6 border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a6b2a]">Admin access</p>
+          <p className="mt-1 text-sm text-ink/70">You are signed in as ADMIN.</p>
+          <a
+            href="/admin"
+            className="mt-3 inline-flex items-center gap-2 bg-ink px-5 py-2.5 text-sm font-medium text-ivory transition-colors hover:bg-[#c8a96e] hover:text-ink"
+          >
+            Go to admin dashboard →
+          </a>
+        </div>
+      )}
       <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <div className="rounded-2xl border border-ink/10 p-4">
           <dt className="text-ink/60">Role</dt>
