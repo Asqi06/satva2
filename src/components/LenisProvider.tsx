@@ -1,7 +1,7 @@
 "use client";
 
-import Lenis from "lenis";
 import { useEffect } from "react";
+import type Lenis from "lenis";
 
 /**
  * Activates Lenis smooth scroll site-wide.
@@ -23,29 +23,51 @@ export function LenisProvider() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    // Desktop felt laggy with the previous sine ease + 0.85s duration
-    // (slow start). easeOutCubic + 0.6s is snappier: wheel responds
-    // immediately, then eases out. Multipliers stay at 1x so a
-    // wheel tick moves exactly one tick worth.
-    const lenis = new Lenis({
-      duration: 0.6,
-      easing: (t: number) => 1 - Math.pow(1 - t, 3),
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 1.2,
-      autoRaf: true,
-      anchors: true,
-    });
+    // Defer to idle so initial LCP/CLS is not blocked by smooth-scroll JS.
+    // Dynamic import also removes Lenis from the initial JS bundle (~25 KiB).
+    let lenis: Lenis | null = null;
+    let cancelled = false;
 
-    // Expose for drawer/menu scroll-locks (stop/start without
-    // fighting Lenis via body overflow alone).
-    (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
+    const start = () => {
+      if (cancelled) return;
+      void import("lenis").then(({ default: LenisCtor }) => {
+        if (cancelled) return;
+        lenis = new LenisCtor({
+          duration: 0.6,
+          easing: (t: number) => 1 - Math.pow(1 - t, 3),
+          smoothWheel: true,
+          wheelMultiplier: 1,
+          touchMultiplier: 1.2,
+          autoRaf: true,
+          anchors: true,
+        });
+        (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
+      });
+    };
 
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(start, { timeout: 1200 });
+      return () => {
+        cancelled = true;
+        w.cancelIdleCallback?.(id);
+        if (lenis) {
+          if ((window as unknown as { __lenis?: Lenis }).__lenis === lenis) delete (window as unknown as { __lenis?: Lenis }).__lenis;
+          lenis.destroy();
+        }
+      };
+    }
+    const t = window.setTimeout(start, 350);
     return () => {
-      if ((window as unknown as { __lenis?: Lenis }).__lenis === lenis) {
-        delete (window as unknown as { __lenis?: Lenis }).__lenis;
+      cancelled = true;
+      window.clearTimeout(t);
+      if (lenis) {
+        if ((window as unknown as { __lenis?: Lenis }).__lenis === lenis) delete (window as unknown as { __lenis?: Lenis }).__lenis;
+        lenis.destroy();
       }
-      lenis.destroy();
     };
   }, []);
 

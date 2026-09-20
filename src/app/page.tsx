@@ -23,8 +23,9 @@ export const metadata: Metadata = {
   },
 };
 
-/** Live catalogue content — never prerender (also keeps builds secret-free). */
-export const dynamic = "force-dynamic";
+/** Live catalogue — ISR 60s keeps TTFB low via CDN while staying secret-free at build. */
+export const revalidate = 60;
+export const dynamic = "force-static";
 
 const MARQUEE_ITEMS = [
   "Free shipping over ₹399",
@@ -112,6 +113,7 @@ export default async function Home() {
                   alt={hero.image.alt}
                   fill
                   priority
+                  fetchPriority="high"
                   sizes="(min-width: 1024px) 55vw, 100vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                 />
@@ -121,8 +123,8 @@ export default async function Home() {
             </Link>
           </div>
         ) : (
-          /* Typographic fallback hero */
-          <div className="relative flex min-h-[88vh] flex-col items-start justify-end overflow-hidden bg-ivory px-8 pb-20 sm:px-14 sm:pb-28">
+          /* Typographic fallback hero — same 85vh as banner to avoid CLS */
+          <div className="relative flex min-h-[85vh] flex-col items-start justify-end overflow-hidden bg-ivory px-8 pb-20 sm:px-14 sm:pb-28">
             {/* Background decorative line */}
             <div className="absolute right-0 top-0 h-full w-px bg-ink/[0.06]" />
             <div className="absolute bottom-0 left-0 right-0 h-px bg-ink/[0.06]" />
