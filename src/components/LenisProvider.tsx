@@ -8,6 +8,15 @@ import { useEffect } from "react";
  * Respects prefers-reduced-motion: if the user prefers no motion,
  * Lenis is not initialised and native scroll behaviour is used.
  *
+ * Uses Lenis `autoRaf` (no manual requestAnimationFrame loop) and a
+ * shorter duration so scrolling feels snappy instead of laggy/stuck.
+ * Required Lenis CSS lives in globals.css (`html.lenis ...` rules);
+ * without it Lenis miscalculates the scroll limit and the page can
+ * stop scrolling part-way down.
+ *
+ * Inner scroll areas (cart drawer, mobile menu) must carry
+ * `data-lenis-prevent` so Lenis lets them scroll natively.
+ *
  * Renders nothing — purely a side-effect component.
  */
 export function LenisProvider() {
@@ -15,20 +24,23 @@ export function LenisProvider() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      duration: 0.85,
+      easing: (t: number) => 1 - Math.cos((t * Math.PI) / 2),
       smoothWheel: true,
+      wheelMultiplier: 1.1,
+      touchMultiplier: 1.5,
+      autoRaf: true,
+      anchors: true,
     });
 
-    let raf: number;
-    function loop(time: number) {
-      lenis.raf(time);
-      raf = requestAnimationFrame(loop);
-    }
-    raf = requestAnimationFrame(loop);
+    // Expose for drawer/menu scroll-locks (stop/start without
+    // fighting Lenis via body overflow alone).
+    (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
 
     return () => {
-      cancelAnimationFrame(raf);
+      if ((window as unknown as { __lenis?: Lenis }).__lenis === lenis) {
+        delete (window as unknown as { __lenis?: Lenis }).__lenis;
+      }
       lenis.destroy();
     };
   }, []);

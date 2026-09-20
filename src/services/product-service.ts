@@ -273,6 +273,9 @@ export async function listPublicProducts(
   const [total, docs] = await Promise.all([
     Product.countDocuments(filter),
     Product.find(filter)
+      .select(
+        "name slug shortDescription price compareAtPrice sku images ratingAverage ratingCount stock reservedStock categoryId tags isFeatured createdAt",
+      )
       .sort(SORT_MAP[query.sort])
       .skip((query.page - 1) * query.limit)
       .limit(query.limit)

@@ -46,10 +46,23 @@ export function SiteHeader() {
     return () => document.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  // Lock body scroll when mobile menu is open
+  // Lock body scroll when mobile menu is open (also pauses Lenis
+  // virtual scroll, which ignores body overflow on its own).
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    const lenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis;
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+      lenis?.stop();
+    } else {
+      document.body.style.overflow = "";
+      lenis?.start();
+    }
+    return () => {
+      document.body.style.overflow = "";
+      // Only restart Lenis on cleanup if the menu was open; otherwise
+      // we could restart it while the cart drawer keeps it stopped.
+      if (menuOpen) lenis?.start();
+    };
   }, [menuOpen]);
 
   return (
@@ -150,7 +163,7 @@ export function SiteHeader() {
                 ✕
               </button>
             </div>
-            <nav aria-label="Mobile" className="flex-1 px-6 py-8">
+            <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-6 py-8" data-lenis-prevent>
               <ul className="space-y-1">
                 {NAV_LINKS.map((link, i) => {
                   const active = pathname === link.href || pathname.startsWith(link.href + "/");

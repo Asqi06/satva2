@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getClientEnv } from "@/lib/env";
+import { cloudinaryResize } from "@/utils/cloudinary-url";
 import { NewsletterForm } from "@/features/content/NewsletterForm";
 import { ProductCard } from "@/features/products/ProductCard";
 import { listLiveBanners } from "@/services/banner-service";
@@ -48,7 +49,7 @@ export default async function Home() {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-ivory font-sans text-ink">
+    <div className="flex flex-1 flex-col bg-ivory font-sans text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
 
       {/* ───────── HERO ───────── */}
@@ -83,7 +84,7 @@ export default async function Home() {
               {/* Image side */}
               <div className="relative min-h-[50vh] overflow-hidden bg-[#e8e0d5] lg:min-h-full">
                 <Image
-                  src={hero.image.secureUrl}
+                  src={cloudinaryResize(hero.image.secureUrl, 1200)}
                   alt={hero.image.alt}
                   fill
                   priority

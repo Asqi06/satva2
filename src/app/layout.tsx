@@ -46,9 +46,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
+      className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}
     >
-      <body className="flex min-h-full flex-col font-sans">
+      <body className="flex min-h-screen flex-col font-sans">
         <LenisProvider />
         <AnalyticsLoader />
         <a
@@ -60,7 +60,7 @@ export default function RootLayout({
         <AuthSessionProvider>
           <CartProvider>
             <SiteHeader />
-            <div id="main-content" className="flex min-h-0 flex-1 flex-col">
+            <div id="main-content" className="flex flex-1 flex-col">
               {children}
             </div>
             <SiteFooter />
