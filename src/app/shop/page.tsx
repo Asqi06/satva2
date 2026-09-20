@@ -6,11 +6,33 @@ import { productQuerySchema } from "@/schemas/product";
 import { ProductCard } from "@/features/products/ProductCard";
 import { ShopFilters } from "@/features/products/ShopFilters";
 
-export const metadata: Metadata = {
-  title: "Shop all jewellery",
-  description:
-    "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const raw = await searchParams;
+  const category = (Array.isArray(raw.category) ? raw.category[0] : raw.category)?.toLowerCase();
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
+  if (category) {
+    const title = `${category.charAt(0).toUpperCase() + category.slice(1)} jewellery | SatvaStones`;
+    const description = `Shop ${category} — Korean, Western and Pinterest-inspired jewellery. Anti-tarnish, honestly priced.`;
+    return {
+      title,
+      description,
+      alternates: { canonical: `${appUrl}/shop?category=${encodeURIComponent(category)}` },
+      openGraph: { title, description, url: `${appUrl}/shop?category=${encodeURIComponent(category)}`, type: "website", siteName: "SatvaStones" },
+      twitter: { card: "summary_large_image", title, description },
+    };
+  }
+  return {
+    title: "Shop all jewellery",
+    description: "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced. Korean & Western styles, anti-tarnish.",
+    alternates: { canonical: `${appUrl}/shop` },
+    openGraph: { title: "Shop all jewellery | SatvaStones", description: "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced.", url: `${appUrl}/shop`, type: "website", siteName: "SatvaStones" },
+    twitter: { card: "summary_large_image", title: "Shop all jewellery | SatvaStones", description: "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced." },
+  };
+}
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -46,8 +68,34 @@ export default async function ShopPage({
     listPublicCategories(),
   ]);
 
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
+  const categoryName = flat.category ? categories.find((c) => c.slug === flat.category.toLowerCase())?.name ?? flat.category : null;
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: categoryName ? `${categoryName} jewellery` : "All jewellery",
+    url: `${appUrl}/shop${flat.category ? `?category=${encodeURIComponent(flat.category)}` : ""}`,
+    isPartOf: { "@type": "WebSite", name: "SatvaStones", url: appUrl },
+  };
+  const breadcrumbLd =
+    categoryName !== null
+      ? {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: appUrl },
+            { "@type": "ListItem", position: 2, name: "Shop", item: `${appUrl}/shop` },
+            { "@type": "ListItem", position: 3, name: categoryName, item: `${appUrl}/shop?category=${encodeURIComponent(flat.category!)}` },
+          ],
+        }
+      : null;
+
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
+      {breadcrumbLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      )}
       {/* Page header */}
       <div className="border-b border-ink/[0.07] bg-ivory">
         <div className="mx-auto w-full max-w-7xl px-6 pb-10 pt-12 sm:px-10">

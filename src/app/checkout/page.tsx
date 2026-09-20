@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { CheckoutWizard } from "@/features/checkout/CheckoutWizard";
 
 export const metadata: Metadata = {
-  title: "Checkout",
+  title: "Checkout — SatvaStones",
   description: "Delivery, payment and confirmation for your SatvaStones order.",
+  robots: { index: false, follow: false },
 };
 
 /** Public entry; the wizard gates guests to login before payment. */

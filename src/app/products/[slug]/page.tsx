@@ -20,19 +20,35 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const product = await getPublicProductBySlug(slug);
-  if (!product) return { title: "Not found" };
-  const title = product.seo.title || product.name;
+  if (!product) return { title: "Not found", robots: { index: false, follow: false } };
+  const title = product.seo.title || `${product.name} | SatvaStones`;
   const description =
     product.seo.description ||
     product.shortDescription ||
-    product.description.slice(0, 160);
-  const images = product.images.slice(0, 1).map((i) => ({ url: i.secureUrl, alt: i.alt }));
+    product.description.slice(0, 155);
+  const images = product.images.slice(0, 4).map((i) => ({ url: i.secureUrl, alt: i.alt, width: 1200, height: 630 }));
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const canonical = `${appUrl}/products/${product.slug}`;
   return {
     title,
     description,
-    alternates: { canonical: `${appUrl}/products/${product.slug}` },
-    openGraph: { title, description, images, url: `${appUrl}/products/${product.slug}` },
+    keywords: [product.name, product.category.name, ...(product.tags ?? []), product.material ?? "", product.color ?? ""].filter(Boolean),
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      images,
+      url: canonical,
+      siteName: "SatvaStones",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: images.map((i) => i.url),
+    },
+    robots: { index: true, follow: true },
   };
 }
 
@@ -49,16 +65,19 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     name: product.name,
     description: product.shortDescription ?? product.description.slice(0, 300),
     sku: product.sku,
+    brand: { "@type": "Brand", name: "SatvaStones" },
+    category: product.category.name,
     image: product.images.map((i) => i.secureUrl),
     url: canonical,
     offers: {
       "@type": "Offer",
       priceCurrency: "INR",
       price: product.price,
-      availability: product.inStock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: canonical,
+      seller: { "@type": "Organization", name: "SatvaStones", url: appUrl },
+      itemCondition: "https://schema.org/NewCondition",
+      ...(product.compareAtPrice ? { highPrice: product.compareAtPrice } : {}),
     },
     ...(product.ratingCount > 0
       ? {
@@ -66,6 +85,8 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             "@type": "AggregateRating",
             ratingValue: product.ratingAverage,
             reviewCount: product.ratingCount,
+            bestRating: 5,
+            worstRating: 1,
           },
         }
       : {}),

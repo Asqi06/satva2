@@ -3,7 +3,9 @@ import { SignInButton } from "@/features/auth/SignInButton";
 
 export const metadata: Metadata = {
   title: "Sign in — SatvaStones",
-  description: "Log in to SatvaStones with Google.",
+  description: "Log in to SatvaStones with Google. Your orders, wishlist and addresses in sync.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/login" },
 };
 
 export default function LoginPage() {

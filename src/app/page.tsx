@@ -13,7 +13,14 @@ import { listFeaturedReviews } from "@/services/review-service";
 export const metadata: Metadata = {
   title: "SatvaStones — Everyday Aesthetic Jewellery",
   description:
-    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
+    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers. Anti-tarnish, honestly priced.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    title: "SatvaStones — Everyday Aesthetic Jewellery",
+    description:
+      "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
+  },
 };
 
 /** Live catalogue content — never prerender (also keeps builds secret-free). */
@@ -45,12 +52,29 @@ export default async function Home() {
     "@type": "Organization",
     name: "SatvaStones",
     url: appUrl,
-    description: "Everyday aesthetic jewellery for India.",
+    logo: `${appUrl}/icon.png`,
+    description: "Everyday aesthetic jewellery for India — Korean, Western and Pinterest-inspired, anti-tarnish, crafted in Vapi, Gujarat.",
+    sameAs: [],
+  };
+
+  const websiteLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "SatvaStones",
+    url: appUrl,
+    description: "Korean, Western and Pinterest-inspired jewellery for India.",
+    publisher: { "@type": "Organization", name: "SatvaStones", url: appUrl },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${appUrl}/shop?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
   };
 
   return (
     <div className="flex flex-1 flex-col bg-ivory font-sans text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
 
       {/* ───────── HERO ───────── */}
       <main>
