@@ -32,9 +32,23 @@ const MARQUEE_ITEMS = [
   "Anti-tarnish finish",
   "Crafted in Vapi, Gujarat",
   "Verified reviews",
-  "COD not available",
+  "UPI • Cards • Netbanking",
   "Korean & Western styles",
   "Premium-looking, honestly priced",
+];
+
+const TRUST_ITEMS = [
+  { title: "Free shipping over ₹399", body: "Flat ₹49 below · 5–7 days, tracked" },
+  { title: "Pay your way", body: "UPI, cards, netbanking & wallets" },
+  { title: "7-day easy cover", body: "Defects & transit damage replaced" },
+  { title: "Gift-ready always", body: "Pouch + box + note, no extra charge" },
+];
+
+const OCCASIONS = [
+  { title: "Wedding Season", body: "Statement pieces for baraats & pheras", href: "/shop?sort=best-selling", tag: "Shaadi-ready" },
+  { title: "Everyday Essentials", body: "Light, water-friendly daily wear", href: "/shop", tag: "Daily wear" },
+  { title: "Gifting Edit", body: "Shagun-proof picks under every budget", href: "/shop?sort=featured", tag: "Gift-ready" },
+  { title: "Under ₹499", body: "Pocket-friendly luxe, zero guilt", href: "/shop?maxPrice=499", tag: "Steals" },
 ];
 
 export default async function Home() {
@@ -105,6 +119,9 @@ export default async function Home() {
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </span>
+                <p className="max-w-sm text-xs leading-5 text-ink/45 animate-fade-up delay-300">
+                  Free shipping over ₹399 · UPI, cards & netbanking · 7-day easy cover
+                </p>
               </div>
               {/* Image side */}
               <div className="relative min-h-[50vh] overflow-hidden bg-[#e8e0d5] lg:min-h-full">
@@ -142,7 +159,7 @@ export default async function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-4 animate-fade-up delay-300">
               <Link
                 href="/shop"
-                className="group inline-flex items-center gap-3 bg-[#0a0a0a] px-8 py-4 text-sm font-medium tracking-wide text-ivory transition-colors hover:bg-[#c8a96e] hover:text-[#0a0a0a]"
+                className="btn-primary group"
               >
                 Browse the collection
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1" aria-hidden="true">
@@ -153,6 +170,9 @@ export default async function Home() {
                 Our story
               </Link>
             </div>
+            <p className="mt-4 text-xs leading-5 text-ink/45 animate-fade-up delay-300">
+              Prices in ₹, taxes included · Ships in 2–4 days · Gift-ready packing
+            </p>
           </div>
         )}
       </main>
@@ -171,6 +191,43 @@ export default async function Home() {
           ))}
         </div>
       </div>
+
+      {/* ───────── TRUST STRIP ───────── */}
+      <section aria-label="Why shop with SatvaStones" className="mx-auto w-full max-w-7xl px-6 pt-14 sm:px-10">
+        <div className="trust-strip">
+          {TRUST_ITEMS.map((t) => (
+            <div key={t.title} className="trust-cell">
+              <strong>{t.title}</strong>
+              <span>{t.body}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ───────── SHOP BY OCCASION ───────── */}
+      <section aria-label="Shop by occasion" className="mx-auto w-full max-w-7xl px-6 pt-20 sm:px-10">
+        <p className="eyebrow">Occasions</p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="section-title mt-1 text-5xl tracking-tight sm:text-6xl">
+            Dress for the moment
+          </h2>
+          <Link href="/shop" className="text-sm font-medium text-ink/50 underline underline-offset-4 hover:text-ink">
+            View everything →
+          </Link>
+        </div>
+        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {OCCASIONS.map((o, i) => (
+            <li key={o.title} className="animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
+              <Link href={o.href} className="card-lift group block bg-[#0a0a0a] p-7 text-ivory">
+                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#c8a96e]">{o.tag}</span>
+                <span className="mt-2 block font-display italic text-3xl leading-tight">{o.title}</span>
+                <span className="mt-2 block text-sm leading-6 text-ivory/55">{o.body}</span>
+                <span aria-hidden="true" className="mt-4 block text-[#c8a96e] transition-transform group-hover:translate-x-1">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {/* ───────── DEPARTMENTS ───────── */}
       {categories.length > 0 && (
@@ -235,7 +292,7 @@ export default async function Home() {
           <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
             {newest.products.map((p, i) => (
               <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
-                <ProductCard product={p} />
+                <ProductCard product={p} badge="new" />
               </div>
             ))}
           </div>
@@ -273,7 +330,7 @@ export default async function Home() {
           <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
             {bestsellers.products.map((p, i) => (
               <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
-                <ProductCard product={p} />
+                <ProductCard product={p} badge="bestseller" />
               </div>
             ))}
           </div>
@@ -317,6 +374,35 @@ export default async function Home() {
           </ul>
         </section>
       )}
+
+      {/* ───────── POCKET-FRIENDLY + REASSURANCE ───────── */}
+      <section aria-label="Shop by budget" className="mx-auto w-full max-w-7xl px-6 pt-24 sm:px-10">
+        <p className="eyebrow">Budgets, respected</p>
+        <h2 className="section-title mt-1 text-5xl tracking-tight sm:text-6xl">
+          Luxe looks, honest prices
+        </h2>
+        <p className="lede mt-3 max-w-xl text-sm">
+          Every price is in ₹, inclusive of taxes. No fake 70%-off games — the price you see
+          is the price we thought about.
+        </p>
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <Link href="/shop?maxPrice=499" className="card-lift group bg-white/50 p-7">
+            <span className="font-display italic text-4xl">Under ₹499</span>
+            <span className="mt-2 block text-sm text-ink/55">Daily steals & first-job gifts</span>
+            <span aria-hidden="true" className="mt-4 block text-sm text-ink/40 group-hover:text-[#c8a96e]">Shop →</span>
+          </Link>
+          <Link href="/shop?maxPrice=999" className="card-lift group bg-white/50 p-7">
+            <span className="font-display italic text-4xl">Under ₹999</span>
+            <span className="mt-2 block text-sm text-ink/55">Festive-ready without the splurge</span>
+            <span aria-hidden="true" className="mt-4 block text-sm text-ink/40 group-hover:text-[#c8a96e]">Shop →</span>
+          </Link>
+          <Link href="/shop?sort=best-selling" className="card-lift group bg-[#0a0a0a] p-7 text-ivory">
+            <span className="font-display italic text-4xl">Most loved</span>
+            <span className="mt-2 block text-sm text-ivory/55">What India is wearing right now</span>
+            <span aria-hidden="true" className="mt-4 block text-sm text-[#c8a96e]">Shop →</span>
+          </Link>
+        </div>
+      </section>
 
       {/* ───────── NEWSLETTER ───────── */}
       <section aria-label="Newsletter" className="mt-24 bg-[#0a0a0a] py-20 text-ivory">

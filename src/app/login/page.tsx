@@ -18,20 +18,26 @@ export default function LoginPage() {
 
       <main className="w-full max-w-sm border border-ink/[0.07] bg-ivory px-8 py-12 shadow-[0_24px_80px_rgba(10,10,10,0.12)] animate-scale-in">
         {/* Wordmark */}
-        <p className="font-display italic text-2xl text-[#c8a96e]">SatvaStones</p>
+        <p className="font-display italic text-2xl text-[#c8a96e]">SatvaStones ✦</p>
 
         <h1 className="mt-6 font-display italic text-5xl leading-[1.05] tracking-tight">
-          Welcome<br />back.
+          Namaste,<br />welcome back.
         </h1>
 
         <p className="mt-4 text-sm leading-7 text-ink/60">
           One tap with Google — your orders, wishlist and addresses stay in sync
-          across every device.
+          across every device. No passwords, no OTP spam.
         </p>
 
         <div className="mt-8">
           <SignInButton />
         </div>
+
+        <ul className="mt-6 space-y-1.5 border-t border-ink/[0.07] pt-5 text-xs leading-5 text-ink/50">
+          <li>✓ Track orders live, 5–7 day delivery</li>
+          <li>✓ Wishlist syncs across phone & laptop</li>
+          <li>✓ UPI, cards & netbanking at checkout</li>
+        </ul>
 
         <p className="mt-5 text-xs text-ink/40">
           New here? The same button creates your account — no password needed.

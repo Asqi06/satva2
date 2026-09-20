@@ -4,6 +4,20 @@ All notable changes to SatvaStones are documented here. Format follows Keep a Ch
 
 ## [Unreleased]
 
+### Changed (Storefront revamp: Desi-Editorial)
+
+- Design system: new `haldi`/`mehendi`/`sindoor` tokens + utilities (`.eyebrow`, `.section-title`, `.lede`, `.btn-primary/gold/ghost`, `.card-lift`, `.badge-off/bestseller/new`, `.trust-strip`, `.bg-bandhani`, `.ship-progress`, `.admin-card/kpi`) in `globals.css`. No business logic touched.
+- Header: festive announcement bar (free shipping ₹399, UPI/cards, 7-day cover), sticky positioning (spacer removed), ADMIN link for admins.
+- Footer: trust-badge row, SEO `nav` landmark, `h2` headings, Vapi + ₹/taxes copy.
+- Home: trust strip, "Shop by occasion" (Wedding/Everyday/Gifting/Under ₹499), budget band (Under ₹499/₹999/Most loved), hero trust microcopy, `new`/`bestseller` card badges. Single h1 preserved; Organization + WebSite JSON-LD untouched.
+- Shop: category-aware h1, lede with shipping/payment reassurance, playful empty state.
+- Product: "Good to know" trust panel (delivery, UPI-only-no-COD, gift packing, 7-day cover), EMI + tax-inclusive notes, gallery counter + resized images, warmer purchase panel.
+- Bag/wishlist: free-shipping progress bar (live threshold), gift/trust notes, `btn` system, lazy resized thumbnails.
+- Checkout: step hints, UPI-first payment copy, server-truth disclaimer, festive confirmation with order tracking link.
+- Account/auth/static: `Namaste` login with trust checklist, eyebrow/section titles, order tracking eyebrows.
+- Reviews: verified-review header copy.
+- Admin: back-office greeting, ₹ KPIs via `.admin-kpi` classes, dashboard quick-nav via `.admin-card`. Guards, services, APIs unchanged.
+
 ### Added (Phase 3: Shopping)
 
 - `Cart` + `Wishlist` models (one per user, unique userId); guest carts in localStorage with snapshots, merged once-per-login via `CartProvider` + `SessionProvider`.

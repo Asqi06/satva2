@@ -15,8 +15,8 @@ export default async function AccountOrdersPage() {
 
   return (
     <main>
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">History</p>
-      <h1 className="mt-2 font-display text-4xl tracking-tight">My orders</h1>
+      <p className="eyebrow">History · Tracked to your pincode</p>
+      <h1 className="section-title mt-2 text-4xl tracking-tight">My orders</h1>
       {orders.length === 0 ? (
         <div className="mt-6 rounded-3xl border border-ink/10 bg-white/60 p-8 text-center">
           <p className="font-display text-2xl">No orders yet.</p>

@@ -26,10 +26,10 @@ interface PlacedOrder {
   couponCode?: string;
 }
 
-const STEPS: { id: Step; label: string }[] = [
-  { id: "address", label: "Address" },
-  { id: "delivery", label: "Delivery" },
-  { id: "payment", label: "Payment" },
+const STEPS: { id: Step; label: string; hint: string }[] = [
+  { id: "address", label: "Address", hint: "Where should it go?" },
+  { id: "delivery", label: "Delivery", hint: "Speed, coupon & gift note" },
+  { id: "payment", label: "Payment", hint: "UPI, cards & netbanking" },
 ];
 
 /**
@@ -235,16 +235,19 @@ export function CheckoutWizard() {
   if (authState === "guest") {
     return (
       <div className="mx-auto w-full max-w-md rounded-3xl border border-ink/10 bg-white/60 p-8 text-center">
-        <h1 className="font-display text-3xl">One step first.</h1>
+        <p className="eyebrow">Almost there</p>
+        <h1 className="section-title mt-1 text-3xl">One quick sign-in.</h1>
         <p className="mt-2 text-sm leading-6 text-ink/70">
-          Login connects your bag, addresses and orders. Your guest bag merges automatically.
+          Login connects your bag, addresses and orders. Your guest bag merges automatically —
+          nothing you picked gets lost.
         </p>
         <Link
           href="/login"
-          className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay"
+          className="btn-primary mt-6 w-full"
         >
           Continue with Google
         </Link>
+        <p className="mt-3 text-xs text-ink/45">Takes 10 seconds · No password needed</p>
       </div>
     );
   }
@@ -252,8 +255,9 @@ export function CheckoutWizard() {
   if (lines.length === 0 && step !== "done") {
     return (
       <div className="mx-auto w-full max-w-md rounded-3xl border border-ink/10 bg-white/60 p-8 text-center">
-        <h1 className="font-display text-3xl">Your bag is empty.</h1>
-        <Link href="/shop" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay">
+        <h1 className="font-display italic text-3xl">Your bag is empty.</h1>
+        <p className="mt-2 text-sm text-ink/55">Add something pretty first — under ₹499 to start.</p>
+        <Link href="/shop" className="btn-primary mt-6 w-full">
           Back to the shop
         </Link>
       </div>
@@ -265,11 +269,12 @@ export function CheckoutWizard() {
   return (
     <div>
       {step !== "done" && (
-        <ol aria-label="Checkout steps" className="flex gap-2">
+        <ol aria-label="Checkout steps" className="flex flex-wrap gap-2">
           {STEPS.map((s, i) => (
             <li
               key={s.id}
               aria-current={step === s.id ? "step" : undefined}
+              title={s.hint}
               className={`rounded-full px-4 py-1.5 text-sm ${
                 step === s.id ? "bg-ink text-ivory" : "border border-ink/15 text-ink/60"
               }`}
@@ -395,37 +400,42 @@ export function CheckoutWizard() {
 
       {step === "payment" && (
         <section aria-label="Payment" className="mt-6 rounded-3xl border border-ink/10 bg-white/60 p-6">
-          <h2 className="font-display text-2xl">Almost yours.</h2>
+          <p className="eyebrow">UPI-first checkout</p>
+          <h2 className="section-title mt-1 text-2xl">Almost yours.</h2>
           <dl className="mt-4 space-y-1 text-sm">
             <div className="flex justify-between">
-              <dt className="text-ink/60">Subtotal ({count} items)</dt>
-              <dd>{formatINR(subtotal)}</dd>
+              <dt className="text-ink/60">Subtotal ({count} item{count === 1 ? "" : "s"}, incl. taxes)</dt>
+              <dd className="font-mono">{formatINR(subtotal)}</dd>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between">
-                <dt className="text-ink/60">Coupon {coupon && `(${coupon})`}</dt>
-                <dd>−{formatINR(discount)}</dd>
+              <div className="flex justify-between text-[#1f4d2e]">
+                <dt>Coupon {coupon && `(${coupon})`}</dt>
+                <dd className="font-mono">−{formatINR(discount)}</dd>
               </div>
             )}
             <div className="flex justify-between">
               <dt className="text-ink/60">Shipping</dt>
-              <dd>{shippingPreview === 0 ? "Free" : formatINR(shippingPreview)}</dd>
+              <dd className="font-mono">{shippingPreview === 0 ? "Free ✓" : formatINR(shippingPreview)}</dd>
             </div>
             <div className="flex justify-between border-t border-ink/10 pt-2 font-semibold">
-              <dt>Estimated total</dt>
-              <dd>{formatINR(subtotal - discount + shippingPreview)}</dd>
+              <dt>To pay</dt>
+              <dd className="font-mono text-lg">{formatINR(subtotal - discount + shippingPreview)}</dd>
             </div>
           </dl>
-          <p className="mt-2 text-xs text-ink/60">Final amounts are confirmed by the server when you pay. UPI, cards, netbanking & wallets via Razorpay.</p>
-          <div className="mt-6 flex gap-2">
-            <button type="button" onClick={() => setStep("delivery")} className="rounded-full border border-ink/20 px-6 py-3 text-sm">
+          <ul className="mt-3 space-y-1 text-xs leading-5 text-ink/60">
+            <li>💳 Pay with <strong>GPay, PhonePe, Paytm UPI</strong>, cards, netbanking & wallets via Razorpay.</li>
+            <li>🔒 Final amounts are confirmed by our server when you pay — never from this screen.</li>
+            <li>🎁 Gift box + note included free. Online payments only, no COD.</li>
+          </ul>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setStep("delivery")} className="btn-ghost">
               ← Back
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={() => void pay()}
-              className="rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-60"
+              className="btn-primary flex-1 disabled:opacity-60"
             >
               {busy ? "Processing…" : `Pay ${formatINR(subtotal - discount + shippingPreview)}`}
             </button>
@@ -434,9 +444,10 @@ export function CheckoutWizard() {
       )}
 
       {step === "done" && order && (
-        <section aria-label="Order confirmation" className="mt-6 rounded-3xl border border-ink/10 bg-white/60 p-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">Payment confirmed</p>
-          <h2 className="mt-2 font-display text-4xl">Thank you — it&apos;s yours.</h2>
+        <section aria-label="Order confirmation" className="mt-6 rounded-3xl border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-8 text-center">
+          <p className="eyebrow">Payment confirmed ✓</p>
+          <h2 className="section-title mt-1 text-4xl">Shabaash — it&apos;s yours!</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-ink/65">We&apos;re packing it gift-ready in Vapi as you read this.</p>
           <dl className="mx-auto mt-6 max-w-sm space-y-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-ink/60">Order</dt>
@@ -444,17 +455,22 @@ export function CheckoutWizard() {
             </div>
             <div className="flex justify-between">
               <dt className="text-ink/60">Amount paid</dt>
-              <dd className="font-semibold">{formatINR(order.total)}</dd>
+              <dd className="font-mono font-semibold">{formatINR(order.total)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-ink/60">Arriving in</dt>
-              <dd>5–7 days</dd>
+              <dd>5–7 days, tracked</dd>
             </div>
           </dl>
-          <p className="mt-4 text-sm text-ink/70">A confirmation email is on its way (order emails land in Phase 7).</p>
-          <Link href="/shop" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay">
-            Keep browsing
-          </Link>
+          <p className="mt-4 text-sm text-ink/70">A confirmation email is on its way. Track it anytime under My orders.</p>
+          <span className="mt-6 flex flex-wrap justify-center gap-2">
+            <Link href={`/account/orders/${order.id}`} className="btn-primary">
+              Track my order
+            </Link>
+            <Link href="/shop" className="btn-ghost">
+              Keep browsing
+            </Link>
+          </span>
         </section>
       )}
     </div>

@@ -175,24 +175,28 @@ export function PurchasePanel({
           type="button"
           disabled={busy || (!selected && !product.inStock) || (selected != null && stock === 0)}
           onClick={() => void addToBag()}
-          className="flex-1 border border-[#0a0a0a] bg-[#0a0a0a] px-8 py-4 text-sm font-semibold uppercase tracking-[0.15em] text-ivory transition-colors hover:bg-[#c8a96e] hover:border-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-40 sm:flex-initial"
+          className="btn-primary flex-1 disabled:opacity-40 sm:flex-initial"
         >
-          {busy ? "Adding…" : added ? "✓ Added!" : stock === 0 ? "Out of stock" : "Add to bag"}
+          {busy ? "Adding…" : added ? "✓ Added to bag!" : stock === 0 ? "Out of stock" : "Add to bag"}
         </button>
         <button
           type="button"
           disabled={wishBusy}
           onClick={() => void toggleWishlist()}
           aria-pressed={wished}
-          className={`border px-6 py-4 text-sm font-medium transition-colors disabled:opacity-40 ${
-            wished
-              ? "border-[#c8a96e] text-[#c8a96e]"
-              : "border-ink/20 text-ink/60 hover:border-ink hover:text-ink"
+          className={`btn-ghost disabled:opacity-40 ${
+            wished ? "!border-[#c8a96e] !text-[#c8a96e]" : ""
           }`}
         >
           {wished ? "♥ Saved" : "♡ Wishlist"}
         </button>
       </div>
+      <p className="text-xs leading-5 text-ink/45">
+        {selected && stock > 0 && stock < 10
+          ? `Hurry — only ${stock} left in this variant. `
+          : ""}
+        Ships in 2–4 days · Free shipping over ₹399 · Gift box included
+      </p>
     </div>
   );
 }

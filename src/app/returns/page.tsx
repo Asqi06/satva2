@@ -12,8 +12,8 @@ export default function ReturnsPage() {
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">Reader services</p>
-        <h1 className="mt-2 font-display text-5xl tracking-tight">Returns & exchanges.</h1>
+        <p className="eyebrow">Reader services · 7-day cover</p>
+        <h1 className="section-title mt-2 text-5xl tracking-tight">Returns & exchanges.</h1>
         <div className="mt-6 space-y-5 leading-8 text-ink/85">
           <p>
             <strong>7-day cover:</strong> manufacturing defects and transit damage are replaced or

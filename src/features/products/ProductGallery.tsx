@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { cloudinaryResize } from "@/utils/cloudinary-url";
 
 /** Editorial product gallery — fade transition between images, thumbnail strip at bottom. */
 export function ProductGallery({
@@ -34,15 +35,21 @@ export function ProductGallery({
             }`}
           >
             <Image
-              src={img.secureUrl}
+              src={cloudinaryResize(img.secureUrl, 1000)}
               alt={img.alt || productName}
               fill
               priority={i === 0}
+              fetchPriority={i === 0 ? "high" : "auto"}
               sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"
             />
           </div>
         ))}
+        {images.length > 1 && (
+          <span className="absolute bottom-3 right-3 bg-[#0a0a0a]/70 px-2.5 py-1 font-mono text-[11px] text-ivory" aria-hidden="true">
+            {active + 1} / {images.length}
+          </span>
+        )}
       </div>
 
       {/* Thumbnail strip */}
@@ -66,13 +73,15 @@ export function ProductGallery({
                   : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
-              <Image
-                src={img.secureUrl}
-                alt=""
-                fill
-                sizes="15vw"
-                className="object-cover"
-              />
+            <Image
+              src={cloudinaryResize(img.secureUrl, 200)}
+              alt=""
+              fill
+              sizes="15vw"
+              loading="lazy"
+              decoding="async"
+              className="object-cover"
+            />
             </button>
           ))}
         </div>

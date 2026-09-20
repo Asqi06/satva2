@@ -38,28 +38,25 @@ export default async function AdminHome() {
       {/* Header */}
       <div className="mb-8 border-b border-ivory/[0.06] pb-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">
-          Back office
+          Back office · Namaste, admin
         </p>
         <h1 className="mt-1 font-display italic text-5xl text-ivory">
           Dashboard
         </h1>
+        <p className="mt-2 max-w-xl text-sm text-ivory/45">
+          Sales in ₹, stock alerts and fulfilment — everything priced inclusive of taxes,
+          just like the storefront.
+        </p>
       </div>
 
       {/* KPI grid */}
       <section aria-label="Sales overview">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-ivory/30">
-          At a glance
+          At a glance · All amounts in ₹
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {kpis.map((kpi) => (
-            <div
-              key={kpi.label}
-              className={`border p-4 ${
-                kpi.accent
-                  ? "border-[#c8a96e]/40 bg-[#c8a96e]/10"
-                  : "border-ivory/[0.07] bg-ivory/[0.04]"
-              }`}
-            >
+            <div key={kpi.label} className={kpi.accent ? "admin-kpi-accent" : "admin-kpi"}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ivory/35">
                 {kpi.label}
               </p>
@@ -156,11 +153,7 @@ export default async function AdminHome() {
       {/* Quick navigation sections */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {SECTIONS.map((s) => (
-          <Link
-            key={s.href}
-            href={s.href}
-            className="group border border-ivory/[0.07] bg-ivory/[0.03] p-6 transition-colors hover:border-[#c8a96e]/40 hover:bg-[#c8a96e]/[0.04]"
-          >
+          <Link key={s.href} href={s.href} className="admin-card group">
             <h2 className="font-display italic text-xl text-ivory group-hover:text-[#c8a96e]">
               {s.label}
             </h2>

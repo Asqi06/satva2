@@ -200,10 +200,10 @@ export function CartDrawer() {
         {lines.length > 0 && (
           <div className="border-t border-ink/[0.08] px-6 py-5">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-ink/50">Subtotal</span>
+              <span className="text-sm text-ink/50">Subtotal (incl. taxes)</span>
               <span className="font-mono text-2xl font-semibold">{formatINR(subtotal)}</span>
             </div>
-            <p className="mt-1 text-xs text-ink/35">Shipping & taxes at checkout.</p>
+            <p className="mt-1 text-xs text-ink/35">Shipping at checkout · Free over ₹399 · 🎁 gift box free</p>
             <Link
               href="/cart"
               onClick={() => setDrawerOpen(false)}

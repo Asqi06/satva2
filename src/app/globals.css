@@ -10,6 +10,10 @@
   --clay: #b34a2b;
   --sage: #7d8471;
   --marigold: #d9a441;
+  /* Desi-editorial accents: haldi (turmeric), mehendi (leaf green), sindoor (festive red) */
+  --haldi: #e3a008;
+  --mehendi: #1f4d2e;
+  --sindoor: #9c1c1c;
 }
 
 @theme inline {
@@ -21,6 +25,9 @@
   --color-clay: #b34a2b;
   --color-marigold: #d9a441;
   --color-sage: #7d8471;
+  --color-haldi: #e3a008;
+  --color-mehendi: #1f4d2e;
+  --color-sindoor: #9c1c1c;
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-display);
@@ -165,6 +172,250 @@ body {
   display: flex;
   width: max-content;
   will-change: transform;
+}
+
+/* ─────────────────────────────────────────────
+   Satva Desi-Editorial system (revamp)
+   Eyebrows, display headings, buttons, cards,
+   trust strips, badges, bandhani texture.
+───────────────────────────────────────────── */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--gold);
+}
+
+.eyebrow-dark {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--marigold);
+}
+
+.display-hero {
+  font-family: var(--font-display);
+  font-style: italic;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+.lede {
+  line-height: 1.8;
+  color: color-mix(in srgb, var(--foreground) 65%, transparent);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: #0a0a0a;
+  color: var(--background);
+  padding: 1rem 2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+.btn-primary:hover {
+  background: var(--gold);
+  color: #0a0a0a;
+}
+
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: var(--gold);
+  color: #0a0a0a;
+  padding: 1rem 2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+.btn-gold:hover {
+  background: #0a0a0a;
+  color: var(--background);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  padding: 0.9rem 1.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: border-color 0.25s, color 0.25s;
+}
+
+.btn-ghost:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.card-lift {
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  background: rgba(255, 255, 255, 0.55);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-color 0.3s;
+}
+
+.card-lift:hover {
+  transform: translateY(-4px);
+  border-color: var(--gold);
+  box-shadow: 0 18px 50px rgba(10, 10, 10, 0.12);
+}
+
+.pill-active {
+  border: 1px solid #0a0a0a;
+  background: #0a0a0a;
+  color: var(--background);
+}
+
+.pill-gold {
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: #0a0a0a;
+}
+
+.badge-off {
+  background: var(--gold);
+  color: #0a0a0a;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.3rem 0.7rem;
+}
+
+.badge-bestseller {
+  background: var(--mehendi);
+  color: #f9f5ee;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.3rem 0.7rem;
+}
+
+.badge-new {
+  background: var(--sindoor);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.3rem 0.7rem;
+}
+
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+
+.price-note {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--foreground) 45%, transparent);
+}
+
+/* Bandhani dot texture — subtle festive grain, pure CSS */
+.bg-bandhani {
+  background-image: radial-gradient(color-mix(in srgb, var(--gold) 22%, transparent) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+.bg-bandhani-dark {
+  background-image: radial-gradient(rgba(200, 169, 110, 0.14) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+/* Trust strip: 4-up reassurance row */
+.trust-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+@media (min-width: 768px) {
+  .trust-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.trust-cell {
+  background: var(--background);
+  padding: 1.1rem 1.25rem;
+}
+
+.trust-cell strong {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.trust-cell span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 55%, transparent);
+}
+
+/* Free-shipping progress */
+.ship-progress {
+  height: 6px;
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  overflow: hidden;
+}
+
+.ship-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(to right, var(--marigold), var(--gold));
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Admin polish */
+.admin-card {
+  border: 1px solid rgba(249, 245, 238, 0.08);
+  background: rgba(249, 245, 238, 0.04);
+  padding: 1.25rem;
+  transition: border-color 0.25s;
+}
+
+.admin-card:hover {
+  border-color: rgba(200, 169, 110, 0.4);
+}
+
+.admin-kpi {
+  border: 1px solid rgba(249, 245, 238, 0.08);
+  background: rgba(249, 245, 238, 0.04);
+  padding: 1rem;
+}
+
+.admin-kpi-accent {
+  border: 1px solid rgba(200, 169, 110, 0.4);
+  background: rgba(200, 169, 110, 0.1);
+  padding: 1rem;
 }
 
 /* ─────────────────────────────────────────────

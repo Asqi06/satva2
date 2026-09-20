@@ -219,7 +219,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             <p className="mt-2 text-sm" aria-live="polite">
               {product.inStock ? (
                 <span className="font-medium text-emerald-800">
-                  In stock — ships in 2–4 days
+                  In stock — ships in 2–4 days from Vapi
                 </span>
               ) : (
                 <span className="font-medium text-red-700">Out of stock</span>
@@ -229,6 +229,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
                 · Free shipping over ₹399 · UPI, cards &amp; netbanking
               </span>
             </p>
+            <p className="price-note mt-1">Price in ₹, inclusive of all taxes · EMI from {formatINR(Math.round(product.price / 12))}/mo on cards</p>
 
             {/* Short description */}
             {product.shortDescription && (
@@ -251,8 +252,21 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               }}
             />
 
+            {/* Trust + delivery panel — reassurance Indian shoppers expect */}
+            <section aria-label="Delivery and promises" className="mt-8 border border-ink/[0.08] bg-white/50 p-5">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink/40">
+                Good to know
+              </h2>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/70">
+                <li>🚚 <strong>Delivery in 5–7 days</strong> across India, tracked to your pincode.</li>
+                <li>💳 <strong>UPI, cards, netbanking & wallets</strong> via Razorpay. Online payments only — no COD.</li>
+                <li>🎁 <strong>Gift-ready packing free</strong> — pouch, box & note for shagun and birthdays.</li>
+                <li>🛡️ <strong>7-day easy cover</strong> for defects & transit damage.</li>
+              </ul>
+            </section>
+
             {/* Gold divider */}
-            <div className="my-8 h-px bg-gradient-to-r from-[#c8a96e]/40 via-[#c8a96e] to-transparent" />
+            <div className="divider-gold my-8" />
 
             {/* Details */}
             <section aria-label="Product details">
