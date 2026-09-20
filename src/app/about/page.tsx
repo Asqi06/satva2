@@ -4,6 +4,8 @@ export const metadata: Metadata = {
   title: "Our story — SatvaStones",
   description:
     "SatvaStones started with one idea: jewellery that looks expensive without costing the earth. Made in Vapi, Gujarat, worn everywhere.",
+  alternates: { canonical: "/about" },
+  openGraph: { title: "Our story — SatvaStones", description: "SatvaStones started with one idea: jewellery that looks expensive without costing the earth. Made in Vapi, Gujarat, worn everywhere.", url: "/about", type: "website", siteName: "SatvaStones" },
 };
 
 export default function AboutPage() {

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Shipping & packaging",
-  description: "SatvaStones shipping timelines, fees and gift packaging.",
+  title: "Shipping & packaging — SatvaStones",
+  description: "SatvaStones shipping timelines, fees and gift packaging. Dispatch 2–4 days, free shipping over ₹399.",
+  alternates: { canonical: "/shipping" },
+  openGraph: { title: "Shipping & packaging — SatvaStones", description: "Dispatch 2–4 days, delivery 5–7 days across India. Free shipping over ₹399.", url: "/shipping", type: "website", siteName: "SatvaStones" },
 };
 
 export default function ShippingPage() {

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/features/content/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact",
+  title: "Contact — SatvaStones",
   description: "Talk to SatvaStones — orders, sizing, gifting and everything else.",
+  alternates: { canonical: "/contact" },
+  openGraph: { title: "Contact — SatvaStones", description: "Talk to SatvaStones — orders, sizing, gifting and everything else.", url: "/contact", type: "website", siteName: "SatvaStones" },
 };
 
 export default function ContactPage() {

@@ -29,13 +29,55 @@ const mono = Geist_Mono({
   display: "swap",
 });
 
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: {
     default: "SatvaStones — Everyday Aesthetic Jewellery",
     template: "%s | SatvaStones",
   },
   description:
-    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
+    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers. Anti-tarnish, honestly priced, crafted in Vapi, Gujarat.",
+  applicationName: "SatvaStones",
+  category: "jewelry",
+  keywords: [
+    "SatvaStones",
+    "Korean jewellery India",
+    "Western jewellery",
+    "Pinterest jewellery",
+    "rings bracelets necklaces earrings",
+    "oxidised jewellery",
+    "anti-tarnish jewellery",
+    "gift hampers India",
+  ],
+  authors: [{ name: "SatvaStones", url: appUrl }],
+  creator: "SatvaStones",
+  publisher: "SatvaStones",
+  formatDetection: { email: false, address: false, telephone: false },
+  alternates: { canonical: appUrl },
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: appUrl,
+    siteName: "SatvaStones",
+    title: "SatvaStones — Everyday Aesthetic Jewellery",
+    description:
+      "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SatvaStones — Everyday Aesthetic Jewellery",
+    description:
+      "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
+    creator: "@satvastones",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-video-preview": -1, "max-snippet": -1 },
+  },
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({

@@ -4,8 +4,9 @@ import { SignOutButton } from "@/features/auth/SignOutButton";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "My Account",
+  title: "My Account — SatvaStones",
   description: "Your SatvaStones profile, orders and settings.",
+  robots: { index: false, follow: false },
 };
 
 export default async function AccountPage() {

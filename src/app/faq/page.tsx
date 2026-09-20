@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Good questions, kept short",
   description: "SatvaStones FAQ — materials, water, storage, shipping and gifting.",
+  alternates: { canonical: "/faq" },
+  openGraph: { title: "FAQ | SatvaStones", description: "SatvaStones FAQ — materials, water, storage, shipping and gifting.", url: "/faq", type: "website", siteName: "SatvaStones" },
 };
 
 const QA: { q: string; a: string }[] = [
@@ -33,8 +35,19 @@ const QA: { q: string; a: string }[] = [
 ];
 
 export default function FaqPage() {
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: QA.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">Ask the desk</p>
         <h1 className="mt-2 font-display text-5xl tracking-tight">Good questions, kept short.</h1>

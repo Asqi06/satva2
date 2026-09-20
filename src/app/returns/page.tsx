@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Returns & exchanges",
-  description: "SatvaStones return policy — defects, transit damage and size help.",
+  title: "Returns & exchanges — SatvaStones",
+  description: "SatvaStones return policy — defects, transit damage and size help. 7-day cover.",
+  alternates: { canonical: "/returns" },
+  openGraph: { title: "Returns & exchanges — SatvaStones", description: "7-day cover for defects and transit damage.", url: "/returns", type: "website", siteName: "SatvaStones" },
 };
 
 export default function ReturnsPage() {
