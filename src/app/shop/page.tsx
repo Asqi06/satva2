@@ -103,7 +103,7 @@ export default async function ShopPage({
           <p className="eyebrow">
             The shop · Prices in ₹, taxes included
           </p>
-          <h1 className="section-title mt-2 text-6xl tracking-tight sm:text-7xl">
+          <h1 className="section-title mt-2 text-5xl tracking-tight sm:text-7xl">
             {heading}
           </h1>
           <p className="lede mt-4 max-w-xl text-sm">

@@ -129,7 +129,7 @@ export function ProductsTable() {
       </div>
 
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           void load(1, q);
@@ -141,11 +141,11 @@ export function ProductsTable() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search name, SKU, slug…"
-          className="admin-input w-full max-w-sm px-4 py-2 text-sm"
+          className="admin-input w-full px-4 py-2.5 text-base sm:max-w-sm sm:py-2 sm:text-sm"
         />
         <button
           type="submit"
-          className="border border-ivory/20 px-5 py-2 text-sm text-ivory/60 hover:border-[#c8a96e] hover:text-[#c8a96e]"
+          className="shrink-0 border border-ivory/20 px-5 py-2.5 text-sm text-ivory/60 hover:border-[#c8a96e] hover:text-[#c8a96e] sm:py-2"
         >
           Search
         </button>
@@ -183,7 +183,70 @@ export function ProductsTable() {
         </div>
       )}
 
-      <div className="mt-4 overflow-x-auto border border-ivory/[0.07]">
+      {/* Mobile cards — full actions without horizontal scrolling */}
+      <ul className="mt-4 space-y-3 md:hidden">
+        {rows.map((r) => (
+          <li key={r.id} className="border border-ivory/[0.07] bg-ivory/[0.03] p-4">
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                aria-label={`Select ${r.name}`}
+                checked={selected.has(r.id)}
+                onChange={() => toggleSelect(r.id)}
+                className="mt-1 h-5 w-5 shrink-0 accent-[#c8a96e]"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-ivory">{r.name}</p>
+                <p className="mt-0.5 font-mono text-xs text-ivory/50">{r.sku}</p>
+                <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-mono text-ivory/80">{formatINR(r.price)}</span>
+                  <span className="text-xs text-ivory/50">Stock {r.stock}</span>
+                  {r.stock - r.reservedStock <= r.lowStockThreshold && (
+                    <span className="bg-[#c8a96e]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#c8a96e]">
+                      low
+                    </span>
+                  )}
+                  <span
+                    className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                      r.isPublished ? "bg-emerald-400/15 text-emerald-400" : "bg-ivory/[0.07] text-ivory/35"
+                    }`}
+                  >
+                    {r.isPublished ? "Live" : "Draft"}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-ivory/[0.06] pt-3 text-sm">
+              <Link href={`/admin/products/${r.id}/edit`} className="text-ivory/60 underline underline-offset-4">
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={() => void mutate(r.isPublished ? "unpublish" : "publish", [r.id])}
+                className="text-ivory/60 underline underline-offset-4"
+              >
+                {r.isPublished ? "Unpublish" : "Publish"}
+              </button>
+              <button type="button" onClick={() => void duplicateOne(r.id)} className="text-ivory/60 underline underline-offset-4">
+                Duplicate
+              </button>
+              <button type="button" onClick={() => void removeOne(r.id, r.name)} className="text-red-400/70 underline underline-offset-4">
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+        {rows.length === 0 && !loading && (
+          <li className="border border-ivory/[0.07] p-10 text-center text-ivory/30">
+            No products yet. Create the first one.
+          </li>
+        )}
+        {loading && (
+          <li className="border border-ivory/[0.07] p-10 text-center text-ivory/30">Loading…</li>
+        )}
+      </ul>
+
+      <div className="mt-4 hidden overflow-x-auto border border-ivory/[0.07] md:block">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
             <tr className="border-b border-ivory/[0.07] bg-ivory/[0.04]">

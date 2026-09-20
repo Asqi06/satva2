@@ -383,7 +383,7 @@ export function CheckoutWizard() {
               </p>
             )}
           </div>
-          <div className="mt-6 flex gap-2">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <button type="button" onClick={() => setStep("address")} className="rounded-full border border-ink/20 px-6 py-3 text-sm">
               ← Back
             </button>
@@ -427,7 +427,7 @@ export function CheckoutWizard() {
             <li>🔒 Final amounts are confirmed by our server when you pay — never from this screen.</li>
             <li>🎁 Gift box + note included free. Online payments only, no COD.</li>
           </ul>
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <button type="button" onClick={() => setStep("delivery")} className="btn-ghost">
               ← Back
             </button>

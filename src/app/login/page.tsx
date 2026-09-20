@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-ivory text-ink">
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-ivory px-4 py-10 text-ink">
       {/* Decorative half-screen background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute bottom-0 left-0 right-0 top-1/2 bg-[#0a0a0a]" />

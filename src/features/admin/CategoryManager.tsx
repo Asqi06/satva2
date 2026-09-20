@@ -167,7 +167,40 @@ export function CategoryManager() {
         </div>
       </form>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-ink/10 bg-white/60">
+      {/* Mobile cards — no horizontal scroll */}
+      <ul className="mt-4 space-y-3 md:hidden">
+        {rows.map((r) => (
+          <li key={r.id} className="rounded-2xl border border-ink/10 bg-white/60 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate font-medium">{r.name}</span>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${r.isPublished ? "bg-green-800/10 text-green-800" : "bg-ink/10 text-ink/50"}`}>
+                {r.isPublished ? "Live" : "Hidden"}
+              </span>
+            </div>
+            <p className="mt-0.5 font-mono text-xs text-ink/50">/{r.slug}</p>
+            <div className="mt-2 flex gap-4 text-sm">
+              <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4">
+                Edit
+              </button>
+              <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-clay">
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+        {rows.length === 0 && !loading && (
+          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+            No categories yet.
+          </li>
+        )}
+        {loading && (
+          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+            Loading…
+          </li>
+        )}
+      </ul>
+
+      <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-ink/10 bg-white/60 md:block">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="border-b border-ink/10 text-ink/60">

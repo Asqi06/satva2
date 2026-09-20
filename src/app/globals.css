@@ -71,6 +71,28 @@ body {
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: rgba(200, 169, 110, 0.25);
+  text-size-adjust: 100%;
+}
+
+img,
+video {
+  max-width: 100%;
+}
+
+/* Mobile-first: 16px inputs stop iOS Safari auto-zoom on focus;
+   tap targets stay thumb-friendly without redesigning desktop. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  button,
+  a {
+    min-height: 24px;
+  }
 }
 
 ::selection {

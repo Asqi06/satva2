@@ -29,23 +29,31 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-full flex-1 bg-[#0f0f0f] text-ivory">
-      <div className="mx-auto grid w-full max-w-[1400px] lg:grid-cols-[240px_1fr]">
+      <div className="mx-auto grid w-full max-w-[1400px] lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* ── Sidebar ── */}
-        <aside className="border-r border-ivory/[0.06]">
+        <aside className="min-w-0 border-b border-ivory/[0.06] lg:border-b-0 lg:border-r">
           {/* Brand bar */}
-          <div className="border-b border-ivory/[0.06] px-6 py-5">
-            <Link href="/" className="font-display italic text-xl text-[#c8a96e]">
-              SatvaStones ✦
+          <div className="flex items-center justify-between gap-3 border-b border-ivory/[0.06] px-4 py-4 sm:px-6 lg:block lg:py-5">
+            <div>
+              <Link href="/" className="font-display italic text-xl text-[#c8a96e]">
+                SatvaStones ✦
+              </Link>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-ivory/30">
+                Back office · Vapi studio
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="shrink-0 border border-ivory/15 px-3 py-1.5 text-xs text-ivory/50 lg:hidden"
+            >
+              ← Store
             </Link>
-            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-ivory/30">
-              Back office · Vapi studio
-            </p>
           </div>
 
           {/* Nav */}
-          <nav aria-label="Admin navigation" className="px-3 py-4">
+          <nav aria-label="Admin navigation" className="sticky top-0 z-30 bg-[#0f0f0f]/95 px-3 py-3 backdrop-blur-sm lg:static lg:bg-transparent lg:py-4">
             {/* Mobile: horizontal scroll */}
-            <ul className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:pb-0">
+            <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:pb-0">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href} className="shrink-0">
                   <Link
@@ -92,7 +100,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </aside>
 
         {/* ── Main content ── */}
-        <main className="min-h-screen px-6 py-8 sm:px-8">
+        <main className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {children}
         </main>
       </div>

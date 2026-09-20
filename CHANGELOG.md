@@ -18,6 +18,13 @@ All notable changes to SatvaStones are documented here. Format follows Keep a Ch
 - Reviews: verified-review header copy.
 - Admin: back-office greeting, ₹ KPIs via `.admin-kpi` classes, dashboard quick-nav via `.admin-card`. Guards, services, APIs unchanged.
 
+### Changed (Mobile-first responsiveness)
+
+- Admin shell: `minmax(0,1fr)` grid (no overflow), sticky mobile nav, compact brand bar with ← Store link, `px-4` mobile padding.
+- Admin tables (products/orders/coupons/categories): mobile card lists (`md:hidden`) with full actions; tables kept for `md+`. Search stacks vertically on phones; 16px inputs stop iOS zoom.
+- Storefront type scale: heroes `text-5xl` base, section titles `text-4xl` base, product/shop h1s stepped down on phones; announcement bar wraps with tighter tracking.
+- Touch: stacked checkout buttons, compact cart rows, 16px form text site-wide on ≤640px, gold tap highlight, `max-width:100%` media guard.
+
 ### Added (Phase 3: Shopping)
 
 - `Cart` + `Wishlist` models (one per user, unique userId); guest carts in localStorage with snapshots, merged once-per-login via `CartProvider` + `SessionProvider`.
