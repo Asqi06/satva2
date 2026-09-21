@@ -86,11 +86,11 @@ export async function listAdminOrders(opts: {
   return {
     orders: docs.map((d) => ({
       id: d._id.toString(),
-      total: d.total,
-      itemCount: d.items.reduce((n, i) => n + i.qty, 0),
-      paymentStatus: d.paymentStatus,
-      orderStatus: d.orderStatus,
-      createdAt: d.createdAt.toISOString(),
+      total: d.total ?? 0,
+      itemCount: Array.isArray(d.items) ? d.items.reduce((n, i) => n + (i.qty ?? 0), 0) : 0,
+      paymentStatus: d.paymentStatus ?? "PENDING",
+      orderStatus: d.orderStatus ?? "PENDING",
+      createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : new Date(0).toISOString(),
       customer: {
         email: d.userId ? (byId.get(d.userId.toString())?.email ?? "unknown") : "unknown",
         name: d.userId ? byId.get(d.userId.toString())?.name : undefined,

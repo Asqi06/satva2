@@ -25,6 +25,12 @@ All notable changes to SatvaStones are documented here. Format follows Keep a Ch
 - Storefront type scale: heroes `text-5xl` base, section titles `text-4xl` base, product/shop h1s stepped down on phones; announcement bar wraps with tighter tracking.
 - Touch: stacked checkout buttons, compact cart rows, 16px form text site-wide on ≤640px, gold tap highlight, `max-width:100%` media guard.
 
+### Fixed (Admin orders crash, uploads, back-office theme)
+
+- Orders `replaceAll` crash: legacy orders missing `orderStatus`/`paymentStatus`/`userId`/`items`/`timeline` no longer 500 the list — `toOrderDTO` + `listAdminOrders` default defensively, `StatusPill`/`OrderTimeline` accept nullish values (admin uses new `dark` variant).
+- Uploads: 4MB cap (Vercel bodies die ~4.5MB before code runs), client-side size guard + non-JSON platform-error surfacing in `ProductForm`/`BannerManager`. Set `CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET` on Vercel or every upload 500s.
+- Theme: orders/coupons/categories/reviews/banners managers + order detail + actions converted from washed-out `bg-white/60`-on-dark to the dark back-office (ivory text, gold accents, emerald/red status tones).
+
 ### Added (Phase 3: Shopping)
 
 - `Cart` + `Wishlist` models (one per user, unique userId); guest carts in localStorage with snapshots, merged once-per-login via `CartProvider` + `SessionProvider`.

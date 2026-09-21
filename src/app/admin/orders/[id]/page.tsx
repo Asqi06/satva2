@@ -18,51 +18,51 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
 
   return (
     <main>
-      <Link href="/admin/orders" className="text-sm underline underline-offset-4">
+      <Link href="/admin/orders" className="text-sm text-ivory/50 underline underline-offset-4 hover:text-ivory">
         ← All orders
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-4xl tracking-tight">Order {order.id.slice(-8).toUpperCase()}</h1>
-        <span className="flex gap-2">
-          <StatusPill status={order.orderStatus} />
-          <StatusPill status={order.paymentStatus} />
+        <h1 className="font-display italic text-3xl tracking-tight text-ivory sm:text-4xl">Order {order.id.slice(-8).toUpperCase()}</h1>
+        <span className="flex flex-wrap gap-2">
+          <StatusPill dark status={order.orderStatus} />
+          <StatusPill dark status={order.paymentStatus} />
         </span>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
-          <section aria-label="Items" className="rounded-3xl border border-ink/10 bg-white/60 p-5">
-            <h2 className="font-display text-2xl">Items · {formatINR(order.total)}</h2>
-            <ul className="mt-4 space-y-2 text-sm">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <section aria-label="Items" className="border border-ivory/[0.07] bg-ivory/[0.03] p-5">
+            <h2 className="font-display italic text-2xl text-ivory">Items · {formatINR(order.total)}</h2>
+            <ul className="mt-4 space-y-2 text-sm text-ivory/75">
               {order.items.map((item, i) => (
                 <li key={`${item.productId}-${item.variantSku ?? ""}-${i}`} className="flex justify-between gap-4">
-                  <span>
-                    <strong>{item.name}</strong>
-                    {item.variantSku && <span className="text-ink/60"> · {item.variantSku}</span>}
-                    <span className="text-ink/60"> × {item.qty}</span>
+                  <span className="min-w-0">
+                    <strong className="text-ivory">{item.name}</strong>
+                    {item.variantSku && <span className="text-ivory/50"> · {item.variantSku}</span>}
+                    <span className="text-ivory/50"> × {item.qty}</span>
                   </span>
-                  <span className="font-semibold">{formatINR(item.totalPrice)}</span>
+                  <span className="shrink-0 font-mono font-semibold text-ivory">{formatINR(item.totalPrice)}</span>
                 </li>
               ))}
             </ul>
-            <dl className="mt-3 space-y-1 border-t border-ink/10 pt-3 text-sm">
-              <div className="flex justify-between"><dt className="text-ink/60">Subtotal</dt><dd>{formatINR(order.subtotal)}</dd></div>
+            <dl className="mt-3 space-y-1 border-t border-ivory/[0.07] pt-3 text-sm text-ivory/80">
+              <div className="flex justify-between"><dt className="text-ivory/50">Subtotal</dt><dd className="font-mono">{formatINR(order.subtotal)}</dd></div>
               {order.discount > 0 && (
-                <div className="flex justify-between"><dt className="text-ink/60">Discount{order.couponCode ? ` (${order.couponCode})` : ""}</dt><dd>−{formatINR(order.discount)}</dd></div>
+                <div className="flex justify-between"><dt className="text-ivory/50">Discount{order.couponCode ? ` (${order.couponCode})` : ""}</dt><dd className="font-mono">−{formatINR(order.discount)}</dd></div>
               )}
-              <div className="flex justify-between"><dt className="text-ink/60">Shipping</dt><dd>{order.shipping === 0 ? "Free" : formatINR(order.shipping)}</dd></div>
-              <div className="flex justify-between font-semibold"><dt>Total</dt><dd>{formatINR(order.total)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ivory/50">Shipping</dt><dd className="font-mono">{order.shipping === 0 ? "Free" : formatINR(order.shipping)}</dd></div>
+              <div className="flex justify-between font-semibold text-ivory"><dt>Total</dt><dd className="font-mono">{formatINR(order.total)}</dd></div>
             </dl>
-            <p className="mt-3 text-xs text-ink/60">
+            <p className="mt-3 text-xs leading-5 text-ivory/50">
               {order.address.fullName} · {order.address.phone} · {order.address.addressLine1},{" "}
               {order.address.city} {order.address.pincode}
             </p>
           </section>
 
-          <section aria-label="Timeline" className="rounded-3xl border border-ink/10 bg-white/60 p-5">
-            <h2 className="font-display text-2xl">Timeline</h2>
+          <section aria-label="Timeline" className="border border-ivory/[0.07] bg-ivory/[0.03] p-5">
+            <h2 className="font-display italic text-2xl text-ivory">Timeline</h2>
             <div className="mt-4">
-              <OrderTimeline timeline={order.timeline} />
+              <OrderTimeline dark timeline={order.timeline} />
             </div>
           </section>
         </div>

@@ -96,18 +96,18 @@ export function CategoryManager() {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">Organisation</p>
-      <h1 className="mt-2 font-display text-4xl tracking-tight">Categories</h1>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">Organisation</p>
+      <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Categories</h1>
 
       {notice && (
-        <p role="status" className="mt-4 rounded-2xl border border-ink/10 bg-white/60 p-3 text-sm">
+        <p role="status" className="mt-4 border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-3 text-sm text-ivory">
           {notice}
         </p>
       )}
 
-      <form onSubmit={save} className="mt-6 rounded-2xl border border-ink/10 bg-white/60 p-5">
-        <h2 className="font-display text-2xl">{editingId ? "Edit category" : "New category"}</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <form onSubmit={save} className="mt-6 border border-ivory/[0.07] bg-ivory/[0.03] p-5">
+        <h2 className="font-display italic text-2xl text-ivory">{editingId ? "Edit category" : "New category"}</h2>
+        <div className="mt-4 grid gap-4 text-ivory/70 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
             Name
             <input
@@ -115,7 +115,7 @@ export function CategoryManager() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               maxLength={120}
-              className="rounded-xl border border-ink/15 bg-ivory px-3 py-2"
+              className="admin-input"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -124,7 +124,7 @@ export function CategoryManager() {
               value={form.slug}
               onChange={(e) => setForm({ ...form, slug: e.target.value })}
               placeholder="rings"
-              className="rounded-xl border border-ink/15 bg-ivory px-3 py-2"
+              className="admin-input"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm sm:col-span-2">
@@ -133,7 +133,7 @@ export function CategoryManager() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               maxLength={2000}
-              className="rounded-xl border border-ink/15 bg-ivory px-3 py-2"
+              className="admin-input"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -142,7 +142,7 @@ export function CategoryManager() {
               type="number"
               value={form.sortOrder}
               onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
-              className="rounded-xl border border-ink/15 bg-ivory px-3 py-2"
+              className="admin-input"
             />
           </label>
           <label className="flex items-center gap-2 text-sm">
@@ -150,17 +150,17 @@ export function CategoryManager() {
               type="checkbox"
               checked={form.isPublished}
               onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
-              className="h-4 w-4 accent-[#b34a2b]"
+              className="h-4 w-4 accent-[#c8a96e]"
             />
             Published
           </label>
         </div>
-        <div className="mt-4 flex gap-2">
-          <button type="submit" className="rounded-full bg-ink px-6 py-2 text-sm font-medium text-ivory hover:bg-clay">
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="submit" className="border border-[#c8a96e] bg-[#c8a96e]/10 px-6 py-2 text-sm font-medium text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a]">
             {editingId ? "Save changes" : "Create category"}
           </button>
           {editingId && (
-            <button type="button" onClick={cancel} className="rounded-full border border-ink/20 px-6 py-2 text-sm">
+            <button type="button" onClick={cancel} className="border border-ivory/20 px-6 py-2 text-sm text-ivory/60 hover:border-ivory/40 hover:text-ivory">
               Cancel
             </button>
           )}
@@ -170,58 +170,62 @@ export function CategoryManager() {
       {/* Mobile cards — no horizontal scroll */}
       <ul className="mt-4 space-y-3 md:hidden">
         {rows.map((r) => (
-          <li key={r.id} className="rounded-2xl border border-ink/10 bg-white/60 p-4">
+          <li key={r.id} className="border border-ivory/[0.07] bg-ivory/[0.03] p-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate font-medium">{r.name}</span>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${r.isPublished ? "bg-green-800/10 text-green-800" : "bg-ink/10 text-ink/50"}`}>
+              <span className="truncate font-medium text-ivory">{r.name}</span>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${r.isPublished ? "bg-emerald-400/15 text-emerald-400" : "bg-ivory/[0.07] text-ivory/40"}`}>
                 {r.isPublished ? "Live" : "Hidden"}
               </span>
             </div>
-            <p className="mt-0.5 font-mono text-xs text-ink/50">/{r.slug}</p>
-            <div className="mt-2 flex gap-4 text-sm">
-              <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4">
+            <p className="mt-0.5 font-mono text-xs text-ivory/45">/{r.slug}</p>
+            <div className="mt-2 flex gap-4 text-sm text-ivory/60">
+              <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4 hover:text-ivory">
                 Edit
               </button>
-              <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-clay">
+              <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-red-400">
                 Delete
               </button>
             </div>
           </li>
         ))}
         {rows.length === 0 && !loading && (
-          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+          <li className="border border-ivory/[0.07] p-8 text-center text-sm text-ivory/35">
             No categories yet.
           </li>
         )}
         {loading && (
-          <li className="rounded-2xl border border-ink/10 bg-white/60 p-8 text-center text-sm text-ink/60">
+          <li className="border border-ivory/[0.07] p-8 text-center text-sm text-ivory/35">
             Loading…
           </li>
         )}
       </ul>
 
-      <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-ink/10 bg-white/60 md:block">
+      <div className="mt-4 hidden overflow-x-auto border border-ivory/[0.07] md:block">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
-            <tr className="border-b border-ink/10 text-ink/60">
-              <th className="p-3">Name</th>
-              <th className="p-3">Slug</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Actions</th>
+            <tr className="border-b border-ivory/[0.07] bg-ivory/[0.04]">
+              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Name</th>
+              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Slug</th>
+              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Status</th>
+              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-ink/5 last:border-0">
-                <td className="p-3 font-medium">{r.name}</td>
-                <td className="p-3 font-mono text-xs">{r.slug}</td>
-                <td className="p-3">{r.isPublished ? "Live" : "Hidden"}</td>
+              <tr key={r.id} className="border-b border-ivory/[0.04] last:border-0 hover:bg-ivory/[0.02]">
+                <td className="p-3 font-medium text-ivory">{r.name}</td>
+                <td className="p-3 font-mono text-xs text-ivory/50">{r.slug}</td>
                 <td className="p-3">
-                  <span className="flex gap-3">
-                    <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4">
+                  <span className={`px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${r.isPublished ? "bg-emerald-400/15 text-emerald-400" : "bg-ivory/[0.07] text-ivory/40"}`}>
+                    {r.isPublished ? "Live" : "Hidden"}
+                  </span>
+                </td>
+                <td className="p-3">
+                  <span className="flex gap-3 text-ivory/55">
+                    <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4 hover:text-ivory">
                       Edit
                     </button>
-                    <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-clay">
+                    <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-red-400">
                       Delete
                     </button>
                   </span>
@@ -230,14 +234,14 @@ export function CategoryManager() {
             ))}
             {rows.length === 0 && !loading && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-ink/60">
+                <td colSpan={4} className="p-8 text-center text-ivory/30">
                   No categories yet.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-ink/60">
+                <td colSpan={4} className="p-8 text-center text-ivory/30">
                   Loading…
                 </td>
               </tr>
