@@ -1,7 +1,27 @@
 import { v2 as cloudinary } from "cloudinary";
 import { AppError } from "./errors";
-import { requireServerVar } from "./env";
+import { requireServerVar, serverEnvPresence } from "./env";
 import { logger } from "./logger";
+
+/**
+ * Fail fast with an actionable message when image uploads can't work.
+ * Names the missing keys only — never their values. Called by both
+ * upload routes before touching multipart bodies.
+ */
+export function assertCloudinaryConfigured(): void {
+  const presence = serverEnvPresence();
+  if (
+    !presence.CLOUDINARY_CLOUD_NAME ||
+    !presence.CLOUDINARY_API_KEY ||
+    !presence.CLOUDINARY_API_SECRET
+  ) {
+    throw new AppError(
+      "INTERNAL_ERROR",
+      "Image uploads are not configured — set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in Vercel → Settings → Environment Variables (Production), then redeploy.",
+      503,
+    );
+  }
+}
 
 /**
  * Cloudinary access (server-only). Uploads run through our API so the
