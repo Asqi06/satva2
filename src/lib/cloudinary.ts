@@ -1,7 +1,23 @@
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary, type UploadApiErrorResponse, type UploadApiResponse } from "cloudinary";
 import { AppError } from "./errors";
 import { requireServerVar, serverEnvPresence } from "./env";
 import { logger } from "./logger";
+
+/**
+ * Optional unsigned-upload preset (public name, not a secret). When the
+ * API key/secret are absent, uploads go through this preset instead of
+ * signed calls — validation, auth and size checks still run server-side
+ * in our API routes, so the security model is unchanged.
+ */
+function uploadPreset(): string | null {
+  const preset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
+  return preset ? preset : null;
+}
+
+function hasSignedCredentials(): boolean {
+  const presence = serverEnvPresence();
+  return Boolean(presence.CLOUDINARY_API_KEY && presence.CLOUDINARY_API_SECRET);
+}
 
 /**
  * Fail fast with an actionable message when image uploads can't work.
@@ -10,14 +26,10 @@ import { logger } from "./logger";
  */
 export function assertCloudinaryConfigured(): void {
   const presence = serverEnvPresence();
-  if (
-    !presence.CLOUDINARY_CLOUD_NAME ||
-    !presence.CLOUDINARY_API_KEY ||
-    !presence.CLOUDINARY_API_SECRET
-  ) {
+  if (!presence.CLOUDINARY_CLOUD_NAME || (!hasSignedCredentials() && !uploadPreset())) {
     throw new AppError(
       "INTERNAL_ERROR",
-      "Image uploads are not configured — set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in Vercel → Settings → Environment Variables (Production), then redeploy.",
+      "Image uploads are not configured — set CLOUDINARY_CLOUD_NAME plus either CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET, or an unsigned CLOUDINARY_UPLOAD_PRESET, in Vercel → Settings → Environment Variables (Production), then redeploy.",
       503,
     );
   }
@@ -56,10 +68,15 @@ let configured = false;
 
 export function getCloudinary() {
   if (!configured) {
+    // api_key/secret stay optional: unsigned-preset mode needs cloud_name only.
     cloudinary.config({
       cloud_name: requireServerVar("CLOUDINARY_CLOUD_NAME"),
-      api_key: requireServerVar("CLOUDINARY_API_KEY"),
-      api_secret: requireServerVar("CLOUDINARY_API_SECRET"),
+      ...(hasSignedCredentials()
+        ? {
+            api_key: requireServerVar("CLOUDINARY_API_KEY"),
+            api_secret: requireServerVar("CLOUDINARY_API_SECRET"),
+          }
+        : {}),
     });
     configured = true;
   }
@@ -79,23 +96,33 @@ export async function uploadBuffer(
   opts: { folder: string; resourceType: "image" | "video" },
 ): Promise<UploadResult> {
   const cloud = getCloudinary();
+  const preset = hasSignedCredentials() ? null : uploadPreset();
   return new Promise<UploadResult>((resolve, reject) => {
-    const stream = cloud.uploader.upload_stream(
-      { folder: opts.folder, resource_type: opts.resourceType },
-      (error, result) => {
-        if (error || !result) {
-          reject(error instanceof Error ? error : new Error("Upload failed"));
-          return;
-        }
-        resolve({
-          publicId: result.public_id,
-          secureUrl: result.secure_url,
-          width: result.width,
-          height: result.height,
-          resourceType: result.resource_type,
-        });
-      },
-    );
+    const done = (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
+      if (error || !result) {
+        reject(error instanceof Error ? error : new Error("Upload failed"));
+        return;
+      }
+      resolve({
+        publicId: result.public_id,
+        secureUrl: result.secure_url,
+        width: result.width,
+        height: result.height,
+        resourceType: result.resource_type,
+      });
+    };
+    // Unsigned mode: the preset carries the permission; folder stays per-call.
+    const stream =
+      preset !== null
+        ? cloud.uploader.unsigned_upload_stream(
+            preset,
+            { folder: opts.folder, resource_type: opts.resourceType },
+            done,
+          )
+        : cloud.uploader.upload_stream(
+            { folder: opts.folder, resource_type: opts.resourceType },
+            done,
+          );
     stream.end(buffer);
   });
 }
