@@ -34,6 +34,8 @@ Optional: `CRON_SECRET` (Vercel Cron bearer for `/api/cron/*`; generate with `op
 
 Optional: `EMAIL_FROM` (transactional sender; production needs a verified domain).
 
+Optional: `TYPESAFE_API_KEY` (TypeSafe/Jev judgments for `npm run seo:readiness`; server-only, without it the CLI prints deterministic checks only).
+
 Optional (test only, never production): `E2E_SEED_SECRET`.
 
 Google OAuth callback (register in Google Cloud Console per environment):
