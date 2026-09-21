@@ -4,6 +4,13 @@ All notable changes to SatvaStones are documented here. Format follows Keep a Ch
 
 ## [Unreleased]
 
+### Added (Jev SEO readiness)
+
+- `@typesafe-ai/sdk` + server-only client (`src/lib/typesafe.ts`, lazy, build-safe without the key).
+- `src/services/seo-readiness-service.ts`: 3 Jev Score judgments (content depth, title appeal, trust completeness) in one `systemOne` call + 8 deterministic checks; 0–100 composite with code-owned weights; confidence < 0.4 flags human review. Readiness ≠ ranking probability (documented in code + CLI output).
+- `npm run seo:readiness -- <slug>` CLI (`scripts/seo-readiness.ts`).
+- 6 mocked tests (`tests/seo-readiness-service.test.ts`); `TYPESAFE_API_KEY` in `.env.example` + `ENVIRONMENT.md`; `SEO.md` section.
+
 ### Changed (Storefront revamp: Desi-Editorial)
 
 - Design system: new `haldi`/`mehendi`/`sindoor` tokens + utilities (`.eyebrow`, `.section-title`, `.lede`, `.btn-primary/gold/ghost`, `.card-lift`, `.badge-off/bestseller/new`, `.trust-strip`, `.bg-bandhani`, `.ship-progress`, `.admin-card/kpi`) in `globals.css`. No business logic touched.
