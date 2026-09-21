@@ -61,8 +61,8 @@ export function AdminOrderActions({
   const refundable = paymentStatus === "PAID";
 
   return (
-    <div className="rounded-3xl border border-ink/10 bg-white/60 p-5">
-      <h2 className="font-display text-xl">Actions</h2>
+    <div className="h-fit border border-ivory/[0.07] bg-ivory/[0.03] p-5">
+      <h2 className="font-display italic text-xl text-ivory">Actions</h2>
       <div className="mt-3 flex flex-wrap gap-2 text-sm">
         {options.map((next) => (
           <button
@@ -70,9 +70,9 @@ export function AdminOrderActions({
             type="button"
             disabled={busy}
             onClick={() => void advance(next)}
-            className="rounded-full bg-ink px-4 py-2 text-ivory hover:bg-clay disabled:opacity-50"
+            className="border border-[#c8a96e] bg-[#c8a96e]/10 px-4 py-2 text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-50"
           >
-            → {next.replaceAll("_", " ")}
+            → {(next ?? "").replaceAll("_", " ")}
           </button>
         ))}
         {cancellable && paymentStatus !== "PAID" && (
@@ -90,7 +90,7 @@ export function AdminOrderActions({
                 "Cancel this order and release its stock?",
               )
             }
-            className="rounded-full border border-clay/50 px-4 py-2 text-clay hover:bg-clay hover:text-ivory disabled:opacity-50"
+            className="border border-red-400/40 px-4 py-2 text-red-400 hover:bg-red-400/10 disabled:opacity-50"
           >
             Cancel order
           </button>
@@ -110,14 +110,14 @@ export function AdminOrderActions({
                 "Refund this order in full via Razorpay? Stock returns to the shelf.",
               )
             }
-            className="rounded-full border border-clay/50 px-4 py-2 text-clay hover:bg-clay hover:text-ivory disabled:opacity-50"
+            className="border border-red-400/40 px-4 py-2 text-red-400 hover:bg-red-400/10 disabled:opacity-50"
           >
             Refund in full
           </button>
         )}
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-clay">
+        <p role="alert" className="mt-3 text-sm text-red-400">
           {error}
         </p>
       )}

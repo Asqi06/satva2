@@ -81,30 +81,38 @@ export type LeanOrder = Omit<IOrder, "_id" | "userId" | "createdAt" | "updatedAt
 };
 
 export function toOrderDTO(doc: LeanOrder): OrderDTO {
+  // Legacy/guest orders may miss fields — default defensively so one bad
+  // document can never crash order lists (see admin 500 report).
+  const items = Array.isArray(doc.items) ? doc.items : [];
+  const timeline = Array.isArray(doc.timeline) ? doc.timeline : [];
   return {
     id: doc._id.toString(),
-    items: doc.items.map((i) => ({
-      productId: i.productId.toString(),
+    items: items.map((i) => ({
+      productId: i.productId?.toString() ?? "",
       variantSku: i.variantSku,
-      name: i.name,
+      name: i.name ?? "Item",
       image: i.image,
-      qty: i.qty,
-      unitPrice: i.unitPrice,
-      totalPrice: i.totalPrice,
+      qty: i.qty ?? 0,
+      unitPrice: i.unitPrice ?? 0,
+      totalPrice: i.totalPrice ?? 0,
     })),
-    address: { ...doc.shippingAddress },
-    subtotal: doc.subtotal,
-    discount: doc.discount,
-    shipping: doc.shipping,
-    tax: doc.tax,
-    total: doc.total,
+    address: { ...(doc.shippingAddress ?? {}) } as OrderDTO["address"],
+    subtotal: doc.subtotal ?? 0,
+    discount: doc.discount ?? 0,
+    shipping: doc.shipping ?? 0,
+    tax: doc.tax ?? 0,
+    total: doc.total ?? 0,
     couponCode: doc.couponCode,
-    paymentStatus: doc.paymentStatus,
-    orderStatus: doc.orderStatus,
+    paymentStatus: doc.paymentStatus ?? "PENDING",
+    orderStatus: doc.orderStatus ?? "PENDING",
     razorpayOrderId: doc.razorpayOrderId,
     reservationExpiresAt: doc.reservationExpiresAt?.toISOString(),
-    timeline: doc.timeline.map((t) => ({ status: t.status, at: t.at.toISOString(), note: t.note })),
-    createdAt: doc.createdAt.toISOString(),
+    timeline: timeline.map((t) => ({
+      status: t?.status ?? "PENDING",
+      at: t?.at instanceof Date ? t.at.toISOString() : new Date(0).toISOString(),
+      note: t?.note,
+    })),
+    createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(0).toISOString(),
   };
 }
 

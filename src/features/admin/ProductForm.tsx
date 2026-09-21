@@ -115,21 +115,33 @@ export function ProductForm({
     try {
       const current = getValues("images");
       for (const file of Array.from(files)) {
+        // Client-side guard: Vercel rejects >~4.5MB bodies before our API runs.
+        if (file.size > 4 * 1024 * 1024) {
+          throw new Error(`${file.name}: too large — use JPG/PNG/WebP under 4MB (phone photos: pick "Medium" size).`);
+        }
         const form = new FormData();
         form.append("file", file);
         const res = await fetch("/api/admin/uploads", { method: "POST", body: form });
-        const body = (await res.json()) as
+        let body: unknown;
+        try {
+          body = await res.json();
+        } catch {
+          throw new Error(
+            `${file.name}: server refused the upload (status ${res.status}) — check Cloudinary keys on Vercel and use JPG/PNG/WebP under 4MB.`,
+          );
+        }
+        const parsed = body as
           | { success: true; data: { publicId: string; secureUrl: string; width?: number; height?: number } }
           | { success: false; error: { message: string } };
-        if (!body.success) throw new Error(`${file.name}: ${body.error.message}`);
+        if (!parsed.success) throw new Error(`${file.name}: ${parsed.error.message}`);
         setValue("images", [
           ...getValues("images"),
           {
-            publicId: body.data.publicId,
-            secureUrl: body.data.secureUrl,
+            publicId: parsed.data.publicId,
+            secureUrl: parsed.data.secureUrl,
             alt: "",
-            width: body.data.width,
-            height: body.data.height,
+            width: parsed.data.width,
+            height: parsed.data.height,
             isThumbnail: current.length === 0 && getValues("images").length === 0,
           },
         ]);
@@ -304,7 +316,7 @@ export function ProductForm({
         <h2 className="font-display italic text-2xl text-ivory">Images</h2>
         <p className={hintCls}>First upload (or ★) becomes the thumbnail. Empty alt text falls back to the product name.</p>
         <label className="mt-3 block border border-dashed border-ivory/20 p-6 text-center text-sm text-ivory/40 hover:border-[#c8a96e]/50 hover:text-ivory/60">
-          {uploading ? "Uploading…" : "Drop files or click to upload (JPG/PNG/WebP/AVIF ≤ 5MB, MP4 ≤ 25MB)"}
+          {uploading ? "Uploading…" : "Drop files or click to upload (JPG/PNG/WebP/AVIF ≤ 4MB, MP4 ≤ 25MB)"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
