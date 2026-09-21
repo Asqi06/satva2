@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { AppError, errorResponse, successResponse } from "@/lib/errors";
-import { assertUploadFileOk, uploadBuffer } from "@/lib/cloudinary";
+import { assertCloudinaryConfigured, assertUploadFileOk, uploadBuffer } from "@/lib/cloudinary";
 
 /**
  * Admin image/video upload. Multipart `file` → Cloudinary → reference.
@@ -10,6 +10,7 @@ import { assertUploadFileOk, uploadBuffer } from "@/lib/cloudinary";
 export async function POST(req: NextRequest): Promise<Response> {
   try {
     await requireAdmin();
+    assertCloudinaryConfigured();
     const form = await req.formData();
     const file = form.get("file");
     if (!(file instanceof File)) {
@@ -17,10 +18,19 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     const kind = assertUploadFileOk({ type: file.type, size: file.size, name: file.name });
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadBuffer(buffer, {
-      folder: "satvastones/products",
-      resourceType: kind,
-    });
+    let result;
+    try {
+      result = await uploadBuffer(buffer, {
+        folder: "satvastones/products",
+        resourceType: kind,
+      });
+    } catch {
+      throw new AppError(
+        "INTERNAL_ERROR",
+        "Cloudinary rejected the upload — verify CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET values on the server, then redeploy.",
+        502,
+      );
+    }
     return successResponse(result, 201);
   } catch (error) {
     return errorResponse(error);
