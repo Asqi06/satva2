@@ -31,6 +31,11 @@ All notable changes to SatvaStones are documented here. Format follows Keep a Ch
 - Uploads: 4MB cap (Vercel bodies die ~4.5MB before code runs), client-side size guard + non-JSON platform-error surfacing in `ProductForm`/`BannerManager`. Set `CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET` on Vercel or every upload 500s.
 - Theme: orders/coupons/categories/reviews/banners managers + order detail + actions converted from washed-out `bg-white/60`-on-dark to the dark back-office (ivory text, gold accents, emerald/red status tones).
 
+### Fixed (Legacy COD-era orders read-only)
+
+- `POST /api/admin/orders/6a5b85…/cancel` 409: that order (SAT-1003, COD-era import with `status: "Delivered"`, no `userId`, no machine statuses) can never enter the PENDING→…→DELIVERED machine. `updateOrderStatus`/`adminCancelOrder`/`refundOrder` now reject such docs with a clear "Legacy imported order is read-only" 409 instead of crashing or misleading.
+- `OrderDTO`/`AdminOrderRow` carry `legacy: true`; the admin list shows a LEGACY pill (plus the legacy customer email/amount), the detail page shows a read-only banner and hides Actions. `updateOrderStatus` also guards `TRANSITIONS[undefined]` (was a 500).
+
 ### Added (Phase 3: Shopping)
 
 - `Cart` + `Wishlist` models (one per user, unique userId); guest carts in localStorage with snapshots, merged once-per-login via `CartProvider` + `SessionProvider`.

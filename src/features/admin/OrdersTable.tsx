@@ -91,8 +91,16 @@ export function OrdersTable() {
               {new Date(r.createdAt).toLocaleDateString("en-IN")}
             </p>
             <p className="mt-2 flex flex-wrap gap-1.5">
-              <StatusPill dark status={r.orderStatus} />
-              <StatusPill dark status={r.paymentStatus} />
+              {r.legacy ? (
+                <span className="inline-block rounded-full bg-[#d9a441]/20 px-3 py-1 text-xs font-semibold text-[#d9a441]">
+                  LEGACY · READ-ONLY
+                </span>
+              ) : (
+                <>
+                  <StatusPill dark status={r.orderStatus} />
+                  <StatusPill dark status={r.paymentStatus} />
+                </>
+              )}
             </p>
           </li>
         ))}
@@ -132,8 +140,16 @@ export function OrdersTable() {
                 <td className="max-w-[180px] truncate p-3 text-ivory/70">{r.customer.name ?? r.customer.email}</td>
                 <td className="p-3 text-ivory/70">{r.itemCount}</td>
                 <td className="p-3 font-mono text-ivory/80">{formatINR(r.total)}</td>
-                <td className="p-3"><StatusPill dark status={r.orderStatus} /></td>
-                <td className="p-3"><StatusPill dark status={r.paymentStatus} /></td>
+                <td className="p-3">
+                  {r.legacy ? (
+                    <span className="inline-block rounded-full bg-[#d9a441]/20 px-3 py-1 text-xs font-semibold text-[#d9a441]">
+                      LEGACY
+                    </span>
+                  ) : (
+                    <StatusPill dark status={r.orderStatus} />
+                  )}
+                </td>
+                <td className="p-3">{r.legacy ? <span className="text-ivory/35">—</span> : <StatusPill dark status={r.paymentStatus} />}</td>
                 <td className="p-3 text-ivory/50">{new Date(r.createdAt).toLocaleDateString("en-IN")}</td>
               </tr>
             ))}

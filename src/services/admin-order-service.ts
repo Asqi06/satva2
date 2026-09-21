@@ -42,6 +42,7 @@ export interface AdminOrderRow {
   orderStatus: string;
   createdAt: string;
   customer: { email: string; name?: string };
+  legacy: boolean;
 }
 
 export interface Pagination {
@@ -84,18 +85,28 @@ export async function listAdminOrders(opts: {
       : [];
   const byId = new Map(users.map((u) => [u._id.toString(), u]));
   return {
-    orders: docs.map((d) => ({
-      id: d._id.toString(),
-      total: d.total ?? 0,
-      itemCount: Array.isArray(d.items) ? d.items.reduce((n, i) => n + (i.qty ?? 0), 0) : 0,
-      paymentStatus: d.paymentStatus ?? "PENDING",
-      orderStatus: d.orderStatus ?? "PENDING",
-      createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : new Date(0).toISOString(),
-      customer: {
-        email: d.userId ? (byId.get(d.userId.toString())?.email ?? "unknown") : "unknown",
-        name: d.userId ? byId.get(d.userId.toString())?.name : undefined,
-      },
-    })),
+    orders: docs.map((d) => {
+      const legacyDoc = d as unknown as {
+        amount?: number;
+        customer?: { email?: string; name?: string };
+      };
+      const isLegacy = d.userId == null || d.orderStatus == null;
+      return {
+        id: d._id.toString(),
+        legacy: isLegacy,
+        total: d.total ?? legacyDoc.amount ?? 0,
+        itemCount: Array.isArray(d.items) ? d.items.reduce((n, i) => n + (i.qty ?? 0), 0) : 0,
+        paymentStatus: d.paymentStatus ?? "PENDING",
+        orderStatus: d.orderStatus ?? "PENDING",
+        createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : new Date(0).toISOString(),
+        customer: {
+          email: d.userId
+            ? (byId.get(d.userId.toString())?.email ?? "unknown")
+            : (legacyDoc.customer?.email ?? "unknown"),
+          name: d.userId ? byId.get(d.userId.toString())?.name : legacyDoc.customer?.name,
+        },
+      };
+    }),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 }
@@ -135,7 +146,8 @@ export async function updateOrderStatus(
   const target = next as OrderStatus;
   const order = await Order.findById(orderId).lean<LeanOrder | null>();
   if (!order) throw new AppError("NOT_FOUND", "Order not found", 404);
-  if (!TRANSITIONS[order.orderStatus].includes(target)) {
+  assertMutable(order);
+  if (!(TRANSITIONS[order.orderStatus] ?? []).includes(target)) {
     throw new AppError(
       "CONFLICT",
       `Cannot move order from ${order.orderStatus} to ${target}`,
@@ -168,11 +180,19 @@ export async function updateOrderStatus(
  * PAID orders must go through refund instead (refused here to force
  * the money path); terminal states are refused.
  */
+/** Legacy/COD-era imports (no userId, no machine statuses) are read-only. */
+function assertMutable(order: LeanOrder): void {
+  if (order.userId == null || order.orderStatus == null) {
+    throw new AppError("CONFLICT", "Legacy imported order is read-only and cannot be changed", 409);
+  }
+}
+
 export async function adminCancelOrder(orderId: string, reason: string): Promise<OrderDTO> {
   await connectDb();
   if (!Types.ObjectId.isValid(orderId)) throw new AppError("NOT_FOUND", "Order not found", 404);
   const order = await Order.findById(orderId).lean<LeanOrder | null>();
   if (!order) throw new AppError("NOT_FOUND", "Order not found", 404);
+  assertMutable(order);
   if (!["PENDING", "CONFIRMED", "PROCESSING", "PACKED"].includes(order.orderStatus)) {
     throw new AppError("CONFLICT", `Order cannot be cancelled from ${order.orderStatus}`, 409);
   }
@@ -209,6 +229,7 @@ export async function refundOrder(orderId: string, reason?: string): Promise<Ord
   if (!Types.ObjectId.isValid(orderId)) throw new AppError("NOT_FOUND", "Order not found", 404);
   const order = await Order.findById(orderId).lean<LeanOrder | null>();
   if (!order) throw new AppError("NOT_FOUND", "Order not found", 404);
+  assertMutable(order);
   if (order.paymentStatus !== "PAID") {
     throw new AppError("CONFLICT", "Only paid orders can be refunded", 409);
   }

@@ -71,6 +71,8 @@ export interface OrderDTO {
   reservationExpiresAt?: string;
   timeline: { status: string; at: string; note?: string }[];
   createdAt: string;
+  /** True for pre-launch/COD-era imports lacking userId + machine statuses. Read-only everywhere. */
+  legacy: boolean;
 }
 
 export type LeanOrder = Omit<IOrder, "_id" | "userId" | "createdAt" | "updatedAt"> & {
@@ -113,6 +115,7 @@ export function toOrderDTO(doc: LeanOrder): OrderDTO {
       note: t?.note,
     })),
     createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(0).toISOString(),
+    legacy: doc.userId == null || doc.orderStatus == null,
   };
 }
 
