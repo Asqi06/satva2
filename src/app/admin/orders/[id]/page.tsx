@@ -29,6 +29,12 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         </span>
       </div>
 
+      {order.legacy && (
+        <p role="note" className="mt-4 border border-[#d9a441]/30 bg-[#d9a441]/10 p-3 text-sm text-ivory">
+          Legacy COD-era import (no account, no payment trail) — read-only. Status, cancel and refund actions are disabled for this order.
+        </p>
+      )}
+
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
           <section aria-label="Items" className="border border-ivory/[0.07] bg-ivory/[0.03] p-5">
@@ -67,7 +73,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           </section>
         </div>
 
-        <AdminOrderActions orderId={order.id} orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} />
+        {!order.legacy && (
+          <AdminOrderActions orderId={order.id} orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} />
+        )}
       </div>
     </main>
   );

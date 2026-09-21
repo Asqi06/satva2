@@ -138,6 +138,7 @@ describe("delivery", () => {
       orderStatus: "PENDING",
       timeline: [],
       createdAt: new Date().toISOString(),
+      legacy: false,
     };
     await expect(
       notifyOrderConfirmation(user?._id.toString() ?? "", order),
@@ -179,6 +180,7 @@ describe("delivery", () => {
       orderStatus: "PENDING",
       timeline: [],
       createdAt: new Date().toISOString(),
+      legacy: false,
     };
     await notifyOrderConfirmation(ghost._id.toString(), order);
     expect(sendMock).not.toHaveBeenCalled();
