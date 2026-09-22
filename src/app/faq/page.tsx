@@ -22,7 +22,7 @@ const QA: { q: string; a: string }[] = [
   },
   {
     q: "How long does shipping take?",
-    a: "Dispatch in 2–4 days, delivery in 5–7 days across India. Shipping is ₹49, free over ₹399.",
+    a: "Dispatch in 2–4 days, delivery in 5–7 days across India. Shipping is ₹49, free over ₹899.",
   },
   {
     q: "What if my piece arrives damaged?",
@@ -53,9 +53,9 @@ export default function FaqPage() {
         <h1 className="section-title mt-2 text-5xl tracking-tight">Good questions, kept short.</h1>
         <dl className="mt-8 space-y-4">
           {QA.map((item) => (
-            <div key={item.q} className="rounded-2xl border border-ink/10 bg-white/60 p-5">
+            <div key={item.q} className="rounded-2xl border border-light-gray bg-white/60 p-5">
               <dt className="font-display text-xl">{item.q}</dt>
-              <dd className="mt-2 leading-7 text-ink/80">{item.a}</dd>
+              <dd className="mt-2 leading-7 text-warm-gray">{item.a}</dd>
             </div>
           ))}
         </dl>

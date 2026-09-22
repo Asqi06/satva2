@@ -92,35 +92,35 @@ export default async function ShopPage({
 
   const heading = categoryName ?? "All jewellery";
   return (
-    <div className="min-h-full flex-1 bg-ivory text-ink">
+    <div className="min-h-full flex-1 bg-white text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
       {breadcrumbLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       )}
-      {/* Page header */}
-      <div className="border-b border-ink/[0.07] bg-ivory">
-        <div className="mx-auto w-full max-w-7xl px-6 pb-10 pt-12 sm:px-10">
-          <p className="eyebrow">
+      {/* Page header — blush band like reference */}
+      <div className="bg-blush">
+        <div className="mx-auto w-full max-w-7xl px-4 py-8 text-center sm:px-8">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-primary">
             The shop · Prices in ₹, taxes included
           </p>
-          <h1 className="section-title mt-2 text-5xl tracking-tight sm:text-7xl">
+          <h1 className="section-title mt-2 text-3xl sm:text-4xl">
             {heading}
           </h1>
-          <p className="lede mt-4 max-w-xl text-sm">
+          <p className="mx-auto mt-2 max-w-xl text-[13px] text-ink/60">
             {pagination.total === 0
               ? "No pieces match — try clearing a filter."
-              : `${pagination.total} piece${pagination.total === 1 ? "" : "s"} · Free shipping over ₹399 · UPI, cards & netbanking accepted`}
+              : `${pagination.total} piece${pagination.total === 1 ? "" : "s"} · Free shipping over ₹899 · COD available`}
           </p>
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-7xl px-6 py-8 sm:px-10">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-8">
         {/* Filters */}
         <ShopFilters categories={categories} />
 
         {/* Grid */}
         {products.length > 0 ? (
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {products.map((p, i) => (
               <div
                 key={p.id}
@@ -132,9 +132,10 @@ export default async function ShopPage({
             ))}
           </div>
         ) : (
-          <div className="mt-8 border border-ink/[0.08] bg-white/50 p-16 text-center">
-            <p className="font-display italic text-3xl">Arre, the shelf is empty here.</p>
-            <p className="mt-2 text-sm text-ink/50">Try a different budget or occasion — pretty things await.</p>
+          <div className="mt-6 rounded-2xl border-2 border-dashed border-primary/30 bg-blush/50 p-16 text-center">
+            <p className="text-4xl">🛍️</p>
+            <p className="section-title mt-3 text-2xl">Arre, the shelf is empty here.</p>
+            <p className="mt-2 text-sm text-muted">Try a different budget or occasion — pretty things await.</p>
             <Link
               href="/shop"
               className="btn-primary mt-6"
@@ -146,22 +147,22 @@ export default async function ShopPage({
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <nav aria-label="Pagination" className="mt-14 flex items-center justify-center gap-4">
+          <nav aria-label="Pagination" className="mt-16 flex items-center justify-center gap-3">
             {pagination.page > 1 && (
               <Link
                 href={pageLink(flat, pagination.page - 1)}
-                className="flex items-center gap-2 border border-ink/15 px-6 py-2.5 text-sm font-medium transition-colors hover:border-[#c8a96e] hover:text-[#c8a96e]"
+                className="btn-ghost"
               >
                 ← Previous
               </Link>
             )}
-            <span className="text-sm text-ink/40">
+            <span className="rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-white">
               {pagination.page} / {pagination.totalPages}
             </span>
             {pagination.page < pagination.totalPages && (
               <Link
                 href={pageLink(flat, pagination.page + 1)}
-                className="flex items-center gap-2 border border-ink/15 px-6 py-2.5 text-sm font-medium transition-colors hover:border-[#c8a96e] hover:text-[#c8a96e]"
+                className="btn-ghost"
               >
                 Next →
               </Link>

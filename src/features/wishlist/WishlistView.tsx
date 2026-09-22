@@ -56,7 +56,7 @@ export function WishlistView() {
   if (!view) {
     return (
       <div className="min-h-full flex-1 bg-ivory px-6 py-12 text-ink sm:px-10">
-        <p className="text-sm text-ink/60">{notice ?? "Loading your wishlist…"}</p>
+        <p className="text-sm text-warm-gray">{notice ?? "Loading your wishlist…"}</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function WishlistView() {
                 </Link>
                 <div className="p-4">
                   <h2 className="font-display italic text-lg leading-snug">
-                    <Link href={`/products/${item.slug}`} className="hover:text-[#c8a96e]">
+                    <Link href={`/products/${item.slug}`} className="hover:text-gold">
                       {item.name}
                     </Link>
                   </h2>
@@ -118,7 +118,7 @@ export function WishlistView() {
                     <button
                       type="button"
                       onClick={() => void remove(item.productId)}
-                      className="underline underline-offset-4 text-ink/70 hover:text-clay"
+                      className="underline underline-offset-4 text-warm-gray hover:text-clay"
                     >
                       Remove
                     </button>

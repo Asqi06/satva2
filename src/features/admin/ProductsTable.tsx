@@ -115,14 +115,14 @@ export function ProductsTable() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">
             Catalogue
           </p>
           <h1 className="mt-1 font-display italic text-4xl text-ivory">Products</h1>
         </div>
         <Link
           href="/admin/products/new"
-          className="border border-[#c8a96e] bg-[#c8a96e]/10 px-6 py-2.5 text-sm font-medium text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a]"
+          className="border border-gold bg-gold/10 px-6 py-2.5 text-sm font-medium text-gold hover:bg-gold hover:text-ink"
         >
           + New product
         </Link>
@@ -145,14 +145,14 @@ export function ProductsTable() {
         />
         <button
           type="submit"
-          className="shrink-0 border border-ivory/20 px-5 py-2.5 text-sm text-ivory/60 hover:border-[#c8a96e] hover:text-[#c8a96e] sm:py-2"
+          className="shrink-0 border border-ivory/20 px-5 py-2.5 text-sm text-ivory/60 hover:border-gold hover:text-gold sm:py-2"
         >
           Search
         </button>
       </form>
 
       {notice && (
-        <p role="status" className="mt-4 border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
           {notice}
         </p>
       )}
@@ -174,7 +174,7 @@ export function ProductsTable() {
               className={`border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors ${
                 a === "delete"
                   ? "border-red-400/30 text-red-400 hover:bg-red-400/10"
-                  : "border-ivory/20 text-ivory/50 hover:border-[#c8a96e] hover:text-[#c8a96e]"
+                  : "border-ivory/20 text-ivory/50 hover:border-gold hover:text-gold"
               }`}
             >
               {a}
@@ -193,7 +193,7 @@ export function ProductsTable() {
                 aria-label={`Select ${r.name}`}
                 checked={selected.has(r.id)}
                 onChange={() => toggleSelect(r.id)}
-                className="mt-1 h-5 w-5 shrink-0 accent-[#c8a96e]"
+                className="mt-1 h-5 w-5 shrink-0 accent-gold"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-ivory">{r.name}</p>
@@ -202,7 +202,7 @@ export function ProductsTable() {
                   <span className="font-mono text-ivory/80">{formatINR(r.price)}</span>
                   <span className="text-xs text-ivory/50">Stock {r.stock}</span>
                   {r.stock - r.reservedStock <= r.lowStockThreshold && (
-                    <span className="bg-[#c8a96e]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#c8a96e]">
+                    <span className="bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-gold">
                       low
                     </span>
                   )}
@@ -272,7 +272,7 @@ export function ProductsTable() {
                     aria-label={`Select ${r.name}`}
                     checked={selected.has(r.id)}
                     onChange={() => toggleSelect(r.id)}
-                    className="h-4 w-4 accent-[#c8a96e]"
+                    className="h-4 w-4 accent-gold"
                   />
                 </td>
                 <td className="p-3 font-medium text-ivory">{r.name}</td>
@@ -281,7 +281,7 @@ export function ProductsTable() {
                 <td className="p-3 text-ivory/70">
                   {r.stock}
                   {r.stock - r.reservedStock <= r.lowStockThreshold && (
-                    <span className="ml-2 bg-[#c8a96e]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#c8a96e]">
+                    <span className="ml-2 bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-gold">
                       low
                     </span>
                   )}
@@ -354,7 +354,7 @@ export function ProductsTable() {
             type="button"
             disabled={pagination.page <= 1}
             onClick={() => void load(pagination.page - 1, q)}
-            className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-[#c8a96e] hover:text-[#c8a96e]"
+            className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-gold hover:text-gold"
           >
             ← Previous
           </button>
@@ -365,7 +365,7 @@ export function ProductsTable() {
             type="button"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => void load(pagination.page + 1, q)}
-            className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-[#c8a96e] hover:text-[#c8a96e]"
+            className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-gold hover:text-gold"
           >
             Next →
           </button>

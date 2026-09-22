@@ -129,111 +129,100 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
-      <div className="mx-auto w-full max-w-7xl px-6 py-10 sm:px-10">
-        {/* Breadcrumb */}
+      <div className="mx-auto w-full max-w-7xl px-6 py-12 sm:px-10">
+        {/* Breadcrumb — playful pills */}
         <nav aria-label="Breadcrumb">
-          <ol className="flex flex-wrap items-center gap-1.5 text-xs text-ink/40">
+          <ol className="flex flex-wrap items-center gap-2 text-xs font-bold">
             <li>
-              <Link href="/" className="hover:text-ink">
+              <Link href="/" className="rounded-full bg-white border-2 border-light-gray px-3 py-1 text-muted hover:border-primary hover:text-primary transition-all">
                 Home
               </Link>
             </li>
-            <li aria-hidden="true">·</li>
             <li>
-              <Link href="/shop" className="hover:text-ink">
+              <Link href="/shop" className="rounded-full bg-white border-2 border-light-gray px-3 py-1 text-muted hover:border-primary hover:text-primary transition-all">
                 Shop
               </Link>
             </li>
             {product.category.slug && (
-              <>
-                <li aria-hidden="true">·</li>
-                <li>
-                  <Link
-                    href={`/shop?category=${product.category.slug}`}
-                    className="hover:text-ink"
-                  >
-                    {product.category.name}
-                  </Link>
-                </li>
-              </>
+              <li>
+                <Link
+                  href={`/shop?category=${product.category.slug}`}
+                  className="rounded-full bg-white border-2 border-light-gray px-3 py-1 text-muted hover:border-primary hover:text-primary transition-all"
+                >
+                  {product.category.name}
+                </Link>
+              </li>
             )}
-            <li aria-hidden="true">·</li>
-            <li aria-current="page" className="text-ink/70">
+            <li aria-current="page" className="rounded-full bg-ink px-3 py-1 text-white">
               {product.name}
             </li>
           </ol>
         </nav>
 
-        {/* Editorial two-column split */}
-        <div className="mt-8 grid gap-12 lg:grid-cols-2 lg:gap-16">
+        {/* Playful two-column split */}
+        <div className="mt-10 grid gap-12 lg:grid-cols-2 lg:gap-16">
           {/* Gallery */}
           <ProductGallery images={product.images} productName={product.name} />
 
           {/* Info panel */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-              {product.category.name}
-            </p>
-            <h1 className="mt-2 font-display italic text-4xl leading-[1.1] tracking-tight sm:text-6xl">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary">
+              ✦ {product.category.name}
+            </span>
+            <h1 className="mt-3 section-title text-4xl leading-[1.1] tracking-tight sm:text-5xl">
               {product.name}
             </h1>
 
             {/* Rating */}
             {product.ratingCount > 0 && (
-              <p className="mt-3 flex items-center gap-2 text-sm">
-                <span className="text-[#c8a96e]">
-                  {"★".repeat(Math.round(product.ratingAverage))}
-                  {"★"
-                    .repeat(5)
-                    .split("")
-                    .slice(Math.round(product.ratingAverage))
-                    .join("")
-                    .replace(/★/g, "☆")}
+              <p className="mt-4 flex items-center gap-2 text-sm">
+                <span className="rounded-full bg-amber-100 px-3 py-1 font-bold text-amber-500">
+                  ★ {product.ratingAverage.toFixed(1)}
                 </span>
-                <span className="text-ink/40">
-                  {product.ratingAverage.toFixed(1)} · {product.ratingCount} review
-                  {product.ratingCount === 1 ? "" : "s"}
+                <span className="text-muted font-medium">
+                  {product.ratingCount} review
+                  {product.ratingCount === 1 ? "" : "s"} 💬
                 </span>
               </p>
             )}
 
             {/* Price */}
-            <p className="mt-5 flex items-baseline gap-3" aria-label="Price">
-              <span className="font-mono text-3xl font-semibold">
+            <p className="mt-6 flex flex-wrap items-center gap-3" aria-label="Price">
+              <span className="text-4xl font-extrabold tracking-tight">
                 {formatINR(product.price)}
               </span>
               {product.compareAtPrice !== undefined &&
                 product.compareAtPrice > product.price && (
                   <>
-                    <s className="font-mono text-lg text-ink/35">
+                    <s className="text-lg text-muted">
                       {formatINR(product.compareAtPrice)}
                     </s>
-                    <span className="bg-[#c8a96e] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#0a0a0a]">
-                      Save {product.discountPercent}%
+                    <span className="badge-off">
+                      Save {product.discountPercent}% 🎉
                     </span>
                   </>
                 )}
             </p>
 
             {/* Stock + shipping note */}
-            <p className="mt-2 text-sm" aria-live="polite">
+            <p className="mt-4 text-sm" aria-live="polite">
               {product.inStock ? (
-                <span className="font-medium text-emerald-800">
-                  In stock — ships in 2–4 days from Vapi
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 font-bold text-green-700">
+                  ✓ In stock — ships in 2–4 days
                 </span>
               ) : (
-                <span className="font-medium text-red-700">Out of stock</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 font-bold text-red-600">Out of stock</span>
               )}
-              <span className="text-ink/40">
+              <span className="text-muted">
                 {" "}
-                · Free shipping over ₹399 · UPI, cards &amp; netbanking
+                · Free shipping over ₹899 · COD available
               </span>
             </p>
             <p className="price-note mt-1">Price in ₹, inclusive of all taxes</p>
 
             {/* Short description */}
             {product.shortDescription && (
-              <p className="mt-5 leading-7 text-ink/70">{product.shortDescription}</p>
+              <p className="mt-6 text-base leading-7 text-warm-gray">{product.shortDescription}</p>
             )}
 
             {/* Purchase panel */}
@@ -252,29 +241,29 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               }}
             />
 
-            {/* Trust + delivery panel — reassurance Indian shoppers expect */}
-            <section aria-label="Delivery and promises" className="mt-8 border border-ink/[0.08] bg-white/50 p-5">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink/40">
-                Good to know
+            {/* Trust + delivery panel */}
+            <section aria-label="Delivery and promises" className="mt-10 rounded-2xl bg-blush/60 p-6">
+              <h2 className="eyebrow">
+                ✨ Good to know
               </h2>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/70">
+              <ul className="mt-4 space-y-2.5 text-sm leading-6 text-warm-gray">
                 <li>🚚 <strong>Delivery in 5–7 days</strong> across India, tracked to your pincode.</li>
-                <li>💳 <strong>UPI, cards, netbanking & wallets</strong> via Razorpay. Online payments only — no COD.</li>
-                <li>🎁 <strong>Gift-ready packing free</strong> — pouch, box & note for shagun and birthdays.</li>
-                <li>🛡️ <strong>7-day easy cover</strong> for defects & transit damage.</li>
+                <li>💳 <strong>COD available</strong> + UPI, cards & netbanking via Razorpay.</li>
+                <li>🎁 <strong>Free gift above ₹899</strong> — pouch, box & note in every order.</li>
+                <li>🛡️ <strong>Easy return</strong> — 7-day cover on defects & transit damage.</li>
               </ul>
             </section>
 
-            {/* Gold divider */}
-            <div className="divider-gold my-8" />
+            {/* Divider */}
+            <div className="divider-gold my-10" />
 
             {/* Details */}
             <section aria-label="Product details">
-              <h2 className="font-display italic text-2xl">The details</h2>
-              <p className="mt-3 whitespace-pre-line text-sm leading-7 text-ink/70">
+              <h2 className="section-title text-3xl">The details 👀</h2>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-warm-gray">
                 {product.description}
               </p>
-              <dl className="mt-5 grid grid-cols-2 gap-2.5 text-sm">
+              <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
                 {(
                   [
                     ["SKU", product.sku],
@@ -286,11 +275,11 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
                   ] as [string, string | undefined][]
                 ).map(([term, value]) =>
                   value ? (
-                    <div key={term} className="border border-ink/[0.07] bg-white/50 p-3">
-                      <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink/40">
+                    <div key={term} className="rounded-2xl border-2 border-light-gray bg-white p-3.5 transition-all hover:border-primary hover:scale-[1.02]">
+                      <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
                         {term}
                       </dt>
-                      <dd className="mt-1 font-medium">{value}</dd>
+                      <dd className="mt-1 font-bold">{value}</dd>
                     </div>
                   ) : null,
                 )}
@@ -298,12 +287,12 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
 
               {/* Tags */}
               {product.tags.length > 0 && (
-                <ul aria-label="Tags" className="mt-5 flex flex-wrap gap-2">
+                <ul aria-label="Tags" className="mt-6 flex flex-wrap gap-2">
                   {product.tags.map((t) => (
                     <li key={t}>
                       <Link
                         href={`/shop?q=${encodeURIComponent(t)}`}
-                        className="border border-ink/[0.1] px-3 py-1 text-xs text-ink/50 hover:border-[#c8a96e] hover:text-[#c8a96e]"
+                        className="rounded-full border-2 border-light-gray bg-white px-4 py-1.5 text-xs font-bold text-muted hover:border-primary hover:text-primary transition-all hover:scale-105"
                       >
                         #{t}
                       </Link>
@@ -317,14 +306,14 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
 
         {/* Related */}
         {product.related.length > 0 && (
-          <section aria-label="Related products" className="mt-24">
-            <div className="mb-8">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
+          <section aria-label="Related products" className="mt-16">
+            <div className="mb-6 text-center">
+              <p className="eyebrow">
                 Complete the look
               </p>
-              <h2 className="mt-1 font-display italic text-4xl">You may also like</h2>
+              <h2 className="section-title mt-1 text-2xl sm:text-3xl">You May Also Like</h2>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {product.related.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

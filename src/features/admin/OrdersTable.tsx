@@ -48,13 +48,13 @@ export function OrdersTable() {
 
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">Fulfilment</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Fulfilment</p>
       <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Orders</h1>
 
       <div className="mt-4 flex flex-wrap gap-3 text-sm text-ivory/60">
         <label className="flex items-center gap-2">
           Status
-          <select value={orderStatus} onChange={(e) => setOrderStatus(e.target.value)} className="rounded-full border border-ivory/20 bg-[#1a1a1a] px-3 py-1.5 text-sm text-ivory">
+          <select value={orderStatus} onChange={(e) => setOrderStatus(e.target.value)} className="rounded-full border border-ivory/20 bg-ink px-3 py-1.5 text-sm text-ivory">
             {ORDER_STATUSES.map((s) => (
               <option key={s} value={s}>{s === "" ? "All" : s}</option>
             ))}
@@ -62,7 +62,7 @@ export function OrdersTable() {
         </label>
         <label className="flex items-center gap-2">
           Payment
-          <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} className="rounded-full border border-ivory/20 bg-[#1a1a1a] px-3 py-1.5 text-sm text-ivory">
+          <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} className="rounded-full border border-ivory/20 bg-ink px-3 py-1.5 text-sm text-ivory">
             {PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>{s === "" ? "All" : s}</option>
             ))}
@@ -71,7 +71,7 @@ export function OrdersTable() {
       </div>
 
       {notice && (
-        <p role="status" className="mt-4 border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
           {notice}
         </p>
       )}
@@ -92,7 +92,7 @@ export function OrdersTable() {
             </p>
             <p className="mt-2 flex flex-wrap gap-1.5">
               {r.legacy ? (
-                <span className="inline-block rounded-full bg-[#d9a441]/20 px-3 py-1 text-xs font-semibold text-[#d9a441]">
+                <span className="inline-block rounded-full bg-marigold/20 px-3 py-1 text-xs font-semibold text-marigold">
                   LEGACY · READ-ONLY
                 </span>
               ) : (
@@ -133,7 +133,7 @@ export function OrdersTable() {
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-ivory/[0.04] last:border-0 hover:bg-ivory/[0.02]">
                 <td className="p-3">
-                  <Link href={`/admin/orders/${r.id}`} className="font-mono text-ivory underline underline-offset-4 hover:text-[#c8a96e]">
+                  <Link href={`/admin/orders/${r.id}`} className="font-mono text-ivory underline underline-offset-4 hover:text-gold">
                     {r.id.slice(-8).toUpperCase()}
                   </Link>
                 </td>
@@ -142,7 +142,7 @@ export function OrdersTable() {
                 <td className="p-3 font-mono text-ivory/80">{formatINR(r.total)}</td>
                 <td className="p-3">
                   {r.legacy ? (
-                    <span className="inline-block rounded-full bg-[#d9a441]/20 px-3 py-1 text-xs font-semibold text-[#d9a441]">
+                    <span className="inline-block rounded-full bg-marigold/20 px-3 py-1 text-xs font-semibold text-marigold">
                       LEGACY
                     </span>
                   ) : (
@@ -165,11 +165,11 @@ export function OrdersTable() {
 
       {pagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-          <button type="button" disabled={pagination.page <= 1} onClick={() => void load(pagination.page - 1)} className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-[#c8a96e] hover:text-[#c8a96e]">
+          <button type="button" disabled={pagination.page <= 1} onClick={() => void load(pagination.page - 1)} className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-gold hover:text-gold">
             ← Previous
           </button>
           <span className="text-ivory/35">{pagination.page} / {pagination.totalPages} ({pagination.total})</span>
-          <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)} className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-[#c8a96e] hover:text-[#c8a96e]">
+          <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)} className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-gold hover:text-gold">
             Next →
           </button>
         </div>

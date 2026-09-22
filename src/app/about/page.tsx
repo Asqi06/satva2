@@ -12,7 +12,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       {/* Large editorial header */}
-      <div className="border-b border-ink/[0.07]">
+      <div className="border-b border-light-gray">
         <div className="mx-auto w-full max-w-7xl px-6 pb-14 pt-16 sm:px-10">
           <p className="eyebrow animate-fade-up">
             Our story · Vapi → all of India
@@ -28,14 +28,14 @@ export default function AboutPage() {
         <div className="grid gap-16 lg:grid-cols-[1fr_1fr] lg:gap-24">
           {/* Column 1 */}
           <div className="space-y-8 animate-fade-up delay-200">
-            <div className="h-px bg-gradient-to-r from-[#c8a96e] to-transparent" />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#c8a96e]">
+            <div className="h-px bg-gradient-to-r from-gold to-transparent" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold">
               Why SatvaStones
             </p>
             <p className="font-display italic text-4xl leading-[1.25] tracking-tight sm:text-5xl">
               Korean finishes, Indian sensibility.
             </p>
-            <div className="space-y-5 text-base leading-[1.85] text-ink/70">
+            <div className="space-y-5 text-base leading-[1.85] text-warm-gray">
               <p>
                 SatvaStones started from a simple frustration: the jewellery that looked like it
                 cost ten thousand rupees was mostly buying a brand name, not craftsmanship.
@@ -52,14 +52,14 @@ export default function AboutPage() {
 
           {/* Column 2 */}
           <div className="space-y-8 animate-fade-up delay-300">
-            <div className="h-px bg-gradient-to-r from-[#c8a96e] to-transparent" />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#c8a96e]">
+            <div className="h-px bg-gradient-to-r from-gold to-transparent" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold">
               How we work
             </p>
             <p className="font-display italic text-4xl leading-[1.25] tracking-tight sm:text-5xl">
               Crafted in Vapi, shipped to you.
             </p>
-            <div className="space-y-5 text-base leading-[1.85] text-ink/70">
+            <div className="space-y-5 text-base leading-[1.85] text-warm-gray">
               <p>
                 We work directly with craftspeople in Vapi, Gujarat — one of India&apos;s oldest
                 jewellery-manufacturing clusters. No middlemen, no inflated margins. That&apos;s how
@@ -75,13 +75,13 @@ export default function AboutPage() {
         </div>
 
         {/* Pull quote */}
-        <div className="mt-24 border-y border-ink/[0.07] py-16 text-center animate-fade-up delay-300">
-          <p className="font-display italic text-4xl leading-[1.3] text-ink/80 sm:text-5xl">
+        <div className="mt-24 border-y border-light-gray py-16 text-center animate-fade-up delay-300">
+          <p className="font-display italic text-4xl leading-[1.3] text-warm-gray sm:text-5xl">
             &ldquo;Gold-coloured, not solid gold —{" "}
             <br className="hidden sm:block" />
             and proud of it.&rdquo;
           </p>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.3em] text-[#c8a96e]">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.3em] text-gold">
             SatvaStones, since 2025
           </p>
         </div>
@@ -104,14 +104,14 @@ export default function AboutPage() {
           ].map((v, i) => (
             <div
               key={v.title}
-              className="border border-ink/[0.08] bg-white/50 p-8 animate-fade-up"
+              className="border border-light-gray bg-white/50 p-8 animate-fade-up"
               style={{ animationDelay: `${300 + i * 80}ms` }}
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">
                 {String(i + 1).padStart(2, "0")}
               </p>
               <h2 className="mt-3 font-display italic text-3xl">{v.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-ink/60">{v.body}</p>
+              <p className="mt-3 text-sm leading-7 text-warm-gray">{v.body}</p>
             </div>
           ))}
         </div>

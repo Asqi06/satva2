@@ -1,50 +1,74 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────
-   Design Tokens
+   SatvaStones — Sticker-Pop D2C System
+   (inspired by reference: bold condensed hero type,
+   blush category band, maroon sale tags, black
+   utility strip, rounded product cards)
 ───────────────────────────────────────────── */
 :root {
-  --background: #f9f5ee;
-  --foreground: #0a0a0a;
-  --gold: #c8a96e;
-  --clay: #b34a2b;
-  --sage: #7d8471;
-  --marigold: #d9a441;
-  /* Desi-editorial accents: haldi (turmeric), mehendi (leaf green), sindoor (festive red) */
-  --haldi: #e3a008;
-  --mehendi: #1f4d2e;
-  --sindoor: #9c1c1c;
+  --background: #ffffff;
+  --foreground: #191919;
+  --primary: #d61f2c;
+  --primary-dark: #a81522;
+  --ink: #161616;
+  --ivory: #ffffff;
+  --cream: #fdf4ec;
+  --blush: #fbdfe2;
+  --peach: #eec0b4;
+  --sticker-yellow: #ffd814;
+  --sticker-teal: #1f9bab;
+  --sticker-pink: #f06292;
+  --maroon: #8e3a44;
+  --plum: #5b0f3c;
+  --warm-gray: #6f6f6f;
+  --light-gray: #ececec;
+  --muted: #8a8a8a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-ink: #0a0a0a;
-  --color-ivory: #f9f5ee;
-  --color-gold: #c8a96e;
-  --color-clay: #b34a2b;
-  --color-marigold: #d9a441;
-  --color-sage: #7d8471;
-  --color-haldi: #e3a008;
-  --color-mehendi: #1f4d2e;
-  --color-sindoor: #9c1c1c;
+  --color-primary: #d61f2c;
+  --color-primary-dark: #a81522;
+  --color-ink: #161616;
+  --color-ivory: #ffffff;
+  --color-cream: #fdf4ec;
+  --color-blush: #fbdfe2;
+  --color-peach: #eec0b4;
+  --color-gold: #d61f2c;
+  --color-clay: #a81522;
+  --color-marigold: #ffd814;
+  --color-accent: #f5a623;
+  --color-accent-purple: #a855f7;
+  --color-accent-blue: #3b82f6;
+  --color-secondary: #1f9bab;
+  --color-navy: #161616;
+  --color-mint: #95e1d3;
+  --color-lavender: #e0c3fc;
+  --color-coral: #ff8a80;
+  --color-warm-gray: #6f6f6f;
+  --color-light-gray: #ececec;
+  --color-muted: #8a8a8a;
+  --color-sage: #1f9bab;
+  --color-mehendi: #1f7a3d;
+  --color-sindoor: #d61f2c;
+  --color-maroon: #8e3a44;
+  --color-plum: #5b0f3c;
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-display);
+  --font-sticker: var(--font-sticker);
+  --font-script: var(--font-script);
 }
 
 /* ─────────────────────────────────────────────
    Base
 ───────────────────────────────────────────── */
 html {
-  /* Native smooth scrolling fights Lenis' virtual scroll and makes
-     the page feel laggy / stop part-way. Lenis handles smoothing. */
   scroll-behavior: auto;
 }
 
-/* Required Lenis styles — without these Lenis miscalculates the
-   scroll limit and the page can stop scrolling part-way down.
-   See https://lenis.darkroom.engineering/layout */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -65,13 +89,10 @@ html.lenis body {
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Translated-off-screen panels (cart drawer) and the full-width
-     marquee track must never create a horizontal scrollbar that
-     traps vertical scrolling on some browsers. */
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-tap-highlight-color: rgba(200, 169, 110, 0.25);
+  -webkit-tap-highlight-color: rgba(214, 31, 44, 0.2);
   text-size-adjust: 100%;
 }
 
@@ -80,8 +101,6 @@ video {
   max-width: 100%;
 }
 
-/* Mobile-first: 16px inputs stop iOS Safari auto-zoom on focus;
-   tap targets stay thumb-friendly without redesigning desktop. */
 @media (max-width: 640px) {
   input,
   select,
@@ -96,17 +115,14 @@ video {
 }
 
 ::selection {
-  background: var(--gold);
-  color: #0a0a0a;
+  background: var(--primary);
+  color: #fff;
 }
 
-/* ─────────────────────────────────────────────
-   Focus (WCAG 2.4.7)
-───────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 3px;
-  border-radius: 3px;
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* ─────────────────────────────────────────────
@@ -115,7 +131,7 @@ video {
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(28px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -148,39 +164,33 @@ video {
   to   { transform: rotate(360deg); }
 }
 
-@keyframes goldPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
-}
-
 /* ─────────────────────────────────────────────
    Animation Utilities
 ───────────────────────────────────────────── */
 .animate-fade-up {
-  animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s ease both;
+  animation: fadeIn 0.35s ease both;
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slideInRight 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: scaleIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-marquee {
-  animation: marquee 28s linear infinite;
+  animation: marquee 26s linear infinite;
 }
 
 .animate-spin-ring {
   animation: spinRing 1s linear infinite;
 }
 
-/* Stagger helpers */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
@@ -188,7 +198,7 @@ video {
 .delay-500 { animation-delay: 500ms; }
 
 /* ─────────────────────────────────────────────
-   Marquee Band (homepage strip)
+   Marquee + helpers
 ───────────────────────────────────────────── */
 .marquee-track {
   display: flex;
@@ -196,84 +206,119 @@ video {
   will-change: transform;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Sticker headline (condensed poster type) */
+.font-sticker {
+  font-family: var(--font-sticker);
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+}
+
+.font-script {
+  font-family: var(--font-script);
+}
+
+/* Outlined ghost text like "LIMITED TIME ONLY" */
+.text-outline {
+  -webkit-text-stroke: 1.5px rgba(214, 31, 44, 0.55);
+  color: transparent;
+}
+
 /* ─────────────────────────────────────────────
-   Satva Desi-Editorial system (revamp)
-   Eyebrows, display headings, buttons, cards,
-   trust strips, badges, bandhani texture.
+   Type system (D2C)
 ───────────────────────────────────────────── */
 .eyebrow {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.32em;
-  color: var(--gold);
+  letter-spacing: 0.22em;
+  color: var(--primary);
 }
 
 .eyebrow-dark {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.28em;
-  color: var(--marigold);
+  letter-spacing: 0.18em;
+  color: var(--sticker-yellow);
 }
 
 .display-hero {
   font-family: var(--font-display);
   font-style: italic;
   letter-spacing: -0.02em;
-  line-height: 1.02;
-}
-
-.section-title {
-  font-family: var(--font-display);
-  font-style: italic;
-  letter-spacing: -0.01em;
   line-height: 1.05;
 }
 
-.lede {
-  line-height: 1.8;
-  color: color-mix(in srgb, var(--foreground) 65%, transparent);
+.section-title {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
+.lede {
+  line-height: 1.7;
+  color: var(--warm-gray);
+}
+
+/* ──── Buttons ──── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  background: #0a0a0a;
-  color: var(--background);
-  padding: 1rem 2rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  gap: 0.5rem;
+  background: var(--primary);
+  color: #fff;
+  padding: 0.9rem 2rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: background-color 0.25s, color 0.25s;
+  border-radius: 999px;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 18px rgba(214, 31, 44, 0.35);
 }
 
 .btn-primary:hover {
-  background: var(--gold);
-  color: #0a0a0a;
+  background: var(--primary-dark);
+  transform: translateY(-1px);
 }
 
 .btn-gold {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  background: var(--gold);
-  color: #0a0a0a;
-  padding: 1rem 2rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  gap: 0.5rem;
+  background: var(--ink);
+  color: #fff;
+  padding: 0.9rem 2rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: background-color 0.25s, color 0.25s;
+  border-radius: 999px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .btn-gold:hover {
-  background: #0a0a0a;
-  color: var(--background);
+  background: var(--primary);
+  transform: translateY(-1px);
 }
 
 .btn-ghost {
@@ -281,100 +326,97 @@ video {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
-  padding: 0.9rem 1.75rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: border-color 0.25s, color 0.25s;
+  border: 1.5px solid var(--light-gray);
+  background: #fff;
+  padding: 0.8rem 1.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 999px;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-ghost:hover {
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
+/* ──── Cards ──── */
 .card-lift {
-  border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-  background: rgba(255, 255, 255, 0.55);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-color 0.3s;
+  border: 1px solid #efefef;
+  background: #fff;
+  border-radius: 18px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .card-lift:hover {
   transform: translateY(-4px);
-  border-color: var(--gold);
-  box-shadow: 0 18px 50px rgba(10, 10, 10, 0.12);
+  box-shadow: 0 16px 34px rgba(22, 22, 22, 0.1);
 }
 
 .pill-active {
-  border: 1px solid #0a0a0a;
-  background: #0a0a0a;
-  color: var(--background);
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  border-radius: 999px;
 }
 
 .pill-gold {
-  border: 1px solid var(--gold);
-  background: var(--gold);
-  color: #0a0a0a;
+  border: 1.5px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  border-radius: 999px;
 }
 
+/* ──── Tags (maroon sale tags like reference) ──── */
 .badge-off {
-  background: var(--gold);
-  color: #0a0a0a;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  padding: 0.3rem 0.7rem;
-}
-
-.badge-bestseller {
-  background: var(--mehendi);
-  color: #f9f5ee;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  padding: 0.3rem 0.7rem;
-}
-
-.badge-new {
-  background: var(--sindoor);
+  background: var(--maroon);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  padding: 0.3rem 0.7rem;
+  letter-spacing: 0.04em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 6px;
+}
+
+.badge-bestseller {
+  background: var(--maroon);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 6px;
+}
+
+.badge-new {
+  background: var(--ink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 6px;
 }
 
 .divider-gold {
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--primary), transparent);
 }
 
 .price-note {
   font-size: 11px;
-  color: color-mix(in srgb, var(--foreground) 45%, transparent);
+  color: var(--muted);
 }
 
-/* Bandhani dot texture — subtle festive grain, pure CSS */
-.bg-bandhani {
-  background-image: radial-gradient(color-mix(in srgb, var(--gold) 22%, transparent) 1px, transparent 1.5px);
-  background-size: 22px 22px;
-}
-
-.bg-bandhani-dark {
-  background-image: radial-gradient(rgba(200, 169, 110, 0.14) 1px, transparent 1.5px);
-  background-size: 22px 22px;
-}
-
-/* Trust strip: 4-up reassurance row */
+/* ──── Trust strip ──── */
 .trust-strip {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1px;
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  background: var(--light-gray);
+  border: 1px solid var(--light-gray);
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
@@ -384,83 +426,86 @@ video {
 }
 
 .trust-cell {
-  background: var(--background);
+  background: #fff;
   padding: 1.1rem 1.25rem;
+  text-align: center;
 }
 
 .trust-cell strong {
   display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--foreground);
 }
 
 .trust-cell span {
   display: block;
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
-  color: color-mix(in srgb, var(--foreground) 55%, transparent);
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
-/* Free-shipping progress */
+/* ──── Shipping progress ──── */
 .ship-progress {
-  height: 6px;
-  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  height: 8px;
+  background: var(--blush);
   overflow: hidden;
+  border-radius: 999px;
 }
 
 .ship-progress > span {
   display: block;
   height: 100%;
-  background: linear-gradient(to right, var(--marigold), var(--gold));
+  background: linear-gradient(to right, var(--primary), var(--primary-dark));
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 999px;
 }
 
-/* Admin polish */
+/* ──── Admin (unchanged dark) ──── */
 .admin-card {
-  border: 1px solid rgba(249, 245, 238, 0.08);
-  background: rgba(249, 245, 238, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   padding: 1.25rem;
+  border-radius: 14px;
   transition: border-color 0.25s;
 }
 
 .admin-card:hover {
-  border-color: rgba(200, 169, 110, 0.4);
+  border-color: rgba(214, 31, 44, 0.45);
 }
 
 .admin-kpi {
-  border: 1px solid rgba(249, 245, 238, 0.08);
-  background: rgba(249, 245, 238, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   padding: 1rem;
+  border-radius: 14px;
 }
 
 .admin-kpi-accent {
-  border: 1px solid rgba(200, 169, 110, 0.4);
-  background: rgba(200, 169, 110, 0.1);
+  border: 1px solid rgba(214, 31, 44, 0.45);
+  background: rgba(214, 31, 44, 0.1);
   padding: 1rem;
+  border-radius: 14px;
 }
 
-/* ─────────────────────────────────────────────
-   Admin
-───────────────────────────────────────────── */
 .admin-input {
   width: 100%;
-  border-radius: 8px;
-  border: 1px solid rgba(200, 169, 110, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(214, 31, 44, 0.25);
   background: #111;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: #f9f5ee;
+  color: #fff;
   transition: border-color 0.2s;
 }
 
 .admin-input:focus {
   outline: none;
-  border-color: var(--gold);
+  border-color: var(--primary);
 }
 
 .admin-input::placeholder {
-  color: rgba(249, 245, 238, 0.35);
+  color: rgba(255, 255, 255, 0.3);
 }
 
 /* ─────────────────────────────────────────────

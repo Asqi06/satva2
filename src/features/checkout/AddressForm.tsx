@@ -97,7 +97,7 @@ export function AddressForm({ onCreated }: { onCreated: (id: string) => void }) 
         </label>
       </div>
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="isDefault" className="h-4 w-4 accent-[#b34a2b]" />
+        <input type="checkbox" name="isDefault" className="h-4 w-4 accent-clay" />
         Make default
       </label>
       {error && (

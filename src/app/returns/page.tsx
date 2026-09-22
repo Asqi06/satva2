@@ -14,7 +14,7 @@ export default function ReturnsPage() {
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
         <p className="eyebrow">Reader services · 7-day cover</p>
         <h1 className="section-title mt-2 text-5xl tracking-tight">Returns & exchanges.</h1>
-        <div className="mt-6 space-y-5 leading-8 text-ink/85">
+        <div className="mt-6 space-y-5 leading-8 text-warm-gray">
           <p>
             <strong>7-day cover:</strong> manufacturing defects and transit damage are replaced or
             refunded within 7 days of delivery — photo required, questions minimal.

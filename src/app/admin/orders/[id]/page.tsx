@@ -30,7 +30,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       </div>
 
       {order.legacy && (
-        <p role="note" className="mt-4 border border-[#d9a441]/30 bg-[#d9a441]/10 p-3 text-sm text-ivory">
+        <p role="note" className="mt-4 border border-marigold/30 bg-marigold/10 p-3 text-sm text-ivory">
           Legacy COD-era import (no account, no payment trail) — read-only. Status, cancel and refund actions are disabled for this order.
         </p>
       )}

@@ -9,9 +9,9 @@ export default function Loading() {
       {/* Spinning gold ring */}
       <span
         aria-hidden="true"
-        className="animate-spin-ring block h-10 w-10 rounded-full border-2 border-[#c8a96e]/20 border-t-[#c8a96e]"
+        className="animate-spin-ring block h-10 w-10 rounded-full border-2 border-gold/20 border-t-gold"
       />
-      <p className="font-display italic text-xl text-ink/40">Loading…</p>
+      <p className="font-display italic text-xl text-muted">Loading…</p>
     </div>
   );
 }

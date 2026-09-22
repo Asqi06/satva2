@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/admin/reviews", label: "Reviews", icon: "◉" },
   { href: "/admin/coupons", label: "Coupons", icon: "◎" },
   { href: "/admin/banners", label: "Banners", icon: "◬" },
+  { href: "/admin/settings", label: "Settings", icon: "◈" },
 ] as const;
 
 const COMING_SOON = ["Customers", "Inventory"];
@@ -28,14 +29,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <div className="min-h-full flex-1 bg-[#0f0f0f] text-ivory">
+    <div className="min-h-full flex-1 bg-ink text-ivory">
       <div className="mx-auto grid w-full max-w-[1400px] lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* ── Sidebar ── */}
         <aside className="min-w-0 border-b border-ivory/[0.06] lg:border-b-0 lg:border-r">
           {/* Brand bar */}
           <div className="flex items-center justify-between gap-3 border-b border-ivory/[0.06] px-4 py-4 sm:px-6 lg:block lg:py-5">
             <div>
-              <Link href="/" className="font-display italic text-xl text-[#c8a96e]">
+              <Link href="/" className="font-display italic text-xl text-gold">
                 SatvaStones ✦
               </Link>
               <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-ivory/30">
@@ -51,7 +52,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </div>
 
           {/* Nav */}
-          <nav aria-label="Admin navigation" className="sticky top-0 z-30 bg-[#0f0f0f]/95 px-3 py-3 backdrop-blur-sm lg:static lg:bg-transparent lg:py-4">
+          <nav aria-label="Admin navigation" className="sticky top-0 z-30 bg-ink/95 px-3 py-3 backdrop-blur-sm lg:static lg:bg-transparent lg:py-4">
             {/* Mobile: horizontal scroll */}
             <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:pb-0">
               {NAV_ITEMS.map((item) => (
@@ -60,7 +61,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                     href={item.href}
                     className="flex items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm font-medium text-ivory/55 transition-colors hover:bg-ivory/[0.06] hover:text-ivory lg:rounded-none"
                   >
-                    <span aria-hidden="true" className="text-[#c8a96e]">
+                    <span aria-hidden="true" className="text-gold">
                       {item.icon}
                     </span>
                     {item.label}
@@ -79,7 +80,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                   <span className="flex items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-ivory/25">
                     <span aria-hidden="true" className="text-ivory/15">◌</span>
                     {label}
-                    <span className="ml-auto hidden rounded bg-[#c8a96e]/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#c8a96e] lg:block">
+                    <span className="ml-auto hidden rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-gold lg:block">
                       Soon
                     </span>
                   </span>

@@ -48,20 +48,20 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
                   </span>
                   <span className="flex-1">
                     <strong>{item.name}</strong>
-                    {item.variantSku && <span className="text-ink/60"> · {item.variantSku}</span>}
+                    {item.variantSku && <span className="text-warm-gray"> · {item.variantSku}</span>}
                     <br />
-                    <span className="text-ink/60">Qty {item.qty} × {formatINR(item.unitPrice)}</span>
+                    <span className="text-warm-gray">Qty {item.qty} × {formatINR(item.unitPrice)}</span>
                   </span>
                   <span className="font-semibold">{formatINR(item.totalPrice)}</span>
                 </li>
               ))}
             </ul>
             <dl className="mt-4 space-y-1 border-t border-ink/10 pt-3 text-sm">
-              <div className="flex justify-between"><dt className="text-ink/60">Subtotal</dt><dd>{formatINR(order.subtotal)}</dd></div>
+              <div className="flex justify-between"><dt className="text-warm-gray">Subtotal</dt><dd>{formatINR(order.subtotal)}</dd></div>
               {order.discount > 0 && (
-                <div className="flex justify-between"><dt className="text-ink/60">Discount{order.couponCode ? ` (${order.couponCode})` : ""}</dt><dd>−{formatINR(order.discount)}</dd></div>
+                <div className="flex justify-between"><dt className="text-warm-gray">Discount{order.couponCode ? ` (${order.couponCode})` : ""}</dt><dd>−{formatINR(order.discount)}</dd></div>
               )}
-              <div className="flex justify-between"><dt className="text-ink/60">Shipping</dt><dd>{order.shipping === 0 ? "Free" : formatINR(order.shipping)}</dd></div>
+              <div className="flex justify-between"><dt className="text-warm-gray">Shipping</dt><dd>{order.shipping === 0 ? "Free" : formatINR(order.shipping)}</dd></div>
               <div className="flex justify-between font-semibold"><dt>Total</dt><dd>{formatINR(order.total)}</dd></div>
             </dl>
           </section>

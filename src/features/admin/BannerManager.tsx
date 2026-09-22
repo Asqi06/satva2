@@ -128,11 +128,16 @@ export function BannerManager() {
 
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">Homepage</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Homepage</p>
       <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Hero banners</h1>
+      <p className="mt-2 max-w-xl text-sm text-ivory/45">
+        Upload the full creative as one image (text baked in). Lowest Sort order shows
+        as the main hero; the 2nd banner shows as the sale strip below the viral
+        products. Toggle Active to hide without deleting.
+      </p>
 
       {notice && (
-        <p role="status" className="mt-4 border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
           {notice}
         </p>
       )}
@@ -157,12 +162,12 @@ export function BannerManager() {
             <input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} className={inputCls} />
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 accent-[#c8a96e]" />
+            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 accent-gold" />
             Active
           </label>
         </div>
         <div className="mt-4">
-          <label className="block border border-dashed border-ivory/25 p-4 text-center text-sm text-ivory/50 hover:border-[#c8a96e]/60 hover:text-ivory">
+          <label className="block border border-dashed border-ivory/25 p-4 text-center text-sm text-ivory/50 hover:border-gold/60 hover:text-ivory">
             {uploading ? "Uploading…" : image ? "Replace image (JPG/WebP ≤ 4MB)" : "Upload banner image (wide, JPG/WebP ≤ 4MB)"}
             <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading} onChange={(e) => void uploadImage(e.target.files)} className="sr-only" />
           </label>
@@ -173,7 +178,7 @@ export function BannerManager() {
           )}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="submit" disabled={uploading} className="border border-[#c8a96e] bg-[#c8a96e]/10 px-6 py-2 text-sm font-medium text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-60">
+          <button type="submit" disabled={uploading} className="border border-gold bg-gold/10 px-6 py-2 text-sm font-medium text-gold hover:bg-gold hover:text-ink disabled:opacity-60">
             {editingId ? "Save changes" : "Create banner"}
           </button>
           {editingId && (

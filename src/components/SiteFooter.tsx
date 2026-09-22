@@ -19,8 +19,8 @@ const FOOTER_COLS = [
       { href: "/faq", label: "FAQ" },
       { href: "/contact", label: "Contact us" },
       { href: "/shipping", label: "Shipping info" },
-      { href: "/returns", label: "Returns" },
-      { href: "/account", label: "My account" },
+      { href: "/returns", label: "Returns / Exchange" },
+      { href: "/account/orders", label: "Track order" },
       { href: "/wishlist", label: "Wishlist" },
     ],
   },
@@ -35,55 +35,47 @@ const FOOTER_COLS = [
 ];
 
 const TRUST_ITEMS = [
-  { title: "Free shipping over ₹399", body: "Flat ₹49 below · 5–7 day delivery" },
-  { title: "UPI • Cards • Netbanking", body: "Secure Razorpay checkout, online only" },
-  { title: "7-day easy cover", body: "Defects & transit damage replaced" },
-  { title: "Anti-tarnish finish", body: "Water-friendly shine, made in Vapi" },
+  { title: "Free shipping over ₹899", body: "COD available across India", emoji: "🚚" },
+  { title: "UPI • Cards • Netbanking", body: "Secure Razorpay checkout", emoji: "💳" },
+  { title: "Easy return", body: "7-day cover on defects & damage", emoji: "🛡️" },
+  { title: "Free gift above ₹899", body: "Gift-ready pouch in every order", emoji: "🎁" },
 ];
 
-/** Site-wide desi-editorial footer — trust badges, links, payments, SEO-rich. */
+/** D2C footer — black trust band, red wordmark, link columns. */
 export function SiteFooter() {
   return (
-    <footer className="bg-[#0a0a0a] text-ivory">
-      {/* Gold divider */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-[#c8a96e] to-transparent" />
-
-      {/* Trust badges — the reassurance Indian shoppers look for */}
-      <div className="border-b border-ivory/[0.07]">
-        <ul className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-px px-6 py-8 sm:px-10 lg:grid-cols-4" aria-label="Why shop with SatvaStones">
+    <footer className="bg-ink text-white">
+      <div className="border-b border-white/10">
+        <ul className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-3 px-4 py-8 sm:px-8 lg:grid-cols-4" aria-label="Why shop with SatvaStones">
           {TRUST_ITEMS.map((t) => (
-            <li key={t.title} className="px-2 py-2">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#c8a96e]">{t.title}</p>
-              <p className="mt-1 text-xs leading-5 text-ivory/45">{t.body}</p>
+            <li key={t.title} className="rounded-xl bg-white/[0.06] p-4 text-center">
+              <span className="text-2xl">{t.emoji}</span>
+              <p className="mt-1.5 text-xs font-extrabold uppercase tracking-wider text-white">{t.title}</p>
+              <p className="mt-0.5 text-[11px] text-white/50">{t.body}</p>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Main content */}
-      <div className="mx-auto w-full max-w-7xl px-6 py-16 sm:px-10">
-        <div className="grid gap-12 lg:grid-cols-[1fr_2fr]">
-
-          {/* Brand column */}
+      <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1fr_2fr]">
           <div>
-            <p className="font-display italic text-3xl tracking-tight text-ivory sm:text-4xl">
+            <p className="font-display text-4xl font-black tracking-tight text-primary">
               SatvaStones
             </p>
-            <p className="mt-3 max-w-xs text-sm leading-7 text-ivory/50">
+            <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
               Korean and Western aesthetic jewellery for India — premium-looking,
-              honestly priced, anti-tarnish finish. Every piece ships gift-ready
-              in a shagun-worthy pouch.
+              honestly priced, anti-tarnish finish. Every piece ships gift-ready.
             </p>
-            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-[#c8a96e]">
-              Crafted in Vapi, Gujarat ✦ Worn across India
+            <p className="mt-5 text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/70">
+              Crafted in Vapi, Gujarat
             </p>
           </div>
 
-          {/* Link columns */}
           <nav aria-label="Footer" className="grid gap-8 sm:grid-cols-3">
             {FOOTER_COLS.map((col) => (
               <div key={col.title}>
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c8a96e]">
+                <h2 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/80">
                   {col.title}
                 </h2>
                 <ul className="mt-4 space-y-2.5">
@@ -91,7 +83,7 @@ export function SiteFooter() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-sm text-ivory/55 transition-colors hover:text-ivory"
+                        className="text-sm text-white/50 transition-colors hover:text-white"
                       >
                         {link.label}
                       </Link>
@@ -104,11 +96,10 @@ export function SiteFooter() {
         </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-ivory/[0.07]">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-5 text-xs text-ivory/30 sm:px-10">
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-[11px] text-white/35 sm:px-8">
           <p>© {new Date().getFullYear()} SatvaStones · Vapi, Gujarat. All rights reserved.</p>
-          <p>Prices in ₹, inclusive of taxes ✦ Made with ♥ in India</p>
+          <p>Prices in ₹, inclusive of taxes · Made with care in India</p>
         </div>
       </div>
     </footer>

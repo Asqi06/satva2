@@ -18,13 +18,13 @@ export async function ReviewsSection({ slug }: { slug: string }) {
   return (
     <section aria-label="Customer reviews" className="mt-16">
       <p className="eyebrow">Verified reviews</p>
-      <h2 className="section-title mt-1 text-3xl">Worn & loved across India</h2>
+      <h2 className="section-title mt-1 text-2xl sm:text-3xl">Worn & Loved Across India</h2>
       {list.count > 0 ? (
-        <p className="mt-1 text-sm text-ink/70">
+        <p className="mt-1 text-sm text-warm-gray">
           ★ {list.average.toFixed(1)} · {list.count} verified review{list.count === 1 ? "" : "s"} · Only buyers can review
         </p>
       ) : (
-        <p className="mt-1 text-sm text-ink/70">No reviews yet — bought this piece? Yours could be first.</p>
+        <p className="mt-1 text-sm text-warm-gray">No reviews yet — bought this piece? Yours could be first.</p>
       )}
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
@@ -43,7 +43,7 @@ export async function ReviewsSection({ slug }: { slug: string }) {
                 )}
               </p>
               {r.title && <p className="mt-1 font-semibold">{r.title}</p>}
-              {r.comment && <p className="mt-1 text-sm leading-6 text-ink/80">{r.comment}</p>}
+              {r.comment && <p className="mt-1 text-sm leading-6 text-warm-gray">{r.comment}</p>}
               {r.images.length > 0 && (
                 <ul aria-label="Review photos" className="mt-2 flex gap-2">
                   {r.images.map((img) => (
@@ -53,7 +53,7 @@ export async function ReviewsSection({ slug }: { slug: string }) {
                   ))}
                 </ul>
               )}
-              <p className="mt-2 text-xs text-ink/60">
+              <p className="mt-2 text-xs text-warm-gray">
                 {r.authorName} · {new Date(r.createdAt).toLocaleDateString("en-IN", { dateStyle: "medium" })}
               </p>
               {r.mine && (
@@ -64,7 +64,7 @@ export async function ReviewsSection({ slug }: { slug: string }) {
             </li>
           ))}
           {list.reviews.length === 0 && (
-            <li className="rounded-2xl border border-ink/10 bg-white/30 p-6 text-sm text-ink/60">
+            <li className="rounded-2xl border border-ink/10 bg-white/30 p-6 text-sm text-warm-gray">
               Nothing here yet.
             </li>
           )}

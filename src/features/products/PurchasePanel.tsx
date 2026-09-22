@@ -15,10 +15,7 @@ export interface PurchaseVariant {
   stock: number;
 }
 
-/**
- * Buy box: variant + quantity selection, add-to-bag (server for members,
- * local for guests via CartProvider), wishlist toggle (login required).
- */
+/** Bold & playful buy box — pill variants, bouncy CTAs. */
 export function PurchasePanel({
   product,
 }: {
@@ -97,8 +94,8 @@ export function PurchasePanel({
       {/* Variant pills */}
       {product.variants.length > 0 && (
         <fieldset>
-          <legend className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink/40">
-            Variant
+          <legend className="eyebrow">
+            Pick your variant
           </legend>
           <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Variant">
             {product.variants.map((v) => {
@@ -116,10 +113,10 @@ export function PurchasePanel({
                     setSku(v.sku);
                     setQty(1);
                   }}
-                  className={`border px-5 py-2 text-sm font-medium transition-colors disabled:opacity-35 ${
+                  className={`rounded-full border-2 px-5 py-2.5 text-sm font-bold transition-all hover:scale-105 disabled:opacity-35 ${
                     active
-                      ? "border-[#c8a96e] bg-[#c8a96e]/10 text-ink"
-                      : "border-ink/15 hover:border-ink/40"
+                      ? "border-primary bg-primary text-white shadow-lg shadow-primary/30"
+                      : "border-light-gray bg-white hover:border-primary hover:text-primary"
                   }`}
                 >
                   {label}
@@ -133,37 +130,37 @@ export function PurchasePanel({
       {/* Quantity + running total */}
       <div className="flex flex-wrap items-center gap-5">
         <fieldset className="flex items-center gap-3">
-          <legend className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink/40">
+          <legend className="eyebrow">
             Qty
           </legend>
-          <div className="flex items-center border border-ink/15">
+          <div className="flex items-center rounded-full border-2 border-light-gray bg-white">
             <button
               type="button"
               aria-label="Decrease quantity"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
-              className="px-3.5 py-2.5 text-lg leading-none text-ink/50 hover:text-ink"
+              className="px-4 py-2.5 text-lg leading-none font-bold text-muted hover:text-primary transition-colors"
             >
               −
             </button>
-            <span className="min-w-[2ch] text-center text-sm font-semibold">{qty}</span>
+            <span className="min-w-[2ch] text-center text-sm font-extrabold">{qty}</span>
             <button
               type="button"
               aria-label="Increase quantity"
               onClick={() =>
                 setQty((q) => Math.min(Math.max(stock, 1), q + 1))
               }
-              className="px-3.5 py-2.5 text-lg leading-none text-ink/50 hover:text-ink"
+              className="px-4 py-2.5 text-lg leading-none font-bold text-muted hover:text-primary transition-colors"
             >
               +
             </button>
           </div>
         </fieldset>
 
-        <p className="font-mono text-base" aria-live="polite">
-          <span className="font-semibold">{formatINR(price * qty)}</span>
+        <p className="text-lg" aria-live="polite">
+          <span className="font-extrabold">{formatINR(price * qty)}</span>
           {selected && stock > 0 && stock < 10 && (
-            <span className="ml-2 text-sm text-[#c8a96e]">
-              Only {stock} left
+            <span className="ml-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              Only {stock} left!
             </span>
           )}
         </p>
@@ -177,7 +174,7 @@ export function PurchasePanel({
           onClick={() => void addToBag()}
           className="btn-primary flex-1 disabled:opacity-40 sm:flex-initial"
         >
-          {busy ? "Adding…" : added ? "✓ Added to bag!" : stock === 0 ? "Out of stock" : "Add to bag"}
+          {busy ? "Adding…" : added ? "✓ Added to bag!" : stock === 0 ? "Out of stock" : "Add to bag 🛍️"}
         </button>
         <button
           type="button"
@@ -185,17 +182,17 @@ export function PurchasePanel({
           onClick={() => void toggleWishlist()}
           aria-pressed={wished}
           className={`btn-ghost disabled:opacity-40 ${
-            wished ? "!border-[#c8a96e] !text-[#c8a96e]" : ""
+            wished ? "!border-primary !text-primary !bg-primary/5" : ""
           }`}
         >
-          {wished ? "♥ Saved" : "♡ Wishlist"}
+          {wished ? "♥ Saved!" : "♡ Wishlist"}
         </button>
       </div>
-      <p className="text-xs leading-5 text-ink/45">
+      <p className="text-xs leading-5 text-muted">
         {selected && stock > 0 && stock < 10
           ? `Hurry — only ${stock} left in this variant. `
           : ""}
-        Ships in 2–4 days · Free shipping over ₹399 · Gift box included
+        Ships in 2–4 days · Free shipping over ₹899 · Free gift included 🎁
       </p>
     </div>
   );

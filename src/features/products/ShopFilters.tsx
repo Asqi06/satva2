@@ -20,7 +20,7 @@ function setParam(params: URLSearchParams, key: string, value: string): void {
   params.delete("page");
 }
 
-/** Editorial pill-style shop filter + sort bar. Updates the URL; the server page re-renders. */
+/** Bold & playful filter bar — pill buttons, rounded search, bouncy toggles. */
 export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,13 +56,13 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
         <label className="relative flex-1">
           <span className="sr-only">Search jewellery</span>
           <svg
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30"
-            width="15"
-            height="15"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
@@ -76,13 +76,13 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search rings, jhumkas, oxidised, gifts under ₹499…"
-            className="w-full border border-ink/[0.1] bg-white/70 py-2.5 pl-10 pr-4 text-sm placeholder:text-ink/30 focus:border-[#c8a96e] focus:outline-none focus:ring-0"
+            className="w-full rounded-full border-2 border-light-gray bg-white py-3 pl-11 pr-4 text-sm placeholder:text-muted focus:border-primary focus:outline-none transition-colors"
           />
         </label>
         <button
           type="submit"
           disabled={pending}
-          className="border border-ink/[0.1] bg-[#0a0a0a] px-5 py-2.5 text-sm font-medium text-ivory transition-colors hover:bg-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-50"
+          className="btn-primary disabled:opacity-50"
         >
           {pending ? "…" : "Search"}
         </button>
@@ -99,10 +99,10 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
               p.delete("page");
             })
           }
-          className={`border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] transition-colors ${
+          className={`rounded-full border-2 px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-all hover:scale-105 ${
             currentCategory === ""
-              ? "border-[#0a0a0a] bg-[#0a0a0a] text-ivory"
-              : "border-ink/[0.12] text-ink/50 hover:border-ink/30 hover:text-ink"
+              ? "border-ink bg-ink text-white shadow-lg"
+              : "border-light-gray bg-white text-muted hover:border-primary hover:text-primary"
           }`}
         >
           All
@@ -114,10 +114,10 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             onClick={() =>
               push((p) => setParam(p, "category", c.slug))
             }
-            className={`border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] transition-colors ${
+            className={`rounded-full border-2 px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-all hover:scale-105 ${
               currentCategory === c.slug
-                ? "border-[#c8a96e] bg-[#c8a96e] text-[#0a0a0a]"
-                : "border-ink/[0.12] text-ink/50 hover:border-ink/30 hover:text-ink"
+                ? "border-primary bg-primary text-white shadow-lg shadow-primary/30"
+                : "border-light-gray bg-white text-muted hover:border-primary hover:text-primary"
             }`}
           >
             {c.name}
@@ -129,7 +129,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
           value={currentSort}
           onChange={(e) => push((p) => setParam(p, "sort", e.target.value))}
           aria-label="Sort products"
-          className="ml-auto border border-ink/[0.1] bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-ink/60 focus:border-[#c8a96e] focus:outline-none"
+          className="ml-auto cursor-pointer rounded-full border-2 border-light-gray bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-warm-gray focus:border-primary focus:outline-none transition-colors"
         >
           {PRODUCT_SORTS.map((s) => (
             <option key={s} value={s}>
@@ -139,7 +139,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
         </select>
 
         {/* In stock toggle */}
-        <label className="flex cursor-pointer items-center gap-2">
+        <label className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-light-gray bg-white px-4 py-2 transition-colors hover:border-primary">
           <input
             type="checkbox"
             checked={inStockOnly}
@@ -156,7 +156,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
           />
           <span
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              inStockOnly ? "bg-[#c8a96e]" : "bg-ink/15"
+              inStockOnly ? "bg-primary" : "bg-light-gray"
             }`}
           >
             <span
@@ -165,7 +165,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
               }`}
             />
           </span>
-          <span className="text-xs font-semibold uppercase tracking-[0.15em] text-ink/50">
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-muted">
             In stock
           </span>
         </label>
