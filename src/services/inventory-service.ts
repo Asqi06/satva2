@@ -142,15 +142,27 @@ export async function releaseExpiredReservations(): Promise<number> {
   }).lean();
   let count = 0;
   for (const order of expired) {
-    const lines: ReserveLine[] = order.items.map((i) => ({
-      productId: i.productId.toString(),
-      variantSku: i.variantSku,
-      qty: i.qty,
-    }));
-    await releaseHold(lines, order._id, "Reservation expired");
-    if (order.couponCode) {
-      const doc = await Coupon.findOne({ code: order.couponCode }).select("_id").lean();
-      if (doc) await releaseCouponUse(doc._id.toString());
+    // One malformed legacy document must never 500 every new checkout:
+    // cancel it defensively and move on.
+    try {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const lines: ReserveLine[] = [];
+      for (const i of items) {
+        const productId =
+          typeof i?.productId === "string"
+            ? i.productId
+            : (i?.productId?.toString() ?? "");
+        if (!productId || typeof i?.qty !== "number") continue;
+        lines.push({ productId, variantSku: i.variantSku, qty: i.qty });
+      }
+      await releaseHold(lines, order._id, "Reservation expired");
+      if (order.couponCode) {
+        const doc = await Coupon.findOne({ code: order.couponCode }).select("_id").lean();
+        if (doc) await releaseCouponUse(doc._id.toString());
+      }
+    } catch {
+      // Holds stay as-is; the order is still cancelled below so this
+      // document can never poison the sweep again.
     }
     await Order.updateOne(
       { _id: order._id, orderStatus: "PENDING" },

@@ -142,7 +142,8 @@ export async function createOrder(
 
   const user = await User.findById(userId);
   if (!user) throw new AppError("UNAUTHORIZED", "Login required", 401);
-  const address = user.addresses.find((a) => a._id.toString() === input.addressId);
+  // Legacy/guest-era users may lack the addresses array — 404, never a TypeError 500.
+  const address = (user.addresses ?? []).find((a) => a._id.toString() === input.addressId);
   if (!address) throw new AppError("NOT_FOUND", "Address not found", 404);
 
   const cart = await getCartView(userId.toString());
