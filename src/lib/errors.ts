@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "./logger";
 
 /**
  * Structured application errors + predictable JSON envelopes.
@@ -75,6 +76,15 @@ export function toErrorBody(error: unknown): { status: number; body: ErrorBody }
 
 export function errorResponse(error: unknown): NextResponse {
   const { status, body } = toErrorBody(error);
+  // Unexpected 500s log server-side (Vercel function logs) with a safe,
+  // secret-free message so prod crashes are diagnosable. AppErrors and
+  // Zod rejections are expected control flow — stay quiet.
+  if (status >= 500) {
+    logger.error("api internal error", {
+      code: body.error.code,
+      message: error instanceof Error ? error.message : "unknown",
+    });
+  }
   return NextResponse.json(body, { status });
 }
 

@@ -108,6 +108,12 @@ export function CheckoutWizard() {
 
   const applyCoupon = async () => {
     setCouponMsg(null);
+    // Don't burn a request on an empty box — the API 400s on it.
+    if (!coupon.trim()) {
+      setDiscount(0);
+      setCouponMsg("Type a coupon code first, then press Apply.");
+      return;
+    }
     try {
       const res = await fetch("/api/coupons/validate", {
         method: "POST",
