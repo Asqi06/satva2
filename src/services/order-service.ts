@@ -137,7 +137,15 @@ export async function createOrder(
   input: CreateOrderInput,
 ): Promise<{ order: OrderDTO; excluded: number }> {
   await connectDb();
-  await releaseExpiredReservations();
+  // Hygiene, not correctness: an expired-hold sweep failure must never
+  // block a shopper's checkout (it is logged server-side instead).
+  try {
+    await releaseExpiredReservations();
+  } catch (error) {
+    logger.warn("reservation sweep failed; continuing checkout", {
+      message: error instanceof Error ? error.message : "unknown",
+    });
+  }
   const userId = await userIdOrThrow(rawUserId);
 
   const user = await User.findById(userId);
