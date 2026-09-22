@@ -128,6 +128,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     mergedRef.current = email;
     const guestItems = loadGuestCart(window.localStorage);
     (async () => {
+      let merged = guestItems.length === 0;
       try {
         if (guestItems.length > 0) {
           const res = await fetch("/api/cart/merge", {
@@ -150,11 +151,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
             if (summary.data.capped > 0 || summary.data.dropped > 0) {
               setNotice("Some bag quantities were adjusted to available stock.");
             }
+            // Clear the guest bag only after the server confirms the
+            // merge — a failed merge must never wipe the shopper's items.
+            saveGuestCart(window.localStorage, []);
+            merged = true;
+          } else {
+            setNotice("Couldn't sync your guest bag — your picks are still saved on this device.");
           }
-          saveGuestCart(window.localStorage, []);
         }
+      } catch {
+        setNotice("Couldn't sync your guest bag — your picks are still saved on this device.");
       } finally {
-        markMerged(window.localStorage, email);
+        // Only mark merged on success so the next login retries the sync.
+        if (merged) markMerged(window.localStorage, email);
+        else mergedRef.current = null;
         await refresh();
       }
     })();
