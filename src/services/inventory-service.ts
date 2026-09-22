@@ -6,6 +6,17 @@ import { InventoryTransaction } from "@/models/InventoryTransaction";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { releaseCouponUse } from "./coupon-service";
+import { escapeRegExp } from "./product-service";
+
+/**
+ * Case-insensitive exact SKU match. Variant SKUs are uppercased at write
+ * time now, but legacy rows may hold any case while carts always carry
+ * uppercased SKUs — an exact match would silently miss those rows
+ * (reserve 409s on available stock; finalize/restock no-ops leak holds).
+ */
+function skuEquals(sku: string): { $regex: string; $options: string } {
+  return { $regex: `^${escapeRegExp(sku.trim())}$`, $options: "i" };
+}
 
 /**
  * Inventory movements. `stock` is truth, `reservedStock` is transient
@@ -38,7 +49,7 @@ export async function reserveUnits(lines: ReserveLine[], orderId: Types.ObjectId
   await connectDb();
   for (const line of lines) {
     const variantMatch = line.variantSku
-      ? { variants: { $elemMatch: { sku: line.variantSku.toUpperCase(), stock: { $gte: line.qty } } } }
+      ? { variants: { $elemMatch: { sku: skuEquals(line.variantSku), stock: { $gte: line.qty } } } }
       : {};
     const updated = await Product.findOneAndUpdate(
       {
@@ -64,7 +75,7 @@ export async function finalizeSale(lines: ReserveLine[], orderId: Types.ObjectId
     if (!doc) continue;
     if (line.variantSku) {
       await Product.updateOne(
-        { _id: doc._id, "variants.sku": line.variantSku.toUpperCase() },
+        { _id: doc._id, "variants.sku": skuEquals(line.variantSku) },
         {
           $inc: {
             stock: -line.qty,
@@ -105,7 +116,7 @@ export async function restockSold(lines: ReserveLine[], orderId: Types.ObjectId,
     if (!doc) continue;
     if (line.variantSku) {
       await Product.updateOne(
-        { _id: doc._id, "variants.sku": line.variantSku.toUpperCase() },
+        { _id: doc._id, "variants.sku": skuEquals(line.variantSku) },
         { $inc: { stock: line.qty, soldQuantity: -line.qty, "variants.$.stock": line.qty } },
       );
     } else {
