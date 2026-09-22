@@ -132,11 +132,35 @@ function linesOf(order: LeanOrder): ReserveLine[] {
   }));
 }
 
+/**
+ * One-time stale-index cleanup per instance. The production orders
+ * collection carries a legacy unique `orderNumber_1` index, but the
+ * field no longer exists in the schema — every new insert stored
+ * `null` and died with E11000. syncIndexes() drops exactly the
+ * indexes the schema doesn't define and keeps the rest.
+ */
+let orderIndexSync: Promise<void> | null = null;
+
+async function ensureOrderIndexes(): Promise<void> {
+  if (!orderIndexSync) {
+    orderIndexSync = Order.syncIndexes().then(
+      () => undefined,
+      (error: unknown) => {
+        // Retry on the next checkout; the 500-logging names any failure.
+        orderIndexSync = null;
+        throw error;
+      },
+    );
+  }
+  return orderIndexSync;
+}
+
 export async function createOrder(
   rawUserId: string,
   input: CreateOrderInput,
 ): Promise<{ order: OrderDTO; excluded: number }> {
   await connectDb();
+  await ensureOrderIndexes();
   // Hygiene, not correctness: an expired-hold sweep failure must never
   // block a shopper's checkout (it is logged server-side instead).
   try {
