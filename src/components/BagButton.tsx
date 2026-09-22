@@ -33,7 +33,7 @@ export function BagButton() {
       {count > 0 && (
         <span
           aria-hidden="true"
-          className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#c8a96e] text-[10px] font-semibold text-[#0a0a0a]"
+          className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-ink"
         >
           {count > 9 ? "9+" : count}
         </span>

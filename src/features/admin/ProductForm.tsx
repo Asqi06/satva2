@@ -211,7 +211,7 @@ export function ProductForm({
         <button
           type="submit"
           disabled={saving || uploading}
-          className="border border-[#c8a96e] bg-[#c8a96e]/10 px-6 py-2.5 text-sm font-medium text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-60"
+          className="border border-gold bg-gold/10 px-6 py-2.5 text-sm font-medium text-gold hover:bg-gold hover:text-ink disabled:opacity-60"
         >
           {saving ? "Saving…" : mode === "create" ? "Create product" : "Save changes"}
         </button>
@@ -301,11 +301,11 @@ export function ProductForm({
           </label>
           <div className="flex items-end gap-6 pb-2 text-sm text-ivory/60">
             <label className="flex items-center gap-2">
-              <input type="checkbox" {...register("isPublished")} className="h-4 w-4 accent-[#c8a96e]" />
+              <input type="checkbox" {...register("isPublished")} className="h-4 w-4 accent-gold" />
               Published
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" {...register("isFeatured")} className="h-4 w-4 accent-[#c8a96e]" />
+              <input type="checkbox" {...register("isFeatured")} className="h-4 w-4 accent-gold" />
               Featured
             </label>
           </div>
@@ -315,7 +315,7 @@ export function ProductForm({
       <section aria-label="Images" className="border border-ivory/[0.08] bg-ivory/[0.03] p-5">
         <h2 className="font-display italic text-2xl text-ivory">Images</h2>
         <p className={hintCls}>First upload (or ★) becomes the thumbnail. Empty alt text falls back to the product name.</p>
-        <label className="mt-3 block border border-dashed border-ivory/20 p-6 text-center text-sm text-ivory/40 hover:border-[#c8a96e]/50 hover:text-ivory/60">
+        <label className="mt-3 block border border-dashed border-ivory/20 p-6 text-center text-sm text-ivory/40 hover:border-gold/50 hover:text-ivory/60">
           {uploading ? "Uploading…" : "Drop files or click to upload (JPG/PNG/WebP/AVIF ≤ 4MB, MP4 ≤ 25MB)"}
           <input
             type="file"
@@ -335,7 +335,7 @@ export function ProductForm({
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {images.map((img, i) => (
             <li key={img.publicId} className="flex gap-3 border border-ivory/[0.07] p-3">
-              <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-[#1a1a1a]">
+              <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-ink">
                 <Image src={img.secureUrl} alt="" fill sizes="64px" className="object-cover" />
               </span>
               <div className="flex w-full flex-col gap-2">
@@ -350,7 +350,7 @@ export function ProductForm({
                     type="button"
                     onClick={() => setThumbnail(i)}
                     aria-pressed={img.isThumbnail}
-                    className={img.isThumbnail ? "font-semibold text-[#c8a96e]" : "text-ivory/40 underline underline-offset-2 hover:text-ivory"}
+                    className={img.isThumbnail ? "font-semibold text-gold" : "text-ivory/40 underline underline-offset-2 hover:text-ivory"}
                   >
                     {img.isThumbnail ? "★ Thumbnail" : "Make thumbnail"}
                   </button>
@@ -370,7 +370,7 @@ export function ProductForm({
           <button
             type="button"
             onClick={() => appendVariant({ sku: "", stock: 0 })}
-            className="border border-ivory/20 px-4 py-1.5 text-sm text-ivory/60 hover:border-[#c8a96e] hover:text-[#c8a96e]"
+            className="border border-ivory/20 px-4 py-1.5 text-sm text-ivory/60 hover:border-gold hover:text-gold"
           >
             + Add variant
           </button>
@@ -438,7 +438,7 @@ export function ProductForm({
       <button
         type="submit"
         disabled={saving || uploading}
-        className="border border-[#c8a96e] bg-[#c8a96e]/10 px-8 py-3 text-sm font-medium text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-60"
+        className="border border-gold bg-gold/10 px-8 py-3 text-sm font-medium text-gold hover:bg-gold hover:text-ink disabled:opacity-60"
       >
         {saving ? "Saving…" : mode === "create" ? "Create product" : "Save changes"}
       </button>

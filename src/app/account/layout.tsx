@@ -41,10 +41,10 @@ export default async function AccountLayout({ children }: { children: ReactNode 
               <li key={label}>
                 <span
                   aria-disabled="true"
-                  className="flex items-center gap-2 rounded-full border border-ink/15 px-5 py-2 text-sm text-ink/50"
+                  className="flex items-center gap-2 rounded-full border border-ink/15 px-5 py-2 text-sm text-muted"
                 >
                   {label}
-                  <span className="rounded-full bg-marigold/30 px-2 py-0.5 text-[11px] font-semibold text-ink/70">
+                  <span className="rounded-full bg-marigold/30 px-2 py-0.5 text-[11px] font-semibold text-warm-gray">
                     Soon
                   </span>
                 </span>

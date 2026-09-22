@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, Geist_Mono } from "next/font/google";
+import { Anton, Caveat, Fraunces, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AnalyticsLoader } from "@/components/Analytics";
 import { LenisProvider } from "@/components/LenisProvider";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { AuthSessionProvider } from "@/features/auth/SessionProvider";
@@ -38,6 +39,24 @@ const mono = Geist_Mono({
   preload: false,
   fallback: ["ui-monospace", "monospace"],
   adjustFontFallback: false,
+});
+
+const sticker = Anton({
+  variable: "--font-sticker",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+  preload: false,
+  fallback: ["Arial Black", "sans-serif"],
+});
+
+const script = Caveat({
+  variable: "--font-script",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  display: "swap",
+  preload: false,
+  fallback: ["cursive"],
 });
 
 const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
@@ -99,9 +118,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}
+      className={`${display.variable} ${sans.variable} ${mono.variable} ${sticker.variable} ${script.variable} antialiased`}
     >
-      <body className="flex min-h-screen flex-col font-sans">
+      <body className="flex min-h-screen flex-col bg-background font-sans text-foreground">
         <LenisProvider />
         <AnalyticsLoader />
         <a
@@ -113,11 +132,12 @@ export default function RootLayout({
         <AuthSessionProvider>
           <CartProvider>
             <SiteHeader />
-            <div id="main-content" className="flex flex-1 flex-col">
+            <div id="main-content" className="flex flex-1 flex-col pb-16 md:pb-0">
               {children}
             </div>
             <SiteFooter />
             <CartDrawer />
+            <MobileBottomNav />
           </CartProvider>
         </AuthSessionProvider>
       </body>

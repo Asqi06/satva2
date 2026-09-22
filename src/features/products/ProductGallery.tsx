@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { cloudinaryResize } from "@/utils/cloudinary-url";
 
-/** Editorial product gallery — fade transition between images, thumbnail strip at bottom. */
+/** Bold & playful gallery — rounded images, bouncy thumbnails. */
 export function ProductGallery({
   images,
   productName,
@@ -17,7 +17,7 @@ export function ProductGallery({
 
   if (!current) {
     return (
-      <div className="flex aspect-[4/5] items-center justify-center border border-ink/[0.08] bg-[#f0ebe3] font-display italic text-8xl text-ink/20">
+      <div className="flex aspect-[4/5] items-center justify-center rounded-3xl bg-gradient-to-br from-peach to-lavender font-display italic text-8xl text-white">
         S
       </div>
     );
@@ -26,11 +26,11 @@ export function ProductGallery({
   return (
     <div className="lg:sticky lg:top-[76px]">
       {/* Main image */}
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f0ebe3]">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border-2 border-light-gray bg-cream shadow-xl">
         {images.map((img, i) => (
           <div
             key={img.secureUrl}
-            className={`absolute inset-0 transition-opacity duration-400 ${
+            className={`absolute inset-0 transition-opacity duration-500 ${
               i === active ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
           >
@@ -46,7 +46,7 @@ export function ProductGallery({
           </div>
         ))}
         {images.length > 1 && (
-          <span className="absolute bottom-3 right-3 bg-[#0a0a0a]/70 px-2.5 py-1 font-mono text-[11px] text-ivory" aria-hidden="true">
+          <span className="absolute bottom-4 right-4 rounded-full bg-ink/70 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-sm" aria-hidden="true">
             {active + 1} / {images.length}
           </span>
         )}
@@ -55,7 +55,7 @@ export function ProductGallery({
       {/* Thumbnail strip */}
       {images.length > 1 && (
         <div
-          className="mt-3 grid gap-2"
+          className="mt-4 grid gap-3"
           style={{ gridTemplateColumns: `repeat(${Math.min(images.length, 6)}, 1fr)` }}
           role="group"
           aria-label="Product images"
@@ -67,10 +67,10 @@ export function ProductGallery({
               onClick={() => setActive(i)}
               aria-pressed={i === active}
               aria-label={`View image ${i + 1}`}
-              className={`relative aspect-square overflow-hidden border transition-all ${
+              className={`relative aspect-square overflow-hidden rounded-2xl border-2 transition-all hover:scale-105 ${
                 i === active
-                  ? "border-[#c8a96e] opacity-100"
-                  : "border-transparent opacity-60 hover:opacity-100"
+                  ? "border-primary opacity-100 shadow-lg shadow-primary/20"
+                  : "border-light-gray opacity-50 hover:opacity-100"
               }`}
             >
             <Image

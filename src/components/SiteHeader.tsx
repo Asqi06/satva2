@@ -6,29 +6,60 @@ import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { BagButton } from "./BagButton";
 
-const BASE_LINKS = [
-  { href: "/shop", label: "Shop" },
-  { href: "/about", label: "About" },
-  { href: "/wishlist", label: "Wishlist" },
-  { href: "/account", label: "Account" },
+const NAV_LINKS = [
+  { href: "/shop", label: "Categories" },
+  { href: "/shop?sort=best-selling", label: "Hot Deals", hot: true },
+  { href: "/about", label: "Store" },
+  { href: "/account/orders", label: "Track Order" },
+  { href: "/returns", label: "Returns / Exchange" },
+  { href: "/contact", label: "Contact Us" },
 ];
 
-/** Scroll-aware, mobile-capable editorial site header. */
+const DEFAULT_UTILITY_ITEMS = [
+  "Free gift on order above INR 899",
+  "COD available",
+  "Easy return",
+  "Rakhi sale is live — up to 70% off",
+  "Free shipping above INR 899",
+];
+
+/** Jewelsmars-style header: logo row, nav row, black utility strip. */
 export function SiteHeader() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
-  const NAV_LINKS = isAdmin ? [...BASE_LINKS, { href: "/admin", label: "Admin" }] : BASE_LINKS;
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [utilityItems, setUtilityItems] = useState<string[]>(DEFAULT_UTILITY_ITEMS);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
-  // Scroll detection
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 40);
+    const handler = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  // Announcement strip is edited in Admin → Settings.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/settings");
+        const body = (await res.json()) as {
+          success: boolean;
+          data?: { announcement?: string };
+        };
+        const raw = body.success ? body.data?.announcement?.trim() : "";
+        if (raw) {
+          const items = raw
+            .split("|")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (items.length > 0) setUtilityItems(items);
+        }
+      } catch {
+        // Defaults above cover the fallback.
+      }
+    })();
   }, []);
 
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -37,7 +68,6 @@ export function SiteHeader() {
     setMenuOpen(false);
   }
 
-  // Escape key closes menu
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -50,8 +80,6 @@ export function SiteHeader() {
     return () => document.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  // Lock body scroll when mobile menu is open (also pauses Lenis
-  // virtual scroll, which ignores body overflow on its own).
   useEffect(() => {
     const lenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis;
     if (menuOpen) {
@@ -63,140 +91,164 @@ export function SiteHeader() {
     }
     return () => {
       document.body.style.overflow = "";
-      // Only restart Lenis on cleanup if the menu was open; otherwise
-      // we could restart it while the cart drawer keeps it stopped.
       if (menuOpen) lenis?.start();
     };
   }, [menuOpen]);
 
   return (
     <>
-      {/* Festive announcement bar — trust-first for Indian shoppers */}
-      <div className="bg-[#0a0a0a] text-center text-[10px] font-semibold uppercase leading-5 tracking-[0.14em] text-[#c8a96e] sm:text-[11px] sm:tracking-[0.22em]">
-        <p className="mx-auto max-w-7xl px-4 py-2 sm:px-10">
-          Free shipping over ₹399 ✦ UPI, cards & netbanking ✦ 7-day easy cover
-        </p>
-      </div>
       <header
-        className={`sticky top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-ivory/98 shadow-[0_1px_0_rgba(10,10,10,0.08)] backdrop-blur-md"
-            : "bg-ivory/80 backdrop-blur-sm"
+        className={`sticky top-0 z-50 bg-white transition-shadow duration-300 ${
+          scrolled ? "shadow-[0_2px_16px_rgba(0,0,0,0.08)]" : ""
         }`}
       >
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4 sm:px-10">
-
-          {/* Wordmark */}
-          <Link
-            href="/"
-            aria-label="SatvaStones home"
-            className="font-display italic text-xl tracking-tight text-ink transition-opacity hover:opacity-70 sm:text-2xl"
-          >
-            SatvaStones
-          </Link>
-
-          {/* Desktop Nav */}
-          <nav aria-label="Primary" className="hidden md:block">
-            <ul className="flex items-center gap-8 text-sm font-medium tracking-wide">
-              {NAV_LINKS.map((link) => {
-                const active = pathname === link.href || pathname.startsWith(link.href + "/");
-                return (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className={`relative pb-0.5 transition-colors hover:text-gold ${
-                        active ? "text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gold" : "text-ink/70"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          {/* Right icons */}
-          <div className="flex items-center gap-3">
-            <BagButton />
-
-            {/* Mobile hamburger */}
+        {/* ── Logo row ── */}
+        <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
+          {/* Left: mobile menu + search */}
+          <div className="flex flex-1 items-center gap-1">
             <button
               ref={toggleRef}
               type="button"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
-              aria-controls="mobile-menu"
               onClick={() => setMenuOpen((v) => !v)}
-              className="relative flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-full border border-ink/15 md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-black/5 md:hidden"
             >
-              <span
-                className={`h-px w-4 bg-ink transition-all duration-300 ${menuOpen ? "translate-y-[2.5px] rotate-45 w-5" : ""}`}
-              />
-              <span
-                className={`h-px w-5 bg-ink transition-all duration-300 ${menuOpen ? "opacity-0" : ""}`}
-              />
-              <span
-                className={`h-px w-4 bg-ink transition-all duration-300 ${menuOpen ? "-translate-y-[4.5px] -rotate-45 w-5" : ""}`}
-              />
+              <span className="relative block h-3.5 w-5">
+                <span className={`absolute left-0 top-0 h-0.5 w-5 bg-ink transition-all duration-300 ${menuOpen ? "top-1.5 rotate-45" : ""}`} />
+                <span className={`absolute left-0 top-1.5 h-0.5 w-5 bg-ink transition-all duration-300 ${menuOpen ? "opacity-0" : ""}`} />
+                <span className={`absolute left-0 top-3 h-0.5 w-5 bg-ink transition-all duration-300 ${menuOpen ? "top-1.5 -rotate-45" : ""}`} />
+              </span>
             </button>
+            <Link
+              href="/shop"
+              aria-label="Search"
+              className="hidden h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-black/5 sm:flex"
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* Center: wordmark */}
+          <Link href="/" aria-label="SatvaStones home" className="flex flex-col items-center leading-none">
+            <span className="font-display text-[26px] font-black tracking-tight text-primary sm:text-3xl">
+              SatvaStones
+            </span>
+            <span className="mt-0.5 text-[8px] font-bold uppercase tracking-[0.42em] text-ink/50">
+              Everyday Jewellery
+            </span>
+          </Link>
+
+          {/* Right: icons */}
+          <div className="flex flex-1 items-center justify-end gap-0.5 sm:gap-1">
+            <Link href="/account" aria-label="Account" className="hidden h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-black/5 sm:flex">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
+              </svg>
+            </Link>
+            <Link href="/wishlist" aria-label="Wishlist" className="hidden h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-black/5 sm:flex">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              </svg>
+            </Link>
+            <BagButton />
+            {isAdmin && (
+              <Link href="/admin" className="ml-1 hidden rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white md:block">
+                Admin
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* ── Nav row (desktop) ── */}
+        <nav aria-label="Primary" className="hidden border-t border-black/5 md:block">
+          <ul className="mx-auto flex w-full max-w-7xl items-center justify-center gap-8 px-8">
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href || (link.href === "/shop" && pathname.startsWith("/products"));
+              return (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className={`relative flex items-center gap-1.5 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] transition-colors hover:text-primary ${
+                      active ? "text-primary" : "text-ink/70"
+                    }`}
+                  >
+                    {link.label.toUpperCase()}
+                    {"hot" in link && link.hot && (
+                      <span className="rounded-sm bg-primary px-1 py-px text-[8px] font-black tracking-normal text-white">
+                        HOT
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* ── Black utility strip ── */}
+        <div className="overflow-hidden bg-ink py-1.5" aria-hidden="true">
+          <div className="marquee-track animate-marquee whitespace-nowrap md:justify-center md:[animation:none] md:flex-wrap">
+            {[...utilityItems, ...utilityItems].map((item, i) => (
+              <span
+                key={i}
+                className="mx-6 inline-flex items-center gap-6 text-[9px] font-bold uppercase tracking-[0.2em] text-white/85 md:mx-4"
+              >
+                {item}
+                <span className="text-primary">✦</span>
+              </span>
+            ))}
           </div>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile drawer */}
       {menuOpen && (
         <>
-          {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-sm md:hidden animate-fade-in"
+            className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm md:hidden animate-fade-in"
             onClick={() => setMenuOpen(false)}
             aria-hidden="true"
           />
-          {/* Panel */}
-          <div
-            id="mobile-menu"
-            ref={menuRef}
-            className="fixed top-0 right-0 bottom-0 z-50 flex w-72 flex-col bg-ivory text-ink md:hidden animate-slide-in-right"
-          >
-            <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
-              <span className="font-display italic text-xl">SatvaStones</span>
+          <div className="fixed bottom-0 left-0 top-0 z-50 flex w-80 flex-col bg-white md:hidden animate-slide-in-right">
+            <div className="flex items-center justify-between border-b border-black/10 px-6 py-5">
+              <span className="font-display text-2xl font-black text-primary">SatvaStones</span>
               <button
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setMenuOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 text-sm"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-black/5"
               >
                 ✕
               </button>
             </div>
-            <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-6 py-8" data-lenis-prevent>
+            <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-4 py-6" data-lenis-prevent>
               <ul className="space-y-1">
-                {NAV_LINKS.map((link, i) => {
-                  const active = pathname === link.href || pathname.startsWith(link.href + "/");
-                  return (
-                    <li
-                      key={link.href}
-                      className="animate-fade-up"
-                      style={{ animationDelay: `${i * 60}ms` }}
+                {[{ href: "/shop", label: "Categories" }, ...NAV_LINKS.slice(1)].map((link, i) => (
+                  <li key={link.href + link.label} className="animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
+                    <Link
+                      href={link.href}
+                      className="block rounded-xl px-4 py-3 text-[15px] font-bold transition-colors hover:bg-blush"
                     >
-                      <Link
-                        href={link.href}
-                        className={`block rounded-xl px-4 py-3 text-lg font-medium transition-colors ${
-                          active
-                            ? "bg-ink text-ivory"
-                            : "hover:bg-ink/5 text-ink"
-                        }`}
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  );
-                })}
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+                {isAdmin && (
+                  <li>
+                    <Link href="/admin" className="block rounded-xl bg-ink px-4 py-3 text-[15px] font-bold text-white">
+                      Admin
+                    </Link>
+                  </li>
+                )}
               </ul>
             </nav>
-            <div className="border-t border-ink/10 px-6 py-5 text-xs text-ink/40">
-              Crafted in Vapi, Gujarat
+            <div className="border-t border-black/10 px-6 py-5 text-xs text-muted">
+              Crafted in Vapi, Gujarat · COD available
             </div>
           </div>
         </>

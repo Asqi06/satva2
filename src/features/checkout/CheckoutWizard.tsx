@@ -177,7 +177,7 @@ export function CheckoutWizard() {
         name: "SatvaStones",
         description: "Jewellery order",
         order_id: payBody.data.razorpayOrderId,
-        theme: { color: "#1a1512" },
+        theme: { color: "ink" },
         handler: (response) => {
           void (async () => {
             try {
@@ -229,15 +229,15 @@ export function CheckoutWizard() {
   };
 
   if (authState === "checking") {
-    return <p className="px-6 py-12 text-sm text-ink/60">Loading checkout…</p>;
+    return <p className="px-6 py-12 text-sm text-warm-gray">Loading checkout…</p>;
   }
 
   if (authState === "guest") {
     return (
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-ink/10 bg-white/60 p-8 text-center">
+      <div className="mx-auto w-full max-w-md rounded-3xl border border-light-gray bg-white/60 p-8 text-center">
         <p className="eyebrow">Almost there</p>
         <h1 className="section-title mt-1 text-3xl">One quick sign-in.</h1>
-        <p className="mt-2 text-sm leading-6 text-ink/70">
+        <p className="mt-2 text-sm leading-6 text-warm-gray">
           Login connects your bag, addresses and orders. Your guest bag merges automatically —
           nothing you picked gets lost.
         </p>
@@ -247,16 +247,16 @@ export function CheckoutWizard() {
         >
           Continue with Google
         </Link>
-        <p className="mt-3 text-xs text-ink/45">Takes 10 seconds · No password needed</p>
+        <p className="mt-3 text-xs text-muted">Takes 10 seconds · No password needed</p>
       </div>
     );
   }
 
   if (lines.length === 0 && step !== "done") {
     return (
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-ink/10 bg-white/60 p-8 text-center">
+      <div className="mx-auto w-full max-w-md rounded-3xl border border-light-gray bg-white/60 p-8 text-center">
         <h1 className="font-display italic text-3xl">Your bag is empty.</h1>
-        <p className="mt-2 text-sm text-ink/55">Add something pretty first — under ₹499 to start.</p>
+        <p className="mt-2 text-sm text-muted">Add something pretty first — under ₹499 to start.</p>
         <Link href="/shop" className="btn-primary mt-6 w-full">
           Back to the shop
         </Link>
@@ -276,7 +276,7 @@ export function CheckoutWizard() {
               aria-current={step === s.id ? "step" : undefined}
               title={s.hint}
               className={`rounded-full px-4 py-1.5 text-sm ${
-                step === s.id ? "bg-ink text-ivory" : "border border-ink/15 text-ink/60"
+                step === s.id ? "bg-ink text-ivory" : "border border-light-gray text-warm-gray"
               }`}
             >
               {i + 1}. {s.label}
@@ -292,17 +292,17 @@ export function CheckoutWizard() {
       )}
 
       {step === "address" && (
-        <section aria-label="Delivery address" className="mt-6 rounded-3xl border border-ink/10 bg-white/60 p-6">
+        <section aria-label="Delivery address" className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-6">
           <h2 className="font-display text-2xl">Where is it going?</h2>
           {addresses.length === 0 ? (
-            <p className="mt-2 text-sm text-ink/70">No addresses yet — add your first one.</p>
+            <p className="mt-2 text-sm text-warm-gray">No addresses yet — add your first one.</p>
           ) : (
             <div role="radiogroup" aria-label="Saved addresses" className="mt-4 space-y-3">
               {addresses.map((a) => (
                 <label
                   key={a.id}
                   className={`block cursor-pointer rounded-2xl border p-4 text-sm ${
-                    a.id === addressId ? "border-ink" : "border-ink/15"
+                    a.id === addressId ? "border-ink" : "border-light-gray"
                   }`}
                 >
                   <span className="flex items-start gap-3">
@@ -311,7 +311,7 @@ export function CheckoutWizard() {
                       name="address"
                       checked={a.id === addressId}
                       onChange={() => setAddressId(a.id)}
-                      className="mt-1 accent-[#b34a2b]"
+                      className="mt-1 accent-clay"
                     />
                     <span>
                       <strong>{a.fullName}</strong> · {a.phone}
@@ -331,7 +331,7 @@ export function CheckoutWizard() {
             type="button"
             disabled={!addressId}
             onClick={() => setStep("delivery")}
-            className="mt-6 rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-40"
+              className="mt-6 rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-40"
           >
             Continue to delivery
           </button>
@@ -339,11 +339,11 @@ export function CheckoutWizard() {
       )}
 
       {step === "delivery" && (
-        <section aria-label="Delivery method" className="mt-6 rounded-3xl border border-ink/10 bg-white/60 p-6">
+        <section aria-label="Delivery method" className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-6">
           <h2 className="font-display text-2xl">How should it travel?</h2>
           <div className="mt-4 rounded-2xl border border-ink bg-ivory p-4 text-sm">
             <p className="font-semibold">Standard delivery · 5–7 days</p>
-            <p className="mt-1 text-ink/70">
+            <p className="mt-1 text-warm-gray">
               {settings
                 ? subtotal - discount >= settings.freeShippingThreshold
                   ? `Free (orders over ${formatINR(settings.freeShippingThreshold)})`
@@ -351,13 +351,13 @@ export function CheckoutWizard() {
                 : "Calculated at payment."}
             </p>
             {selectedAddress && (
-              <p className="mt-2 text-ink/70">
+              <p className="mt-2 text-warm-gray">
                 To {selectedAddress.fullName}, {selectedAddress.city} {selectedAddress.pincode}
               </p>
             )}
           </div>
           <div className="mt-4">
-            <label htmlFor="coupon" className="text-sm text-ink/70">
+            <label htmlFor="coupon" className="text-sm text-warm-gray">
               Coupon code (optional)
             </label>
             <div className="mt-1 flex gap-2">
@@ -367,12 +367,12 @@ export function CheckoutWizard() {
                 onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder="WELCOME10"
                 maxLength={32}
-                className="w-full max-w-xs rounded-full border border-ink/15 bg-ivory px-4 py-2 text-sm uppercase"
+                className="w-full max-w-xs rounded-full border border-light-gray bg-ivory px-4 py-2 text-sm uppercase"
               />
               <button
                 type="button"
                 onClick={() => void applyCoupon()}
-                className="rounded-full border border-ink/20 px-5 py-2 text-sm hover:border-ink"
+                className="rounded-full border border-light-gray px-5 py-2 text-sm hover:border-ink"
               >
                 Apply
               </button>
@@ -384,7 +384,7 @@ export function CheckoutWizard() {
             )}
           </div>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={() => setStep("address")} className="rounded-full border border-ink/20 px-6 py-3 text-sm">
+              <button type="button" onClick={() => setStep("address")} className="rounded-full border border-light-gray px-6 py-3 text-sm">
               ← Back
             </button>
             <button
@@ -399,30 +399,30 @@ export function CheckoutWizard() {
       )}
 
       {step === "payment" && (
-        <section aria-label="Payment" className="mt-6 rounded-3xl border border-ink/10 bg-white/60 p-6">
+        <section aria-label="Payment" className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-6">
           <p className="eyebrow">UPI-first checkout</p>
           <h2 className="section-title mt-1 text-2xl">Almost yours.</h2>
           <dl className="mt-4 space-y-1 text-sm">
             <div className="flex justify-between">
-              <dt className="text-ink/60">Subtotal ({count} item{count === 1 ? "" : "s"}, incl. taxes)</dt>
+              <dt className="text-warm-gray">Subtotal ({count} item{count === 1 ? "" : "s"}, incl. taxes)</dt>
               <dd className="font-mono">{formatINR(subtotal)}</dd>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between text-[#1f4d2e]">
+              <div className="flex justify-between text-mehendi">
                 <dt>Coupon {coupon && `(${coupon})`}</dt>
                 <dd className="font-mono">−{formatINR(discount)}</dd>
               </div>
             )}
             <div className="flex justify-between">
-              <dt className="text-ink/60">Shipping</dt>
+              <dt className="text-warm-gray">Shipping</dt>
               <dd className="font-mono">{shippingPreview === 0 ? "Free ✓" : formatINR(shippingPreview)}</dd>
             </div>
-            <div className="flex justify-between border-t border-ink/10 pt-2 font-semibold">
+            <div className="flex justify-between border-t border-light-gray pt-2 font-semibold">
               <dt>To pay</dt>
               <dd className="font-mono text-lg">{formatINR(subtotal - discount + shippingPreview)}</dd>
             </div>
           </dl>
-          <ul className="mt-3 space-y-1 text-xs leading-5 text-ink/60">
+          <ul className="mt-3 space-y-1 text-xs leading-5 text-warm-gray">
             <li>💳 Pay with <strong>GPay, PhonePe, Paytm UPI</strong>, cards, netbanking & wallets via Razorpay.</li>
             <li>🔒 Final amounts are confirmed by our server when you pay — never from this screen.</li>
             <li>🎁 Gift box + note included free. Online payments only, no COD.</li>
@@ -444,25 +444,25 @@ export function CheckoutWizard() {
       )}
 
       {step === "done" && order && (
-        <section aria-label="Order confirmation" className="mt-6 rounded-3xl border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-8 text-center">
+        <section aria-label="Order confirmation" className="mt-6 rounded-3xl border border-gold/30 bg-gold/10 p-8 text-center">
           <p className="eyebrow">Payment confirmed ✓</p>
           <h2 className="section-title mt-1 text-4xl">Shabaash — it&apos;s yours!</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-ink/65">We&apos;re packing it gift-ready in Vapi as you read this.</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-warm-gray">We&apos;re packing it gift-ready in Vapi as you read this.</p>
           <dl className="mx-auto mt-6 max-w-sm space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-ink/60">Order</dt>
+              <dt className="text-warm-gray">Order</dt>
               <dd className="font-mono">{order.id}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-ink/60">Amount paid</dt>
+              <dt className="text-warm-gray">Amount paid</dt>
               <dd className="font-mono font-semibold">{formatINR(order.total)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-ink/60">Arriving in</dt>
+              <dt className="text-warm-gray">Arriving in</dt>
               <dd>5–7 days, tracked</dd>
             </div>
           </dl>
-          <p className="mt-4 text-sm text-ink/70">A confirmation email is on its way. Track it anytime under My orders.</p>
+          <p className="mt-4 text-sm text-warm-gray">A confirmation email is on its way. Track it anytime under My orders.</p>
           <span className="mt-6 flex flex-wrap justify-center gap-2">
             <Link href={`/account/orders/${order.id}`} className="btn-primary">
               Track my order

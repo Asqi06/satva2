@@ -96,11 +96,11 @@ export function CategoryManager() {
 
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">Organisation</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Organisation</p>
       <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Categories</h1>
 
       {notice && (
-        <p role="status" className="mt-4 border border-[#c8a96e]/30 bg-[#c8a96e]/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
           {notice}
         </p>
       )}
@@ -150,13 +150,13 @@ export function CategoryManager() {
               type="checkbox"
               checked={form.isPublished}
               onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
-              className="h-4 w-4 accent-[#c8a96e]"
+              className="h-4 w-4 accent-gold"
             />
             Published
           </label>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="submit" className="border border-[#c8a96e] bg-[#c8a96e]/10 px-6 py-2 text-sm font-medium text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a]">
+          <button type="submit" className="border border-gold bg-gold/10 px-6 py-2 text-sm font-medium text-gold hover:bg-gold hover:text-ink">
             {editingId ? "Save changes" : "Create category"}
           </button>
           {editingId && (

@@ -23,32 +23,14 @@ export const metadata: Metadata = {
   },
 };
 
-/** Live catalogue — ISR 60s keeps TTFB low via CDN while staying secret-free at build. */
 export const revalidate = 60;
 export const dynamic = "force-static";
 
-const MARQUEE_ITEMS = [
-  "Free shipping over ₹399",
-  "Anti-tarnish finish",
-  "Crafted in Vapi, Gujarat",
-  "Verified reviews",
-  "UPI • Cards • Netbanking",
-  "Korean & Western styles",
-  "Premium-looking, honestly priced",
-];
-
-const TRUST_ITEMS = [
-  { title: "Free shipping over ₹399", body: "Flat ₹49 below · 5–7 days, tracked" },
-  { title: "Pay your way", body: "UPI, cards, netbanking & wallets" },
-  { title: "7-day easy cover", body: "Defects & transit damage replaced" },
-  { title: "Gift-ready always", body: "Pouch + box + note, no extra charge" },
-];
-
-const OCCASIONS = [
-  { title: "Wedding Season", body: "Statement pieces for baraats & pheras", href: "/shop?sort=best-selling", tag: "Shaadi-ready" },
-  { title: "Everyday Essentials", body: "Light, water-friendly daily wear", href: "/shop", tag: "Daily wear" },
-  { title: "Gifting Edit", body: "Shagun-proof picks under every budget", href: "/shop?sort=featured", tag: "Gift-ready" },
-  { title: "Under ₹499", body: "Pocket-friendly luxe, zero guilt", href: "/shop?maxPrice=499", tag: "Steals" },
+const TRENDS = [
+  { label: "Office Girl", href: "/shop?sort=best-selling", bg: "bg-stone-700" },
+  { label: "Dreamy Girl", href: "/shop?sort=newest", bg: "bg-rose-300" },
+  { label: "Island", href: "/shop", bg: "bg-amber-600" },
+  { label: "Party Night", href: "/shop?maxPrice=999", bg: "bg-zinc-500" },
 ];
 
 export default async function Home() {
@@ -86,336 +68,227 @@ export default async function Home() {
     },
   };
 
+  const allProducts = [...bestsellers.products, ...newest.products];
+  const imgForCategory = (name: string) => {
+    const found = allProducts.find((p) => p.category.name.toLowerCase() === name.toLowerCase());
+    return found?.images[0] ?? allProducts[0]?.images[0];
+  };
+  const trendImgs = [0, 1, 2, 3].map((i) => allProducts[i]?.images[0]);
+  // banners[0] = main hero image, banners[1] = sale strip image (Admin → Banners, ordered by Sort order).
+  const promo = banners[1];
+
   return (
-    <div className="flex flex-1 flex-col bg-ivory font-sans text-ink">
+    <div className="flex flex-1 flex-col bg-white font-sans text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
 
-      {/* ───────── HERO ───────── */}
       <main>
-        {hero ? (
-          /* Banner hero — two-column editorial split */
-          <div className="relative overflow-hidden">
-            <Link
-              href={hero.link}
-              className="group grid min-h-[85vh] lg:grid-cols-2"
-            >
-              {/* Text side */}
-              <div className="flex flex-col items-start justify-end gap-6 bg-ivory px-8 py-16 sm:px-14 sm:py-20 lg:justify-center">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c8a96e] animate-fade-up">
-                  Featured
-                </span>
-                <h1 className="max-w-xl font-display italic text-5xl leading-[1.04] tracking-tight sm:text-7xl lg:text-8xl animate-fade-up delay-100">
-                  {hero.title}
-                </h1>
-                {hero.subtitle && (
-                  <p className="max-w-sm text-base leading-7 text-ink/60 animate-fade-up delay-200">
-                    {hero.subtitle}
-                  </p>
-                )}
-                <span className="animate-fade-up delay-300 group inline-flex items-center gap-3 border border-ink/20 px-7 py-3.5 text-sm font-medium tracking-wide transition-all hover:border-[#c8a96e] hover:text-[#c8a96e]">
-                  Shop the story
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1" aria-hidden="true">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </span>
-                <p className="max-w-sm text-xs leading-5 text-ink/45 animate-fade-up delay-300">
-                  Free shipping over ₹399 · UPI, cards & netbanking · 7-day easy cover
-                </p>
-              </div>
-              {/* Image side */}
-              <div className="relative min-h-[50vh] overflow-hidden bg-[#e8e0d5] lg:min-h-full">
+        {/* ───────── HERO — full banner image, edited in Admin → Banners ───────── */}
+        <section aria-label="Featured collection">
+          {hero ? (
+            <Link href={hero.link} className="group relative block overflow-hidden bg-blush">
+              <span className="relative block aspect-[4/5] w-full sm:aspect-[16/8] lg:aspect-[21/9]">
                 <Image
-                  src={cloudinaryResize(hero.image.secureUrl, 1200)}
+                  src={cloudinaryResize(hero.image.secureUrl, 1600)}
                   alt={hero.image.alt}
                   fill
                   priority
                   fetchPriority="high"
-                  sizes="(min-width: 1024px) 55vw, 100vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                  sizes="100vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
                 />
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]/20" />
-              </div>
+              </span>
+              <span className="sr-only">{hero.title}{hero.subtitle ? ` — ${hero.subtitle}` : ""}</span>
             </Link>
-          </div>
-        ) : (
-          /* Typographic fallback hero — same 85vh as banner to avoid CLS */
-          <div className="relative flex min-h-[85vh] flex-col items-start justify-end overflow-hidden bg-ivory px-8 pb-20 sm:px-14 sm:pb-28">
-            {/* Background decorative line */}
-            <div className="absolute right-0 top-0 h-full w-px bg-ink/[0.06]" />
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-ink/[0.06]" />
-
-            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c8a96e] animate-fade-up">
-              Everyday jewellery, made to gift
-            </p>
-            <h1 className="mt-4 max-w-4xl font-display italic text-5xl leading-[1.04] tracking-tight sm:text-8xl lg:text-[7rem] animate-fade-up delay-100">
-              Pretty things for<br />every-day you.
-            </h1>
-            <p className="mt-6 max-w-md text-base leading-7 text-ink/55 animate-fade-up delay-200">
-              Rings, bracelets, necklaces and oxidised pieces —<br />
-              premium-looking, honestly priced.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4 animate-fade-up delay-300">
-              <Link
-                href="/shop"
-                className="btn-primary group"
-              >
-                Browse the collection
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1" aria-hidden="true">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </Link>
-              <Link href="/about" className="text-sm text-ink/60 underline underline-offset-4 hover:text-ink">
-                Our story
-              </Link>
-            </div>
-            <p className="mt-4 text-xs leading-5 text-ink/45 animate-fade-up delay-300">
-              Prices in ₹, taxes included · Ships in 2–4 days · Gift-ready packing
-            </p>
-          </div>
-        )}
-      </main>
-
-      {/* ───────── MARQUEE STRIP ───────── */}
-      <div
-        className="overflow-hidden border-y border-ink/[0.07] bg-[#0a0a0a] py-3"
-        aria-hidden="true"
-      >
-        <div className="marquee-track animate-marquee whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c8a96e]">
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} className="inline-block px-10">
-              {item}
-              <span className="mx-10 opacity-40">✦</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* ───────── TRUST STRIP ───────── */}
-      <section aria-label="Why shop with SatvaStones" className="mx-auto w-full max-w-7xl px-6 pt-14 sm:px-10">
-        <div className="trust-strip">
-          {TRUST_ITEMS.map((t) => (
-            <div key={t.title} className="trust-cell">
-              <strong>{t.title}</strong>
-              <span>{t.body}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ───────── SHOP BY OCCASION ───────── */}
-      <section aria-label="Shop by occasion" className="mx-auto w-full max-w-7xl px-6 pt-20 sm:px-10">
-        <p className="eyebrow">Occasions</p>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="section-title mt-1 text-4xl tracking-tight sm:text-6xl">
-            Dress for the moment
-          </h2>
-          <Link href="/shop" className="text-sm font-medium text-ink/50 underline underline-offset-4 hover:text-ink">
-            View everything →
-          </Link>
-        </div>
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {OCCASIONS.map((o, i) => (
-            <li key={o.title} className="animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
-              <Link href={o.href} className="card-lift group block bg-[#0a0a0a] p-7 text-ivory">
-                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#c8a96e]">{o.tag}</span>
-                <span className="mt-2 block font-display italic text-3xl leading-tight">{o.title}</span>
-                <span className="mt-2 block text-sm leading-6 text-ivory/55">{o.body}</span>
-                <span aria-hidden="true" className="mt-4 block text-[#c8a96e] transition-transform group-hover:translate-x-1">→</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* ───────── DEPARTMENTS ───────── */}
-      {categories.length > 0 && (
-        <section aria-label="Shop by department" className="mx-auto w-full max-w-7xl px-6 pt-20 sm:px-10">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-                Explore
-              </p>
-              <h2 className="mt-1 font-display italic text-4xl tracking-tight sm:text-6xl">
-                Departments
-              </h2>
-            </div>
-            <Link
-              href="/shop"
-              className="hidden text-sm font-medium text-ink/50 underline underline-offset-4 hover:text-ink sm:block"
-            >
-              View everything →
-            </Link>
-          </div>
-          <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {categories.map((c, i) => (
-              <li key={c.id} className="animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
-                <Link
-                  href={`/shop?category=${c.slug}`}
-                  className="group block border border-ink/[0.08] bg-white/50 p-6 transition-all hover:border-[#c8a96e] hover:bg-white"
-                >
-                  <span className="font-display italic text-2xl leading-tight group-hover:text-[#c8a96e]">
-                    {c.name}
-                  </span>
-                  <span className="mt-2 block text-xs text-ink/40">
-                    {c.productCount ?? 0} piece{(c.productCount ?? 0) === 1 ? "" : "s"}
-                  </span>
+          ) : (
+            <div className="bg-blush">
+              <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-14 text-center sm:px-8">
+                <p className="eyebrow">Everyday jewellery, made to gift</p>
+                <p className="section-title mt-2 text-3xl sm:text-5xl">
+                  Pretty things for every-day you.
+                </p>
+                <p className="lede mt-3 max-w-md text-sm">
+                  Rings, bracelets, necklaces and oxidised pieces — premium-looking,
+                  honestly priced. Add a hero image anytime in Admin → Banners.
+                </p>
+                <Link href="/shop" className="btn-primary mt-6">
+                  Browse the collection →
                 </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 block sm:hidden">
-            <Link href="/shop" className="text-sm text-ink/50 underline underline-offset-4">
-              View everything →
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* ───────── NEW ARRIVALS ───────── */}
-      {newest.products.length > 0 && (
-        <section aria-label="New arrivals" className="mx-auto w-full max-w-7xl px-6 pt-20 sm:px-10">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-                Just arrived
-              </p>
-              <h2 className="mt-1 font-display italic text-4xl tracking-tight sm:text-6xl">
-                New pieces
-              </h2>
-            </div>
-            <Link href="/shop?sort=newest" className="hidden text-sm font-medium text-ink/50 underline underline-offset-4 hover:text-ink sm:block">
-              See all →
-            </Link>
-          </div>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-            {newest.products.map((p, i) => (
-              <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
-                <ProductCard product={p} badge="new" />
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ───────── EDITORIAL BREAK — full-bleed quote ───────── */}
-      <div className="mx-auto w-full max-w-7xl px-6 pt-24 sm:px-10">
-        <div className="border-y border-ink/[0.08] py-14 text-center">
-          <p className="font-display italic text-3xl leading-[1.4] text-ink/70 sm:text-4xl lg:text-5xl">
-            &ldquo;Gold-coloured, not solid gold — and proud of it.&rdquo;
-          </p>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">
-            SatvaStones, Vapi
-          </p>
-        </div>
-      </div>
-
-      {/* ───────── BEST SELLERS ───────── */}
-      {bestsellers.products.length > 0 && (
-        <section aria-label="Best sellers" className="mx-auto w-full max-w-7xl px-6 pt-20 sm:px-10">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-                Community favourites
-              </p>
-              <h2 className="mt-1 font-display italic text-4xl tracking-tight sm:text-6xl">
-                Most loved
-              </h2>
             </div>
-            <Link href="/shop?sort=best-selling" className="hidden text-sm font-medium text-ink/50 underline underline-offset-4 hover:text-ink sm:block">
-              Shop all →
-            </Link>
-          </div>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-            {bestsellers.products.map((p, i) => (
-              <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
-                <ProductCard product={p} badge="bestseller" />
-              </div>
-            ))}
-          </div>
+          )}
         </section>
-      )}
 
-      {/* ───────── REVIEW WALL ───────── */}
-      {wall.length > 0 && (
-        <section aria-label="Customer reviews" className="mx-auto w-full max-w-7xl px-6 pt-24 sm:px-10">
-          <div className="text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-              What they say
-            </p>
-            <h2 className="mt-2 font-display italic text-4xl tracking-tight sm:text-6xl">
-              Worn & loved
-            </h2>
-          </div>
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {wall.map((r, i) => (
-              <li
-                key={r.id}
-                className="border border-ink/[0.08] bg-white/60 p-7 animate-fade-up"
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                {/* Stars */}
-                <p aria-label={`${r.rating} out of 5 stars`} className="text-[#c8a96e]">
-                  {"★".repeat(r.rating)}
-                  <span className="text-ink/15">{"★".repeat(5 - r.rating)}</span>
-                </p>
-                <blockquote className="mt-3 text-base leading-7 text-ink/80 italic font-display">
-                  &ldquo;{r.comment}&rdquo;
-                </blockquote>
-                <p className="mt-4 text-xs text-ink/50">
-                  {r.authorName} ·{" "}
-                  <Link href={`/products/${r.productSlug}`} className="underline underline-offset-4 hover:text-ink">
-                    {r.productName}
+        {/* ───────── CATEGORY STRIP ───────── */}
+        {categories.length > 0 && (
+          <section aria-label="Shop by category" className="bg-blush">
+            <ul className="no-scrollbar mx-auto flex w-full max-w-7xl gap-4 overflow-x-auto px-4 py-6 sm:justify-center sm:gap-8 sm:px-8">
+              {categories.slice(0, 6).map((c) => {
+                const img = imgForCategory(c.name);
+                return (
+                  <li key={c.id} className="w-24 shrink-0 sm:w-32">
+                    <Link href={`/shop?category=${c.slug}`} className="group block text-center">
+                      <span className="relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-sm transition-transform group-hover:scale-105">
+                        {img ? (
+                          <Image
+                            src={cloudinaryResize(img.secureUrl, 400)}
+                            alt={img.alt || c.name}
+                            fill
+                            sizes="160px"
+                            loading="lazy"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-full items-center justify-center bg-white font-display text-3xl font-black text-primary">
+                            {c.name.charAt(0)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-2 block text-[11px] font-semibold text-ink sm:text-xs">
+                        {c.name}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {/* ───────── SHOP BY TREND ───────── */}
+        <section aria-label="Shop by trend" className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
+          <h2 className="section-title text-center text-xl sm:text-2xl">Shop By Trend</h2>
+          <ul className="no-scrollbar mt-5 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible">
+            {TRENDS.map((t, i) => {
+              const img = trendImgs[i];
+              return (
+                <li key={t.label} className="w-40 shrink-0 sm:w-auto">
+                  <Link
+                    href={t.href}
+                    className="group relative block aspect-[3/4.4] overflow-hidden rounded-xl bg-cream"
+                  >
+                    {img ? (
+                      <Image
+                        src={cloudinaryResize(img.secureUrl, 500)}
+                        alt={t.label}
+                        fill
+                        sizes="300px"
+                        loading="lazy"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <span className={`absolute inset-0 ${t.bg}`} />
+                    )}
+                    <span className="absolute inset-y-0 left-0 flex w-9 items-center justify-center bg-black/45 py-3">
+                      <span
+                        className="font-sticker text-sm uppercase tracking-wider text-white"
+                        style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                      >
+                        {t.label}
+                      </span>
+                    </span>
+                    <span className="absolute bottom-2 right-2 rounded-full bg-white/95 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ink">
+                      Shop →
+                    </span>
                   </Link>
-                </p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </section>
-      )}
 
-      {/* ───────── POCKET-FRIENDLY + REASSURANCE ───────── */}
-      <section aria-label="Shop by budget" className="mx-auto w-full max-w-7xl px-6 pt-24 sm:px-10">
-        <p className="eyebrow">Budgets, respected</p>
-        <h2 className="section-title mt-1 text-4xl tracking-tight sm:text-6xl">
-          Luxe looks, honest prices
-        </h2>
-        <p className="lede mt-3 max-w-xl text-sm">
-          Every price is in ₹, inclusive of taxes. No fake 70%-off games — the price you see
-          is the price we thought about.
-        </p>
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          <Link href="/shop?maxPrice=499" className="card-lift group bg-white/50 p-6 sm:p-7">
-            <span className="font-display italic text-3xl sm:text-4xl">Under ₹499</span>
-            <span className="mt-2 block text-sm text-ink/55">Daily steals & first-job gifts</span>
-            <span aria-hidden="true" className="mt-4 block text-sm text-ink/40 group-hover:text-[#c8a96e]">Shop →</span>
-          </Link>
-          <Link href="/shop?maxPrice=999" className="card-lift group bg-white/50 p-6 sm:p-7">
-            <span className="font-display italic text-3xl sm:text-4xl">Under ₹999</span>
-            <span className="mt-2 block text-sm text-ink/55">Festive-ready without the splurge</span>
-            <span aria-hidden="true" className="mt-4 block text-sm text-ink/40 group-hover:text-[#c8a96e]">Shop →</span>
-          </Link>
-          <Link href="/shop?sort=best-selling" className="card-lift group bg-[#0a0a0a] p-6 text-ivory sm:p-7">
-            <span className="font-display italic text-3xl sm:text-4xl">Most loved</span>
-            <span className="mt-2 block text-sm text-ivory/55">What India is wearing right now</span>
-            <span aria-hidden="true" className="mt-4 block text-sm text-[#c8a96e]">Shop →</span>
-          </Link>
-        </div>
-      </section>
+        {/* ───────── INSTAGRAM VIRAL ───────── */}
+        {bestsellers.products.length > 0 && (
+          <section aria-label="Instagram viral products" className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
+            <h2 className="section-title text-center text-xl sm:text-2xl">Instagram Viral Products</h2>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              {bestsellers.products.slice(0, 8).map((p, i) => (
+                <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
+                  <ProductCard product={p} badge="bestseller" eager={i < 2} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <Link href="/shop?sort=best-selling" className="btn-ghost">
+                View all viral →
+              </Link>
+            </div>
+          </section>
+        )}
 
-      {/* ───────── NEWSLETTER ───────── */}
-      <section aria-label="Newsletter" className="mt-24 bg-[#0a0a0a] py-20 text-ivory">
-        <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+        {/* ───────── SALE STRIP — 2nd banner image, edited in Admin → Banners ───────── */}
+        {promo && (
+          <section aria-label={promo.title} className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
+            <Link href={promo.link} className="group relative block overflow-hidden rounded-2xl">
+              <span className="relative block aspect-[4/3] w-full sm:aspect-[21/8]">
+                <Image
+                  src={cloudinaryResize(promo.image.secureUrl, 1400)}
+                  alt={promo.image.alt}
+                  fill
+                  sizes="100vw"
+                  loading="lazy"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
+                />
+              </span>
+              <span className="sr-only">{promo.title}{promo.subtitle ? ` — ${promo.subtitle}` : ""}</span>
+            </Link>
+          </section>
+        )}
+
+        {/* ───────── NEW ARRIVALS ───────── */}
+        {newest.products.length > 0 && (
+          <section aria-label="New arrivals" className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
+            <h2 className="section-title text-center text-xl sm:text-2xl">New Arrivals</h2>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              {newest.products.slice(0, 8).map((p, i) => (
+                <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
+                  <ProductCard product={p} badge="new" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <Link href="/shop?sort=newest" className="btn-ghost">
+                View all new →
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* ───────── REVIEWS ───────── */}
+        {wall.length > 0 && (
+          <section aria-label="Customer reviews" className="mx-auto w-full max-w-7xl px-4 pt-12 sm:px-8">
+            <h2 className="section-title text-center text-xl sm:text-2xl">Worn & Loved</h2>
+            <ul className="no-scrollbar mt-5 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible">
+              {wall.slice(0, 6).map((r) => (
+                <li key={r.id} className="w-72 shrink-0 rounded-2xl border border-black/[0.06] bg-cream p-5 sm:w-auto">
+                  <p aria-label={`${r.rating} out of 5 stars`} className="text-sm font-bold text-amber-500">
+                    {"★".repeat(r.rating)}
+                    <span className="text-black/15">{"★".repeat(5 - r.rating)}</span>
+                  </p>
+                  <blockquote className="clamp-2 mt-2 text-sm leading-6 text-ink/80">
+                    &ldquo;{r.comment}&rdquo;
+                  </blockquote>
+                  <p className="mt-3 text-xs text-muted">
+                    {r.authorName} ·{" "}
+                    <Link href={`/products/${r.productSlug}`} className="font-semibold text-primary hover:underline">
+                      {r.productName}
+                    </Link>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* ───────── NEWSLETTER ───────── */}
+        <section aria-label="Newsletter" className="mt-12 bg-blush py-12">
+          <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 sm:px-8 lg:grid-cols-2 lg:items-center">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#c8a96e]">
-                The Sunday note
-              </p>
-              <h2 className="mt-3 font-display italic text-4xl leading-[1.1] tracking-tight sm:text-6xl">
-                First dibs,<br />little notes.
+              <p className="eyebrow">The Sunday note</p>
+              <h2 className="section-title mt-2 text-3xl sm:text-4xl">
+                First dibs, little notes.
               </h2>
-              <p className="mt-4 max-w-sm text-sm leading-7 text-ivory/50">
+              <p className="lede mt-3 max-w-sm text-sm">
                 Fresh drops and quiet offers, once a week. Never noise.
               </p>
             </div>
@@ -423,8 +296,8 @@ export default async function Home() {
               <NewsletterForm />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   );
 }

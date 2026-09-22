@@ -47,7 +47,7 @@ export function CartDrawer() {
         aria-label="Close bag"
         tabIndex={drawerOpen ? 0 : -1}
         onClick={() => setDrawerOpen(false)}
-        className={`absolute inset-0 bg-[#0a0a0a]/50 backdrop-blur-sm transition-opacity duration-300 ${drawerOpen ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 bg-ink/50 backdrop-blur-sm transition-opacity duration-300 ${drawerOpen ? "opacity-100" : "opacity-0"}`}
       />
 
       {/* Panel */}
@@ -55,7 +55,7 @@ export function CartDrawer() {
         className={`absolute right-0 top-0 flex h-full w-full max-w-[420px] flex-col bg-ivory text-ink shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-ink/[0.08] bg-[#0a0a0a] px-6 py-4 text-ivory">
+        <div className="flex items-center justify-between border-b border-light-gray bg-ink px-6 py-4 text-ivory">
           <h2 className="font-display italic text-2xl">
             Your bag{" "}
             {count > 0 && (
@@ -75,7 +75,7 @@ export function CartDrawer() {
 
         {/* Stock / adjustment notice */}
         {notice && (
-          <p role="status" className="border-b border-[#c8a96e]/30 bg-[#c8a96e]/10 px-6 py-3 text-sm text-ink">
+          <p role="status" className="border-b border-gold/30 bg-gold/10 px-6 py-3 text-sm text-ink">
             {notice}
           </p>
         )}
@@ -83,17 +83,17 @@ export function CartDrawer() {
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-5" data-lenis-prevent>
           {loading ? (
-            <p className="text-sm text-ink/50">Loading your bag…</p>
+            <p className="text-sm text-muted">Loading your bag…</p>
           ) : lines.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
               <p className="font-display italic text-3xl">Empty.</p>
-              <p className="mt-2 text-sm text-ink/50">
+              <p className="mt-2 text-sm text-muted">
                 Pretty things await in the shop.
               </p>
               <Link
                 href="/shop"
                 onClick={() => setDrawerOpen(false)}
-                className="mt-6 inline-flex items-center gap-2 bg-[#0a0a0a] px-7 py-3 text-sm font-medium text-ivory transition-colors hover:bg-[#c8a96e] hover:text-[#0a0a0a]"
+                className="mt-6 inline-flex items-center gap-2 bg-ink px-7 py-3 text-sm font-medium text-ivory transition-colors hover:bg-gold hover:text-ink"
               >
                 Browse the shop
                 <span aria-hidden="true">→</span>
@@ -104,7 +104,7 @@ export function CartDrawer() {
               {lines.map((line) => (
                 <li
                   key={line.key}
-                  className="flex gap-4 border border-ink/[0.07] bg-white/60 p-3"
+                  className="flex gap-4 border border-light-gray bg-white/60 p-3"
                 >
                   {/* Thumbnail */}
                   <Link
@@ -113,7 +113,7 @@ export function CartDrawer() {
                     tabIndex={-1}
                     aria-hidden="true"
                   >
-                    <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-[#f0ebe3]">
+                    <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-cream">
                       {line.image ? (
                         <Image
                           src={cloudinaryResize(line.image.secureUrl, 200)}
@@ -137,12 +137,12 @@ export function CartDrawer() {
                     <Link
                       href={`/products/${line.slug}`}
                       onClick={() => setDrawerOpen(false)}
-                      className="truncate text-sm font-medium hover:text-[#c8a96e]"
+                      className="truncate text-sm font-medium hover:text-gold"
                     >
                       {line.name}
                     </Link>
                     {line.variantSku && (
-                      <p className="text-xs text-ink/40">{line.variantSku}</p>
+                      <p className="text-xs text-muted">{line.variantSku}</p>
                     )}
                     <p className="mt-0.5 font-mono text-sm font-semibold">
                       {formatINR(line.price)}
@@ -152,19 +152,19 @@ export function CartDrawer() {
                       <p className="text-xs text-red-700">Unavailable — remove to continue</p>
                     )}
                     {line.adjusted && (
-                      <p className="text-xs text-[#c8a96e]">Adjusted to available stock</p>
+                      <p className="text-xs text-gold">Adjusted to available stock</p>
                     )}
 
                     {/* Qty stepper + remove */}
                     <div className="mt-2 flex items-center gap-3">
                       <label>
                         <span className="sr-only">Quantity for {line.name}</span>
-                        <span className="flex items-center border border-ink/[0.1]">
+                        <span className="flex items-center border border-light-gray">
                           <button
                             type="button"
                             aria-label="Decrease quantity"
                             onClick={() => void setQty(line.key, line.qty - 1)}
-                            className="px-2.5 py-1 text-sm text-ink/50 hover:text-ink"
+                            className="px-2.5 py-1 text-sm text-muted hover:text-ink"
                           >
                             −
                           </button>
@@ -175,7 +175,7 @@ export function CartDrawer() {
                             type="button"
                             aria-label="Increase quantity"
                             onClick={() => void setQty(line.key, line.qty + 1)}
-                            className="px-2.5 py-1 text-sm text-ink/50 hover:text-ink"
+                            className="px-2.5 py-1 text-sm text-muted hover:text-ink"
                           >
                             +
                           </button>
@@ -184,7 +184,7 @@ export function CartDrawer() {
                       <button
                         type="button"
                         onClick={() => void remove(line.key)}
-                        className="text-xs text-ink/40 underline underline-offset-4 hover:text-ink"
+                        className="text-xs text-muted underline underline-offset-4 hover:text-ink"
                       >
                         Remove
                       </button>
@@ -198,18 +198,18 @@ export function CartDrawer() {
 
         {/* Footer CTA */}
         {lines.length > 0 && (
-          <div className="border-t border-ink/[0.08] px-6 py-5">
+          <div className="border-t border-light-gray px-6 py-5">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-ink/50">Subtotal (incl. taxes)</span>
+              <span className="text-sm text-muted">Subtotal (incl. taxes)</span>
               <span className="font-mono text-2xl font-semibold">{formatINR(subtotal)}</span>
             </div>
-            <p className="mt-1 text-xs text-ink/35">Shipping at checkout · Free over ₹399 · 🎁 gift box free</p>
+            <p className="mt-1 text-xs text-muted">Shipping at checkout · Free over ₹899 · 🎁 free gift</p>
             <Link
               href="/cart"
               onClick={() => setDrawerOpen(false)}
-              className="mt-4 block border border-[#0a0a0a] bg-[#0a0a0a] px-6 py-4 text-center text-sm font-semibold uppercase tracking-[0.15em] text-ivory transition-colors hover:bg-[#c8a96e] hover:border-[#c8a96e] hover:text-[#0a0a0a]"
+              className="btn-primary mt-4 block text-center"
             >
-              Review bag
+              Review bag →
             </Link>
           </div>
         )}

@@ -70,7 +70,7 @@ export function AdminOrderActions({
             type="button"
             disabled={busy}
             onClick={() => void advance(next)}
-            className="border border-[#c8a96e] bg-[#c8a96e]/10 px-4 py-2 text-[#c8a96e] hover:bg-[#c8a96e] hover:text-[#0a0a0a] disabled:opacity-50"
+            className="border border-gold bg-gold/10 px-4 py-2 text-gold hover:bg-gold hover:text-ink disabled:opacity-50"
           >
             → {(next ?? "").replaceAll("_", " ")}
           </button>

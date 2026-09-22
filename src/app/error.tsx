@@ -10,7 +10,7 @@ export default function GlobalError({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ivory px-6 text-center text-ink">
         <h1 className="font-display text-4xl">Something went wrong</h1>
-        <p className="max-w-md text-ink/70">
+        <p className="max-w-md text-warm-gray">
           {error.digest
             ? `Reference ${error.digest}. Please try again.`
             : "Please try again. If it keeps happening, contact support."}

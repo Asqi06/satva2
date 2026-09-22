@@ -16,7 +16,8 @@ const SECTIONS = [
   { href: "/admin/orders", label: "Orders", body: "Fulfil, track, cancel and refund customer orders." },
   { href: "/admin/reviews", label: "Reviews", body: "Moderate what shoppers say." },
   { href: "/admin/coupons", label: "Coupons", body: "Create codes, caps and first-order treats." },
-  { href: "/admin/banners", label: "Banners", body: "Dress the homepage hero." },
+  { href: "/admin/banners", label: "Banners", body: "Hero image + sale strip on the homepage." },
+  { href: "/admin/settings", label: "Settings", body: "Announcement strip, shipping threshold and fees." },
 ] as const;
 
 export default async function AdminHome() {
@@ -37,7 +38,7 @@ export default async function AdminHome() {
     <div>
       {/* Header */}
       <div className="mb-8 border-b border-ivory/[0.06] pb-6">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c8a96e]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">
           Back office · Namaste, admin
         </p>
         <h1 className="mt-1 font-display italic text-4xl text-ivory sm:text-5xl">
@@ -62,7 +63,7 @@ export default async function AdminHome() {
               </p>
               <p
                 className={`mt-1.5 font-mono text-2xl font-semibold ${
-                  kpi.accent ? "text-[#c8a96e]" : "text-ivory"
+                  kpi.accent ? "text-gold" : "text-ivory"
                 }`}
               >
                 {kpi.value}
@@ -90,7 +91,7 @@ export default async function AdminHome() {
                   <span
                     aria-hidden="true"
                     style={{ width: `${Math.max(4, Math.round((d.sales / maxDay) * 100))}%` }}
-                    className="h-2.5 bg-[#c8a96e]/60 transition-all"
+                    className="h-2.5 bg-gold/60 transition-all"
                   />
                   <span className="whitespace-nowrap text-ivory/50">
                     {formatINR(d.sales)} · {d.orders} order{d.orders === 1 ? "" : "s"}
@@ -130,7 +131,7 @@ export default async function AdminHome() {
           {/* Low stock */}
           {stats.lowStock.length > 0 && (
             <div className="mt-5 border-t border-ivory/[0.06] pt-4">
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c8a96e]">
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold">
                 Low stock
               </h3>
               <ul className="mt-2 space-y-1.5">
@@ -138,7 +139,7 @@ export default async function AdminHome() {
                   <li key={p.id} className="flex justify-between gap-3 text-xs">
                     <span className="font-mono text-ivory/40">{p.sku}</span>
                     <span
-                      className={`font-semibold ${p.stock <= 0 ? "text-red-400" : "text-[#c8a96e]"}`}
+                      className={`font-semibold ${p.stock <= 0 ? "text-red-400" : "text-gold"}`}
                     >
                       {p.stock} left
                     </span>
@@ -154,11 +155,11 @@ export default async function AdminHome() {
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {SECTIONS.map((s) => (
           <Link key={s.href} href={s.href} className="admin-card group">
-            <h2 className="font-display italic text-xl text-ivory group-hover:text-[#c8a96e]">
+            <h2 className="font-display italic text-xl text-ivory group-hover:text-gold">
               {s.label}
             </h2>
             <p className="mt-1 text-sm text-ivory/40">{s.body}</p>
-            <span aria-hidden="true" className="mt-3 block text-[#c8a96e]/40 group-hover:text-[#c8a96e]">
+            <span aria-hidden="true" className="mt-3 block text-gold/40 group-hover:text-gold">
               →
             </span>
           </Link>

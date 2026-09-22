@@ -17,19 +17,19 @@ const TONE_LIGHT: Record<string, string> = {
 };
 
 const TONE_DARK: Record<string, string> = {
-  PENDING: "bg-[#d9a441]/20 text-[#d9a441]",
-  CONFIRMED: "bg-[#c8a96e]/15 text-[#c8a96e]",
-  PROCESSING: "bg-[#c8a96e]/15 text-[#c8a96e]",
-  PACKED: "bg-[#c8a96e]/15 text-[#c8a96e]",
-  SHIPPED: "bg-[#c8a96e]/15 text-[#c8a96e]",
-  OUT_FOR_DELIVERY: "bg-[#c8a96e]/15 text-[#c8a96e]",
+  PENDING: "bg-marigold/20 text-marigold",
+  CONFIRMED: "bg-gold/15 text-gold",
+  PROCESSING: "bg-gold/15 text-gold",
+  PACKED: "bg-gold/15 text-gold",
+  SHIPPED: "bg-gold/15 text-gold",
+  OUT_FOR_DELIVERY: "bg-gold/15 text-gold",
   DELIVERED: "bg-emerald-400/15 text-emerald-400",
   CANCELLED: "bg-red-400/15 text-red-400",
   RETURNED: "bg-red-400/15 text-red-400",
   REFUNDED: "bg-red-400/15 text-red-400",
   PAID: "bg-emerald-400/15 text-emerald-400",
   FAILED: "bg-red-400/15 text-red-400",
-  AUTHORIZED: "bg-[#d9a441]/20 text-[#d9a441]",
+  AUTHORIZED: "bg-marigold/20 text-marigold",
 };
 
 export function StatusPill({ status, dark = false }: { status: string | null | undefined; dark?: boolean }) {
@@ -61,7 +61,7 @@ export function OrderTimeline({
           <li key={`${status}-${at}-${i}`} className="relative">
             <span aria-hidden="true" className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-clay" />
             <p className={`text-sm font-semibold ${dark ? "text-ivory" : ""}`}>{status.replaceAll("_", " ")}</p>
-            <p className={`text-xs ${dark ? "text-ivory/60" : "text-ink/60"}`}>
+            <p className={`text-xs ${dark ? "text-ivory/60" : "text-warm-gray"}`}>
               {at ? new Date(at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—"}
               {entry?.note ? ` · ${entry.note}` : ""}
             </p>
