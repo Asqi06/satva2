@@ -133,13 +133,24 @@ export async function restockSold(lines: ReserveLine[], orderId: Types.ObjectId,
  * Sweep expired PENDING reservations. Called lazily at order creation
  * (a dedicated cron wires to this in Phase 10). Returns expired count.
  */
+/**
+ * Bounded batch: each checkout drains the oldest expired holds without
+ * risking serverless timeouts on a large backlog. Projection keeps the
+ * scan lean; poison docs are cancelled defensively (see below).
+ */
+const SWEEP_BATCH = 25;
+
 export async function releaseExpiredReservations(): Promise<number> {
   await connectDb();
   const expired = await Order.find({
     orderStatus: "PENDING",
     paymentStatus: "PENDING",
     reservationExpiresAt: { $lt: new Date() },
-  }).lean();
+  })
+    .sort({ reservationExpiresAt: 1 })
+    .limit(SWEEP_BATCH)
+    .select("_id items couponCode")
+    .lean();
   let count = 0;
   for (const order of expired) {
     // One malformed legacy document must never 500 every new checkout:
