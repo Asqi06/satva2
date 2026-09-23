@@ -71,7 +71,7 @@ export default async function Home() {
   const allProducts = [...bestsellers.products, ...newest.products];
   const imgForCategory = (name: string) => {
     const found = allProducts.find((p) => p.category.name.toLowerCase() === name.toLowerCase());
-    return found?.images[0] ?? allProducts[0]?.images[0];
+    return found?.images[0];
   };
   const trendImgs = [0, 1, 2, 3].map((i) => allProducts[i]?.images[0]);
   // banners[0] = main hero image, banners[1] = sale strip image (Admin → Banners, ordered by Sort order).
@@ -87,7 +87,7 @@ export default async function Home() {
         <section aria-label="Featured collection">
           {hero ? (
             <Link href={hero.link} className="group relative block overflow-hidden bg-blush">
-              <span className="relative block aspect-[4/5] w-full sm:aspect-[16/8] lg:aspect-[21/9]">
+              <span className="relative block aspect-[5/4] w-full sm:aspect-[16/8] lg:aspect-[21/9]">
                 <Image
                   src={cloudinaryResize(hero.image.secureUrl, 1600)}
                   alt={hero.image.alt}
@@ -98,18 +98,29 @@ export default async function Home() {
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
                 />
               </span>
-              <span className="sr-only">{hero.title}{hero.subtitle ? ` — ${hero.subtitle}` : ""}</span>
+              <span className="block bg-cream px-6 py-7 sm:absolute sm:bottom-8 sm:left-8 sm:max-w-md sm:rounded-2xl sm:bg-white/95 sm:p-8 sm:shadow-xl lg:bottom-12 lg:left-12">
+                <span className="eyebrow block">Featured collection · {hero.title}</span>
+                <h1 className="section-title mt-2 block text-3xl text-ink sm:text-4xl">
+                  Little pieces, big feelings.
+                </h1>
+                <span className="mt-3 block max-w-sm text-sm leading-6 text-warm-gray">
+                  Jewellery to make every day feel like an occasion.
+                </span>
+                <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-primary">
+                  Explore the collection <span aria-hidden="true">↗</span>
+                </span>
+              </span>
             </Link>
           ) : (
             <div className="bg-blush">
               <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-14 text-center sm:px-8">
                 <p className="eyebrow">Everyday jewellery, made to gift</p>
-                <p className="section-title mt-2 text-3xl sm:text-5xl">
+                <h1 className="section-title mt-2 text-3xl sm:text-5xl">
                   Pretty things for every-day you.
-                </p>
+                </h1>
                 <p className="lede mt-3 max-w-md text-sm">
                   Rings, bracelets, necklaces and oxidised pieces — premium-looking,
-                  honestly priced. Add a hero image anytime in Admin → Banners.
+                  honestly priced and made to gift.
                 </p>
                 <Link href="/shop" className="btn-primary mt-6">
                   Browse the collection →
@@ -121,14 +132,17 @@ export default async function Home() {
 
         {/* ───────── CATEGORY STRIP ───────── */}
         {categories.length > 0 && (
-          <section aria-label="Shop by category" className="bg-blush">
-            <ul className="no-scrollbar mx-auto flex w-full max-w-7xl gap-4 overflow-x-auto px-4 py-6 sm:justify-center sm:gap-8 sm:px-8">
+          <section aria-labelledby="category-heading" className="border-y border-light-gray bg-cream">
+            <div className="mx-auto w-full max-w-7xl px-4 pb-8 pt-9 sm:px-8">
+              <p className="eyebrow">Find your kind of sparkle</p>
+              <h2 id="category-heading" className="section-title mt-1 text-2xl sm:text-3xl">Shop by category</h2>
+            <ul className="no-scrollbar mt-6 flex gap-4 overflow-x-auto pb-1 sm:gap-6">
               {categories.slice(0, 6).map((c) => {
                 const img = imgForCategory(c.name);
                 return (
                   <li key={c.id} className="w-24 shrink-0 sm:w-32">
                     <Link href={`/shop?category=${c.slug}`} className="group block text-center">
-                      <span className="relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-sm transition-transform group-hover:scale-105">
+                      <span className="relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition-transform group-hover:scale-[1.03]">
                         {img ? (
                           <Image
                             src={cloudinaryResize(img.secureUrl, 400)}
@@ -139,12 +153,12 @@ export default async function Home() {
                             className="object-cover"
                           />
                         ) : (
-                          <span className="flex h-full items-center justify-center bg-white font-display text-3xl font-black text-primary">
+                          <span className="flex h-full items-center justify-center bg-gradient-to-br from-blush via-[#f6e4dd] to-peach/60 font-display text-5xl font-semibold text-maroon/80">
                             {c.name.charAt(0)}
                           </span>
                         )}
                       </span>
-                      <span className="mt-2 block text-[11px] font-semibold text-ink sm:text-xs">
+                      <span className="mt-2 block text-xs font-semibold text-ink sm:text-sm">
                         {c.name}
                       </span>
                     </Link>
@@ -152,21 +166,20 @@ export default async function Home() {
                 );
               })}
             </ul>
+            </div>
           </section>
         )}
 
         {/* ───────── SHOP BY TREND ───────── */}
-        <section aria-label="Shop by trend" className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
-          <h2 className="section-title text-center text-xl sm:text-2xl">Shop By Trend</h2>
-          <ul className="no-scrollbar mt-5 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible">
+        <section aria-labelledby="trend-heading" className="mx-auto w-full max-w-7xl px-4 pt-14 sm:px-8">
+          <p className="eyebrow">A mood for every moment</p>
+          <h2 id="trend-heading" className="section-title mt-1 text-3xl sm:text-4xl">Shop by trend</h2>
+          <ul className="no-scrollbar mt-6 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible">
             {TRENDS.map((t, i) => {
               const img = trendImgs[i];
               return (
                 <li key={t.label} className="w-40 shrink-0 sm:w-auto">
-                  <Link
-                    href={t.href}
-                    className="group relative block aspect-[3/4.4] overflow-hidden rounded-xl bg-cream"
-                  >
+                  <Link href={t.href} className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-cream">
                     {img ? (
                       <Image
                         src={cloudinaryResize(img.secureUrl, 500)}
@@ -179,16 +192,10 @@ export default async function Home() {
                     ) : (
                       <span className={`absolute inset-0 ${t.bg}`} />
                     )}
-                    <span className="absolute inset-y-0 left-0 flex w-9 items-center justify-center bg-black/45 py-3">
-                      <span
-                        className="font-sticker text-sm uppercase tracking-wider text-white"
-                        style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-                      >
-                        {t.label}
-                      </span>
-                    </span>
-                    <span className="absolute bottom-2 right-2 rounded-full bg-white/95 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-ink">
-                      Shop →
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" aria-hidden="true" />
+                    <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4 text-white sm:p-5">
+                      <span className="font-display text-xl font-semibold sm:text-2xl">{t.label}</span>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-ink transition-transform group-hover:-translate-y-1" aria-hidden="true">↗</span>
                     </span>
                   </Link>
                 </li>
@@ -199,19 +206,22 @@ export default async function Home() {
 
         {/* ───────── INSTAGRAM VIRAL ───────── */}
         {bestsellers.products.length > 0 && (
-          <section aria-label="Instagram viral products" className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
-            <h2 className="section-title text-center text-xl sm:text-2xl">Instagram Viral Products</h2>
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              {bestsellers.products.slice(0, 8).map((p, i) => (
+          <section aria-labelledby="popular-heading" className="mx-auto mt-14 w-full max-w-7xl rounded-[28px] bg-cream px-4 py-9 sm:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow">Most loved</p>
+                <h2 id="popular-heading" className="section-title mt-1 text-3xl sm:text-4xl">The popular pieces</h2>
+              </div>
+              <Link href="/shop?sort=best-selling" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
+                View all best sellers ↗
+              </Link>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              {bestsellers.products.slice(0, 4).map((p, i) => (
                 <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
                   <ProductCard product={p} badge="bestseller" eager={i < 2} />
                 </div>
               ))}
-            </div>
-            <div className="mt-6 text-center">
-              <Link href="/shop?sort=best-selling" className="btn-ghost">
-                View all viral →
-              </Link>
             </div>
           </section>
         )}
@@ -237,30 +247,34 @@ export default async function Home() {
 
         {/* ───────── NEW ARRIVALS ───────── */}
         {newest.products.length > 0 && (
-          <section aria-label="New arrivals" className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
-            <h2 className="section-title text-center text-xl sm:text-2xl">New Arrivals</h2>
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              {newest.products.slice(0, 8).map((p, i) => (
+          <section aria-labelledby="new-heading" className="mx-auto w-full max-w-7xl px-4 pt-14 sm:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow">Fresh finds</p>
+                <h2 id="new-heading" className="section-title mt-1 text-3xl sm:text-4xl">New arrivals</h2>
+              </div>
+              <Link href="/shop?sort=newest" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
+                Shop all new ↗
+              </Link>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              {newest.products.slice(0, 4).map((p, i) => (
                 <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
                   <ProductCard product={p} badge="new" />
                 </div>
               ))}
-            </div>
-            <div className="mt-6 text-center">
-              <Link href="/shop?sort=newest" className="btn-ghost">
-                View all new →
-              </Link>
             </div>
           </section>
         )}
 
         {/* ───────── REVIEWS ───────── */}
         {wall.length > 0 && (
-          <section aria-label="Customer reviews" className="mx-auto w-full max-w-7xl px-4 pt-12 sm:px-8">
-            <h2 className="section-title text-center text-xl sm:text-2xl">Worn & Loved</h2>
-            <ul className="no-scrollbar mt-5 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible">
+          <section aria-label="Customer reviews" className="mx-auto w-full max-w-7xl px-4 pt-14 sm:px-8">
+            <p className="eyebrow">From the community</p>
+            <h2 className="section-title mt-1 text-3xl sm:text-4xl">Worn & loved</h2>
+            <ul className="no-scrollbar mt-6 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
               {wall.slice(0, 6).map((r) => (
-                <li key={r.id} className="w-72 shrink-0 rounded-2xl border border-black/[0.06] bg-cream p-5 sm:w-auto">
+                <li key={r.id} className="w-72 shrink-0 rounded-2xl border border-light-gray bg-white p-6 shadow-sm sm:w-auto">
                   <p aria-label={`${r.rating} out of 5 stars`} className="text-sm font-bold text-amber-500">
                     {"★".repeat(r.rating)}
                     <span className="text-black/15">{"★".repeat(5 - r.rating)}</span>

@@ -35,10 +35,10 @@ const FOOTER_COLS = [
 ];
 
 const TRUST_ITEMS = [
-  { title: "Free shipping over ₹899", body: "COD available across India", emoji: "🚚" },
-  { title: "UPI • Cards • Netbanking", body: "Secure Razorpay checkout", emoji: "💳" },
-  { title: "Easy return", body: "7-day cover on defects & damage", emoji: "🛡️" },
-  { title: "Free gift above ₹899", body: "Gift-ready pouch in every order", emoji: "🎁" },
+  { title: "Free shipping over ₹899", body: "COD available across India" },
+  { title: "UPI • Cards • Netbanking", body: "Secure Razorpay checkout" },
+  { title: "Easy return", body: "7-day cover on defects & damage" },
+  { title: "Free gift above ₹899", body: "Gift-ready pouch in every order" },
 ];
 
 /** D2C footer — black trust band, red wordmark, link columns. */
@@ -48,10 +48,9 @@ export function SiteFooter() {
       <div className="border-b border-white/10">
         <ul className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-3 px-4 py-8 sm:px-8 lg:grid-cols-4" aria-label="Why shop with SatvaStones">
           {TRUST_ITEMS.map((t) => (
-            <li key={t.title} className="rounded-xl bg-white/[0.06] p-4 text-center">
-              <span className="text-2xl">{t.emoji}</span>
-              <p className="mt-1.5 text-xs font-extrabold uppercase tracking-wider text-white">{t.title}</p>
-              <p className="mt-0.5 text-[11px] text-white/50">{t.body}</p>
+            <li key={t.title} className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-left">
+              <p className="text-xs font-extrabold uppercase tracking-wider text-white">{t.title}</p>
+              <p className="mt-1 text-xs leading-5 text-white/65">{t.body}</p>
             </li>
           ))}
         </ul>
@@ -63,7 +62,7 @@ export function SiteFooter() {
             <p className="font-display text-4xl font-black tracking-tight text-primary">
               SatvaStones
             </p>
-            <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
+            <p className="mt-3 max-w-xs text-sm leading-6 text-white/65">
               Korean and Western aesthetic jewellery for India — premium-looking,
               honestly priced, anti-tarnish finish. Every piece ships gift-ready.
             </p>
@@ -83,7 +82,7 @@ export function SiteFooter() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-sm text-white/50 transition-colors hover:text-white"
+                        className="text-sm text-white/65 transition-colors hover:text-white"
                       >
                         {link.label}
                       </Link>

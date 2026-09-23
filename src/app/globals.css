@@ -23,7 +23,7 @@
   --plum: #5b0f3c;
   --warm-gray: #6f6f6f;
   --light-gray: #ececec;
-  --muted: #8a8a8a;
+  --muted: #666666;
 }
 
 @theme inline {
@@ -49,7 +49,7 @@
   --color-coral: #ff8a80;
   --color-warm-gray: #6f6f6f;
   --color-light-gray: #ececec;
-  --color-muted: #8a8a8a;
+  --color-muted: var(--muted);
   --color-sage: #1f9bab;
   --color-mehendi: #1f7a3d;
   --color-sindoor: #d61f2c;
@@ -266,10 +266,10 @@ video {
 }
 
 .section-title {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
 }
 
 .lede {
@@ -292,7 +292,7 @@ video {
   text-transform: uppercase;
   border-radius: 999px;
   transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 18px rgba(214, 31, 44, 0.35);
+  box-shadow: 0 6px 18px rgba(214, 31, 44, 0.18);
 }
 
 .btn-primary:hover {

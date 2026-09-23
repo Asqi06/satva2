@@ -82,7 +82,7 @@ export function MobileBottomNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={`relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors ${
-                  active ? "text-primary" : "text-ink/55"
+                  active ? "text-primary" : "text-ink/70"
                 }`}
               >
                 <span className="relative">
