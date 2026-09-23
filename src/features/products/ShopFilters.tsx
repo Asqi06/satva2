@@ -71,12 +71,13 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             <path d="m21 21-4.35-4.35" />
           </svg>
           <input
+            id="shop-search"
             type="search"
             name="q"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search rings, jhumkas, oxidised, gifts under ₹499…"
-            className="w-full rounded-full border-2 border-light-gray bg-white py-3 pl-11 pr-4 text-sm placeholder:text-muted focus:border-primary focus:outline-none transition-colors"
+            className="w-full scroll-mt-40 rounded-full border-2 border-light-gray bg-white py-3 pl-11 pr-4 text-sm placeholder:text-muted focus:border-primary focus:outline-none transition-colors"
           />
         </label>
         <button
@@ -88,9 +89,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
         </button>
       </form>
 
-      {/* Filter pills row */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Category pills */}
+      <div role="group" aria-label="Filter by category" className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
         <button
           type="button"
           onClick={() =>
@@ -99,9 +98,9 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
               p.delete("page");
             })
           }
-          className={`rounded-full border-2 px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-all hover:scale-105 ${
+          className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-xs font-bold uppercase tracking-[0.1em] transition-colors ${
             currentCategory === ""
-              ? "border-ink bg-ink text-white shadow-lg"
+              ? "border-ink bg-ink text-white"
               : "border-light-gray bg-white text-muted hover:border-primary hover:text-primary"
           }`}
         >
@@ -114,22 +113,23 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             onClick={() =>
               push((p) => setParam(p, "category", c.slug))
             }
-            className={`rounded-full border-2 px-5 py-2 text-xs font-bold uppercase tracking-[0.12em] transition-all hover:scale-105 ${
+            className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-xs font-bold uppercase tracking-[0.1em] transition-colors ${
               currentCategory === c.slug
-                ? "border-primary bg-primary text-white shadow-lg shadow-primary/30"
+                ? "border-primary bg-primary text-white"
                 : "border-light-gray bg-white text-muted hover:border-primary hover:text-primary"
             }`}
           >
             {c.name}
           </button>
         ))}
+      </div>
 
-        {/* Sort */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <select
           value={currentSort}
           onChange={(e) => push((p) => setParam(p, "sort", e.target.value))}
           aria-label="Sort products"
-          className="ml-auto cursor-pointer rounded-full border-2 border-light-gray bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-warm-gray focus:border-primary focus:outline-none transition-colors"
+          className="min-h-11 cursor-pointer rounded-full border border-light-gray bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-warm-gray transition-colors focus:border-primary focus:outline-none"
         >
           {PRODUCT_SORTS.map((s) => (
             <option key={s} value={s}>
@@ -138,8 +138,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
           ))}
         </select>
 
-        {/* In stock toggle */}
-        <label className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-light-gray bg-white px-4 py-2 transition-colors hover:border-primary">
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-light-gray bg-white px-4 py-2 transition-colors hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
           <input
             type="checkbox"
             checked={inStockOnly}

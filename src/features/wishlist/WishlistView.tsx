@@ -63,12 +63,12 @@ export function WishlistView() {
 
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
-      <div className="mx-auto w-full max-w-6xl px-6 py-12 sm:px-10">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8">
         <p className="eyebrow">Saved for later</p>
-        <h1 className="section-title mt-2 text-5xl tracking-tight">Wishlist</h1>
+        <h1 className="section-title mt-2 text-3xl sm:text-4xl">Wishlist</h1>
         <p className="lede mt-2 max-w-lg text-sm">
           {view.items.length === 0
-            ? "Your treasure box is empty — tap ♡ on anything you love."
+            ? "Your treasure box is empty — save a piece from its product page."
             : `${view.items.length} saved piece${view.items.length === 1 ? "" : "s"} · synced across your devices.`}
         </p>
         {notice && (
@@ -85,9 +85,9 @@ export function WishlistView() {
             </Link>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {view.items.map((item) => (
-              <article key={item.productId} className="card-lift overflow-hidden bg-white/60">
+              <article key={item.productId} className="card-lift overflow-hidden bg-white">
                 <Link href={`/products/${item.slug}`} aria-label={item.name}>
                   <span className="relative block aspect-[4/5] overflow-hidden bg-ivory">
                     {item.image ? (

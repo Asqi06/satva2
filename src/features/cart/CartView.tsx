@@ -30,13 +30,15 @@ export function CartView() {
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       {/* Page header */}
-      <div className="border-b border-light-gray">
-        <div className="mx-auto w-full max-w-7xl px-6 pb-10 pt-12 sm:px-10">
+      <div className="bg-blush">
+        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8">
           <p className="eyebrow">
             Your bag · Prices in ₹, taxes included
           </p>
-          <h1 className="section-title mt-2 text-6xl tracking-tight sm:text-7xl">
-            {count > 0
+          <h1 className="section-title mt-2 text-3xl sm:text-4xl">
+            {loading
+              ? "Your bag"
+              : count > 0
               ? `${count} piece${count === 1 ? "" : "s"}`
               : "Empty bag"}
           </h1>
@@ -58,7 +60,7 @@ export function CartView() {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-7xl px-6 py-10 sm:px-10">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8">
         {/* Notice */}
         {notice && (
           <p
@@ -72,7 +74,7 @@ export function CartView() {
         {loading ? (
           <p className="text-sm text-muted">Loading your bag…</p>
         ) : lines.length === 0 ? (
-          <div className="mt-4 border border-light-gray bg-white/50 px-6 py-20 text-center">
+          <div className="mt-4 rounded-2xl border border-light-gray bg-white px-6 py-16 text-center">
             <p className="eyebrow">Empty bag</p>
             <p className="mt-2 font-display italic text-4xl">Nothing here yet.</p>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-muted">
@@ -89,7 +91,7 @@ export function CartView() {
               {lines.map((line) => (
                 <li
                   key={line.key}
-                  className="flex gap-3 border border-light-gray bg-white/60 p-3 sm:gap-5 sm:p-4"
+                  className="flex gap-3 rounded-2xl border border-light-gray bg-white p-3 sm:gap-5 sm:p-4"
                 >
                   {/* Thumbnail */}
                   <Link href={`/products/${line.slug}`} tabIndex={-1} aria-hidden="true" className="shrink-0">
@@ -179,8 +181,8 @@ export function CartView() {
             </ul>
 
             {/* Order summary sidebar */}
-            <aside className="h-fit border border-light-gray bg-white/60 p-6">
-              <h2 className="font-display italic text-2xl">Summary</h2>
+            <aside className="h-fit rounded-2xl border border-light-gray bg-white p-6">
+              <h2 className="section-title text-2xl">Summary</h2>
               <div className="mt-4 space-y-2 border-t border-light-gray pt-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted">Subtotal</span>

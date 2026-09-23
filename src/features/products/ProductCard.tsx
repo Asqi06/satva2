@@ -4,8 +4,7 @@ import type { ProductListItem } from "@/services/product-service";
 import { cloudinaryResize } from "@/utils/cloudinary-url";
 import { formatINR } from "@/utils/format";
 
-/** Reference-style product card: maroon sale tag, wishlist heart,
- *  2-line name, star rating, price + strike, pink ADD bar. Server-safe. */
+/** Shared product card for the home, shop, and related-product grids. */
 export function ProductCard({
   product,
   eager = false,
@@ -16,9 +15,9 @@ export function ProductCard({
   badge?: "bestseller" | "new";
 }) {
   const cover = product.images[0];
-  const showHotTag = badge === "bestseller" || product.discountPercent >= 20;
+  const showHotTag = badge === "bestseller";
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-black/[0.06] bg-white transition-shadow hover:shadow-[0_12px_30px_rgba(0,0,0,0.1)]">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-light-gray bg-white transition-shadow hover:shadow-[0_12px_30px_rgba(0,0,0,0.1)]">
       {/* Image */}
       <div className="relative">
         <Link href={`/products/${product.slug}`} aria-label={product.name} tabIndex={-1}>
@@ -58,22 +57,11 @@ export function ProductCard({
             <span className="badge-off">{product.discountPercent}% off</span>
           ) : null}
         </span>
-
-        {/* Top-right wishlist */}
-        <Link
-          href="/wishlist"
-          aria-label={`Save ${product.name} to wishlist`}
-          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm transition-transform hover:scale-110"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-          </svg>
-        </Link>
       </div>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
-        <h3 className="clamp-2 min-h-[2.4em] text-[12px] font-medium leading-[1.2] text-ink sm:text-[13px]">
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <h3 className="clamp-2 min-h-[2.6em] text-[13px] font-semibold leading-[1.3] text-ink sm:text-sm">
           <Link href={`/products/${product.slug}`} className="transition-colors hover:text-primary">
             {product.name}
           </Link>
@@ -85,11 +73,11 @@ export function ProductCard({
             <span className="ml-1 font-medium text-muted">({product.ratingCount})</span>
           </p>
         ) : (
-          <p className="mt-1 text-[11px] text-muted">New</p>
+          <p className="mt-1 text-[11px] text-muted">No reviews yet</p>
         )}
 
-        <p className="mt-1 flex items-baseline gap-1.5">
-          <span className="text-[14px] font-extrabold sm:text-[15px]">{formatINR(product.price)}</span>
+        <p className="mt-2 flex flex-wrap items-baseline gap-1.5">
+          <span className="text-base font-extrabold">{formatINR(product.price)}</span>
           {product.compareAtPrice !== undefined && product.compareAtPrice > product.price && (
             <s className="text-[11px] text-muted">{formatINR(product.compareAtPrice)}</s>
           )}
@@ -97,9 +85,9 @@ export function ProductCard({
 
         <Link
           href={`/products/${product.slug}`}
-          className="mt-2 rounded-lg bg-blush py-2 text-center text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary transition-colors hover:bg-primary hover:text-white"
+          className="mt-auto flex min-h-11 items-center justify-center rounded-full bg-blush px-3 py-2 text-center text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary transition-colors hover:bg-primary hover:text-white"
         >
-          {product.inStock ? "Add to cart" : "View"}
+          {product.inStock ? "View details" : "View item"}
         </Link>
       </div>
     </article>

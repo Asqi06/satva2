@@ -8,7 +8,7 @@ import { BagButton } from "./BagButton";
 
 const NAV_LINKS = [
   { href: "/shop", label: "Categories" },
-  { href: "/shop?sort=best-selling", label: "Hot Deals", hot: true },
+  { href: "/shop?sort=best-selling", label: "Best Sellers" },
   { href: "/about", label: "Store" },
   { href: "/account/orders", label: "Track Order" },
   { href: "/returns", label: "Returns / Exchange" },
@@ -19,7 +19,6 @@ const DEFAULT_UTILITY_ITEMS = [
   "Free gift on order above INR 899",
   "COD available",
   "Easy return",
-  "Rakhi sale is live — up to 70% off",
   "Free shipping above INR 899",
 ];
 
@@ -121,8 +120,8 @@ export function SiteHeader() {
               </span>
             </button>
             <Link
-              href="/shop"
-              aria-label="Search"
+              href="/shop#shop-search"
+              aria-label="Search jewellery"
               className="hidden h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-black/5 sm:flex"
             >
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -178,11 +177,6 @@ export function SiteHeader() {
                     }`}
                   >
                     {link.label.toUpperCase()}
-                    {"hot" in link && link.hot && (
-                      <span className="rounded-sm bg-primary px-1 py-px text-[8px] font-black tracking-normal text-white">
-                        HOT
-                      </span>
-                    )}
                   </Link>
                 </li>
               );
@@ -196,7 +190,7 @@ export function SiteHeader() {
             {[...utilityItems, ...utilityItems].map((item, i) => (
               <span
                 key={i}
-                className="mx-6 inline-flex items-center gap-6 text-[9px] font-bold uppercase tracking-[0.2em] text-white/85 md:mx-4"
+                className={`mx-6 inline-flex items-center gap-6 text-[9px] font-bold uppercase tracking-[0.2em] text-white/85 md:mx-4 ${i >= utilityItems.length ? "md:hidden" : ""}`}
               >
                 {item}
                 <span className="text-primary">✦</span>
