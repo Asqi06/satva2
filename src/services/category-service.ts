@@ -11,12 +11,14 @@ export interface CategoryDTO {
   name: string;
   slug: string;
   description?: string;
+  searchTerms?: string[];
   image?: { publicId: string; secureUrl: string; alt: string };
   parentId: string | null;
   isPublished: boolean;
   sortOrder: number;
   seo: { title?: string; description?: string };
   productCount?: number;
+  updatedAt?: string;
 }
 
 type LeanCategory = Omit<ICategory, "_id" | "parentId"> & {
@@ -30,6 +32,7 @@ function toDTO(doc: LeanCategory, productCount?: number): CategoryDTO {
     name: doc.name,
     slug: doc.slug,
     description: doc.description,
+    searchTerms: doc.searchTerms ?? [],
     image: doc.image
       ? { publicId: doc.image.publicId, secureUrl: doc.image.secureUrl, alt: doc.image.alt }
       : undefined,
@@ -38,6 +41,7 @@ function toDTO(doc: LeanCategory, productCount?: number): CategoryDTO {
     sortOrder: doc.sortOrder,
     seo: { title: doc.seo?.title, description: doc.seo?.description },
     productCount,
+    updatedAt: doc.updatedAt?.toISOString(),
   };
 }
 
@@ -85,7 +89,8 @@ export async function createCategory(input: CategoryInput): Promise<CategoryDTO>
     name: input.name,
     slug: uniqueSlug,
     description: input.description,
-    image: input.image,
+    searchTerms: input.searchTerms,
+    image: input.image ?? undefined,
     parentId: input.parentId ? new Types.ObjectId(input.parentId) : null,
     isPublished: input.isPublished,
     sortOrder: input.sortOrder,
@@ -111,7 +116,8 @@ export async function updateCategory(
   }
   if (input.name !== undefined) doc.name = input.name;
   if (input.description !== undefined) doc.description = input.description;
-  if (input.image !== undefined) doc.image = input.image;
+  if (input.searchTerms !== undefined) doc.searchTerms = input.searchTerms;
+  if (input.image !== undefined) doc.image = input.image ?? undefined;
   if (input.parentId !== undefined) {
     if (input.parentId && input.parentId === id) {
       throw new AppError("VALIDATION_ERROR", "Category cannot be its own parent", 400);

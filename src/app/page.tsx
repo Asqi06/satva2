@@ -9,19 +9,18 @@ import { listLiveBanners } from "@/services/banner-service";
 import { listPublicCategories } from "@/services/category-service";
 import { listPublicProducts } from "@/services/product-service";
 import { listFeaturedReviews } from "@/services/review-service";
+import { getSettings } from "@/services/settings-service";
 
-export const metadata: Metadata = {
-  title: "SatvaStones — Everyday Aesthetic Jewellery",
-  description:
-    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers. Anti-tarnish, honestly priced.",
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    title: "SatvaStones — Everyday Aesthetic Jewellery",
-    description:
-      "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const title = settings.homeSeoTitle || "SatvaStones — Everyday Aesthetic Jewellery";
+  const description = settings.homeSeoDescription || "Shop rings, bracelets, necklaces, earrings and oxidised jewellery online in India at SatvaStones.";
+  return {
+    title: { absolute: title }, description, alternates: { canonical: "/" },
+    openGraph: { type: "website", title, description, url: "/" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export const revalidate = 60;
 export const dynamic = "force-static";
@@ -101,10 +100,10 @@ export default async function Home() {
               <span className="block bg-cream px-6 py-7 sm:absolute sm:bottom-8 sm:left-8 sm:max-w-md sm:rounded-2xl sm:bg-white/95 sm:p-8 sm:shadow-xl lg:bottom-12 lg:left-12">
                 <span className="eyebrow block">Featured collection · {hero.title}</span>
                 <h1 className="section-title mt-2 block text-3xl text-ink sm:text-4xl">
-                  Little pieces, big feelings.
+                  {hero.title}
                 </h1>
                 <span className="mt-3 block max-w-sm text-sm leading-6 text-warm-gray">
-                  Jewellery to make every day feel like an occasion.
+                  {hero.subtitle || "Jewellery to make every day feel like an occasion."}
                 </span>
                 <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-primary">
                   Explore the collection
@@ -138,7 +137,7 @@ export default async function Home() {
               <h2 id="category-heading" className="section-title mt-1 text-2xl sm:text-3xl">Shop by category</h2>
             <ul className="no-scrollbar mt-6 flex gap-4 overflow-x-auto pb-1 sm:gap-6">
               {categories.slice(0, 6).map((c) => {
-                const img = imgForCategory(c.name);
+                const img = c.image ?? imgForCategory(c.name);
                 return (
                   <li key={c.id} className="w-24 shrink-0 sm:w-32">
                     <Link href={`/shop?category=${c.slug}`} className="group block text-center">

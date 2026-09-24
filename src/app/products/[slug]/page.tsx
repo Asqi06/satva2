@@ -26,13 +26,12 @@ export async function generateMetadata({
     product.seo.description ||
     product.shortDescription ||
     product.description.slice(0, 155);
-  const images = product.images.slice(0, 4).map((i) => ({ url: i.secureUrl, alt: i.alt, width: 1200, height: 630 }));
+  const images = product.images.slice(0, 4).map((i) => ({ url: i.secureUrl, alt: i.alt }));
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const canonical = `${appUrl}/products/${product.slug}`;
   return {
-    title,
+    title: { absolute: title },
     description,
-    keywords: [product.name, product.category.name, ...(product.tags ?? []), product.material ?? "", product.color ?? ""].filter(Boolean),
     alternates: { canonical },
     openGraph: {
       type: "website",
@@ -77,7 +76,6 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       url: canonical,
       seller: { "@type": "Organization", name: "SatvaStones", url: appUrl },
       itemCondition: "https://schema.org/NewCondition",
-      ...(product.compareAtPrice ? { highPrice: product.compareAtPrice } : {}),
     },
     ...(product.ratingCount > 0
       ? {

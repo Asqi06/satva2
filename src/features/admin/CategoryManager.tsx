@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import type { CategoryDTO } from "@/services/category-service";
 
@@ -7,7 +8,7 @@ type ApiEnvelope =
   | { success: true; data: { categories: CategoryDTO[] } | CategoryDTO }
   | { success: false; error: { code: string; message: string } };
 
-const emptyForm = { name: "", slug: "", description: "", parentId: "", isPublished: true, sortOrder: 0 };
+const emptyForm = { name: "", slug: "", description: "", searchTerms: "", seoTitle: "", seoDescription: "", parentId: "", isPublished: true, sortOrder: 0 };
 
 /** Category list + create/edit/delete. */
 export function CategoryManager() {
@@ -16,6 +17,27 @@ export function CategoryManager() {
   const [notice, setNotice] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [image, setImage] = useState<CategoryDTO["image"]>();
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImage = async (file?: File) => {
+    if (!file) return;
+    setNotice(null);
+    if (file.size > 4 * 1024 * 1024) return setNotice("Use a JPG, PNG, WebP or AVIF image under 4 MB.");
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await fetch("/api/admin/uploads", { method: "POST", body: data });
+      const body = (await res.json()) as { success: boolean; data?: { publicId: string; secureUrl: string }; error?: { message: string } };
+      if (!body.success || !body.data) throw new Error(body.error?.message ?? "Upload failed");
+      setImage({ ...body.data, alt: `${form.name || "Jewellery"} category` });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -43,15 +65,20 @@ export function CategoryManager() {
       name: row.name,
       slug: row.slug,
       description: row.description ?? "",
+      searchTerms: (row.searchTerms ?? []).join(", "),
+      seoTitle: row.seo.title ?? "",
+      seoDescription: row.seo.description ?? "",
       parentId: row.parentId ?? "",
       isPublished: row.isPublished,
       sortOrder: row.sortOrder,
     });
+    setImage(row.image);
   };
 
   const cancel = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImage(undefined);
   };
 
   const save = async (e: React.FormEvent) => {
@@ -61,7 +88,11 @@ export function CategoryManager() {
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim() || undefined,
-        description: form.description.trim() || undefined,
+        description: form.description.trim(),
+        searchTerms: [...new Set(form.searchTerms.split(",").map((term) => term.trim()).filter(Boolean))],
+        seoTitle: form.seoTitle.trim(),
+        seoDescription: form.seoDescription.trim(),
+        image: image ? { ...image, alt: image.alt.trim() || `${form.name.trim()} category` } : null,
         parentId: form.parentId || null,
         isPublished: form.isPublished,
         sortOrder: Number(form.sortOrder) || 0,
@@ -100,6 +131,7 @@ export function CategoryManager() {
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Organisation</p>
       <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Categories</h1>
+      <p className="mt-2 max-w-2xl text-sm text-ivory/50">The first six published categories appear in the homepage “Shop by category” row. Upload each image here, add a descriptive alt, and set the sort order. The description and SEO fields also shape the category shop page.</p>
 
       {notice && (
         <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
@@ -131,13 +163,34 @@ export function CategoryManager() {
           </label>
           <label className="flex flex-col gap-1 text-sm sm:col-span-2">
             Description
-            <input
+            <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               maxLength={2000}
+              rows={3}
               className="admin-input"
             />
           </label>
+          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+            Search words and Hinglish aliases (comma separated)
+            <input value={form.searchTerms} onChange={(e) => setForm({ ...form, searchTerms: e.target.value })} placeholder="Alternate names shoppers use for this category" className="admin-input" />
+            <span className="text-xs text-ivory/40">Use words shoppers actually use for this category. Maximum 20.</span>
+          </label>
+          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+            Search result title
+            <input value={form.seoTitle} onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} maxLength={160} placeholder={`Buy ${form.name || "Category"} Online in India | SatvaStones`} className="admin-input" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+            Search result description
+            <textarea value={form.seoDescription} onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} maxLength={320} rows={2} className="admin-input" />
+          </label>
+          <div className="sm:col-span-2">
+            <label className="block cursor-pointer border border-dashed border-ivory/25 p-4 text-center text-sm hover:border-gold/60">
+              {uploading ? "Uploading…" : image ? "Replace category image" : "Upload category image (square crop works best, up to 4 MB)"}
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading} onChange={(e) => void uploadImage(e.target.files?.[0])} className="sr-only" />
+            </label>
+            {image && <div className="mt-3 flex items-center gap-3"><span className="relative h-20 w-20 overflow-hidden rounded-lg"><Image src={image.secureUrl} alt="" fill sizes="80px" className="object-cover" /></span><label className="flex flex-1 flex-col gap-1 text-sm">Image alt text<input value={image.alt} onChange={(e) => setImage({ ...image, alt: e.target.value })} maxLength={200} required className="admin-input" /></label><button type="button" onClick={() => setImage(undefined)} className="text-xs underline">Remove</button></div>}
+          </div>
           <label className="flex flex-col gap-1 text-sm">
             Parent category
             <select value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })} className="admin-input">
@@ -167,7 +220,7 @@ export function CategoryManager() {
           </label>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="submit" className="border border-gold bg-gold/10 px-6 py-2 text-sm font-medium text-gold hover:bg-gold hover:text-ink">
+          <button type="submit" disabled={uploading} className="border border-gold bg-gold/10 px-6 py-2 text-sm font-medium text-gold hover:bg-gold hover:text-ink disabled:opacity-50">
             {editingId ? "Save changes" : "Create category"}
           </button>
           {editingId && (

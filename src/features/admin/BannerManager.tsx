@@ -131,7 +131,7 @@ export function BannerManager() {
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Homepage</p>
       <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Hero banners</h1>
       <p className="mt-2 max-w-xl text-sm text-ivory/45">
-        Upload the full creative as one image (text baked in). Lowest Sort order shows
+        Upload a wide image without text; the title and subtitle stay editable over it. Lowest Sort order shows
         as the main hero; the 2nd banner shows as the sale strip below the viral
         products. Toggle Active to hide without deleting.
       </p>
@@ -172,9 +172,14 @@ export function BannerManager() {
             <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading} onChange={(e) => void uploadImage(e.target.files)} className="sr-only" />
           </label>
           {image && (
-            <span className="relative mt-3 block h-32 w-full overflow-hidden rounded-xl border border-ivory/10">
-              <Image src={image.secureUrl} alt="" fill sizes="50vw" className="object-cover" />
-            </span>
+            <>
+              <span className="relative mt-3 block h-32 w-full overflow-hidden rounded-xl border border-ivory/10">
+                <Image src={image.secureUrl} alt="" fill sizes="50vw" className="object-cover" />
+              </span>
+              <label className="mt-3 flex flex-col gap-1 text-sm text-ivory/70">Image alt text
+                <input value={image.alt} onChange={(e) => setImage({ ...image, alt: e.target.value })} required maxLength={200} className={inputCls} />
+              </label>
+            </>
           )}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { requireAdmin } from "@/lib/admin-guard";
 import { AppError } from "@/lib/errors";
 
 /** Admin shell. Server-side ADMIN check — proxy redirect is UX only. */
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },

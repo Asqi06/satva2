@@ -134,7 +134,6 @@ export function buildSeoState(input: SeoPageInput): Record<string, JsonValue> {
 
 /** Pure-code checks — no inference spent on what regex can answer. */
 export function runSeoChecks(input: SeoPageInput): SeoCheck[] {
-  const words = input.bodyText.trim().split(/\s+/).filter(Boolean).length;
   const missingAlt = input.imageAlts.filter((a) => !a.trim()).length;
   return [
     {
@@ -145,14 +144,14 @@ export function runSeoChecks(input: SeoPageInput): SeoCheck[] {
     },
     {
       id: "title-length",
-      label: "Title ≤ 60 chars (no SERP truncation)",
-      pass: input.title.length > 0 && input.title.length <= 60,
+      label: "Descriptive title present",
+      pass: input.title.trim().length > 0,
       detail: `${input.title.length} chars`,
     },
     {
       id: "meta-length",
-      label: "Meta description 120–160 chars",
-      pass: input.metaDescription.length >= 120 && input.metaDescription.length <= 160,
+      label: "Meta description present",
+      pass: input.metaDescription.trim().length > 0,
       detail: `${input.metaDescription.length} chars`,
     },
     {
@@ -175,15 +174,9 @@ export function runSeoChecks(input: SeoPageInput): SeoCheck[] {
     },
     {
       id: "copy-depth",
-      label: "Body copy ≥ 300 words",
-      pass: words >= 300,
-      detail: `${words} words`,
-    },
-    {
-      id: "review-volume",
-      label: "Review volume for stars eligibility",
-      pass: input.reviewCount >= 5,
-      detail: `${input.reviewCount} reviews @ ${input.ratingAverage}`,
+      label: "Product description present",
+      pass: input.bodyText.trim().length > 0,
+      detail: `${input.bodyText.trim().length} characters`,
     },
   ];
 }

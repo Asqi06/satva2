@@ -260,11 +260,13 @@ export function ProductForm({
           <label className={`${labelCls} sm:col-span-2`}>
             Description
             <textarea {...register("description")} rows={5} className={inputCls} />
+            <span className={hintCls}>Describe this piece in your own words: style, material, size or fit, care, and when someone would wear or gift it. Use a Hindi/Hinglish name only when it matches the item.</span>
             <FieldError errors={errors} name="description" />
           </label>
           <label className={`${labelCls} sm:col-span-2`}>
             Tags (comma separated)
             <input {...register("tagsText")} placeholder="korean, minimal, gift" className={inputCls} />
+            <span className={hintCls}>Add accurate search synonyms such as jhumka, bali, anguthi, haar or kangan for relevant products.</span>
           </label>
         </div>
       </section>
