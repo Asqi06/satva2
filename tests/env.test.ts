@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getClientEnv, getServerEnv, requireServerVar, serverEnvPresence } from "@/lib/env";
 
 const FULL_SERVER_ENV = {
@@ -82,5 +82,14 @@ describe("getClientEnv", () => {
     process.env.NEXT_PUBLIC_APP_URL = "not-a-url";
     expect(() => getClientEnv()).toThrow();
     delete process.env.NEXT_PUBLIC_APP_URL;
+  });
+
+  it("never publishes localhost URLs in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    for (const value of [undefined, "", "http://localhost:3001", "http://127.0.0.1:3000", "https://satvastones.in", "http://www.satvastones.in"]) {
+      vi.stubEnv("NEXT_PUBLIC_APP_URL", value);
+      expect(getClientEnv().NEXT_PUBLIC_APP_URL).toBe("https://www.satvastones.in");
+    }
+    vi.unstubAllEnvs();
   });
 });

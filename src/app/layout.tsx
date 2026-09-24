@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Caveat, Fraunces, Inter, Geist_Mono } from "next/font/google";
+import { Fraunces, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AnalyticsLoader } from "@/components/Analytics";
 import { LenisProvider } from "@/components/LenisProvider";
@@ -9,13 +9,13 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { AuthSessionProvider } from "@/features/auth/SessionProvider";
 import { CartDrawer } from "@/features/cart/CartDrawer";
 import { CartProvider } from "@/features/cart/CartProvider";
+import { getClientEnv } from "@/lib/env";
 
 const display = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
   style: ["normal", "italic"],
   display: "swap",
-  axes: ["SOFT", "WONK"],
   preload: true,
   fallback: ["Georgia", "serif"],
   adjustFontFallback: true,
@@ -41,25 +41,7 @@ const mono = Geist_Mono({
   adjustFontFallback: false,
 });
 
-const sticker = Anton({
-  variable: "--font-sticker",
-  subsets: ["latin"],
-  weight: ["400"],
-  display: "swap",
-  preload: false,
-  fallback: ["Arial Black", "sans-serif"],
-});
-
-const script = Caveat({
-  variable: "--font-script",
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  display: "swap",
-  preload: false,
-  fallback: ["cursive"],
-});
-
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
+const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -107,8 +89,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable} ${sticker.variable} ${script.variable} antialiased`}
+      className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}
     >
+      <head><link rel="preconnect" href="https://res.cloudinary.com" /></head>
       <body className="flex min-h-screen flex-col bg-background font-sans text-foreground">
         <LenisProvider />
         <AnalyticsLoader />

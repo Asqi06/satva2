@@ -6,6 +6,7 @@ import { productQuerySchema } from "@/schemas/product";
 import { ProductCard } from "@/features/products/ProductCard";
 import { ShopFilters } from "@/features/products/ShopFilters";
 import { getSettings } from "@/services/settings-service";
+import { getClientEnv } from "@/lib/env";
 
 export async function generateMetadata({
   searchParams,
@@ -16,7 +17,7 @@ export async function generateMetadata({
   const category = (Array.isArray(raw.category) ? raw.category[0] : raw.category)?.toLowerCase();
   const categories = category ? await listPublicCategories() : [];
   const selected = categories.find((item) => item.slug === category && (item.productCount ?? 0) > 0);
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
+  const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   if (selected) {
     const title = selected.seo.title || `Buy ${selected.name} Online in India | SatvaStones`;
     const description = selected.seo.description || selected.description?.slice(0, 160) || `Shop ${selected.name.toLowerCase()} online at SatvaStones. Explore the collection, prices and product details.`;
@@ -78,7 +79,7 @@ export default async function ShopPage({
     listPublicCategories(),
   ]);
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
+  const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const selectedCategory = flat.category ? categories.find((c) => c.slug === flat.category.toLowerCase()) : undefined;
   const categoryName = selectedCategory?.name ?? null;
   const collectionLd = {
