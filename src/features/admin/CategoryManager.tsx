@@ -7,7 +7,7 @@ type ApiEnvelope =
   | { success: true; data: { categories: CategoryDTO[] } | CategoryDTO }
   | { success: false; error: { code: string; message: string } };
 
-const emptyForm = { name: "", slug: "", description: "", isPublished: true, sortOrder: 0 };
+const emptyForm = { name: "", slug: "", description: "", parentId: "", isPublished: true, sortOrder: 0 };
 
 /** Category list + create/edit/delete. */
 export function CategoryManager() {
@@ -43,6 +43,7 @@ export function CategoryManager() {
       name: row.name,
       slug: row.slug,
       description: row.description ?? "",
+      parentId: row.parentId ?? "",
       isPublished: row.isPublished,
       sortOrder: row.sortOrder,
     });
@@ -61,6 +62,7 @@ export function CategoryManager() {
         name: form.name.trim(),
         slug: form.slug.trim() || undefined,
         description: form.description.trim() || undefined,
+        parentId: form.parentId || null,
         isPublished: form.isPublished,
         sortOrder: Number(form.sortOrder) || 0,
       };
@@ -135,6 +137,15 @@ export function CategoryManager() {
               maxLength={2000}
               className="admin-input"
             />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Parent category
+            <select value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })} className="admin-input">
+              <option value="">None</option>
+              {rows.filter((row) => row.id !== editingId).map((row) => (
+                <option key={row.id} value={row.id}>{row.name}</option>
+              ))}
+            </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Sort order

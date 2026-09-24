@@ -242,6 +242,18 @@ describe("order service", () => {
     expect(stored?.paymentStatus).toBe("PENDING");
   });
 
+  it("does not settle payment for a cancelled order", async () => {
+    const { order } = await createOrder(userId, { addressId });
+    const pay = await createPaymentOrder(userId, order.id);
+    await cancelOrder(userId, order.id, "Changed mind");
+    await expect(verifyPayment(userId, {
+      razorpayOrderId: pay.razorpayOrderId,
+      razorpayPaymentId: "pay_late",
+      razorpaySignature: paymentSig(pay.razorpayOrderId, "pay_late"),
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await Order.findById(order.id).lean())?.orderStatus).toBe("CANCELLED");
+  });
+
   it("settles webhooks once and handles failures", async () => {
     const { order } = await createOrder(userId, { addressId });
     const pay = await createPaymentOrder(userId, order.id);

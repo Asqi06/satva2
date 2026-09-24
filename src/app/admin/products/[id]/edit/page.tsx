@@ -26,7 +26,7 @@ export default async function EditProductPage({
     shortDescription: detail.shortDescription,
     categoryId: detail.category.id,
     subcategory: detail.subcategory,
-    images: detail.images.map((i) => ({ ...i, alt: i.alt, isThumbnail: false })),
+    images: detail.images,
     videos: detail.videos,
     price: detail.price,
     compareAtPrice: detail.compareAtPrice,

@@ -25,10 +25,16 @@ export const couponAdminInputSchema = couponAdminBaseSchema.refine((v) => v.type
   path: ["value"],
 });
 
-export const couponAdminPartialSchema = couponAdminBaseSchema.partial().superRefine((v, ctx) => {
+export const couponAdminPartialSchema = couponAdminBaseSchema.partial().extend({
+  maximumDiscount: z.number().int().min(1).nullable().optional(),
+  usageLimit: z.number().int().min(1).nullable().optional(),
+  perUserLimit: z.number().int().min(1).nullable().optional(),
+  expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
+}).superRefine((v, ctx) => {
   if (v.type === "PERCENTAGE" && v.value !== undefined && v.value > 100) {
     ctx.addIssue({ code: "custom", message: "Percentage value must be 1–100", path: ["value"] });
   }
 });
 
 export type CouponAdminInput = z.infer<typeof couponAdminInputSchema>;
+export type CouponAdminPatch = z.infer<typeof couponAdminPartialSchema>;

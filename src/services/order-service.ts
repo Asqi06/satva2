@@ -361,7 +361,7 @@ async function settleOrderPaid(
   eventMarker: string,
 ): Promise<LeanOrder> {
   const won = await Order.findOneAndUpdate(
-    { _id: orderId, paymentStatus: "PENDING" },
+    { _id: orderId, paymentStatus: "PENDING", orderStatus: "PENDING" },
     {
       $set: {
         paymentStatus: "PAID",
@@ -492,23 +492,30 @@ export async function handleWebhookEvent(eventId: string, event: string, entity:
   }
   if (event === "refund.processed") {
     if (order.paymentStatus === "PAID") {
-      await restockSold(linesOf(order), order._id, "Refund processed");
-      await Order.updateOne(
-        { _id: order._id },
+      const refunded = await Order.findOneAndUpdate(
+        { _id: order._id, paymentStatus: "PAID" },
         {
           $set: { paymentStatus: "REFUNDED", orderStatus: "REFUNDED" },
           $push: { timeline: { status: "REFUNDED" as OrderStatus, at: new Date(), note: "Refund processed" } },
         },
-      );
-      if (payment) {
-        await Payment.updateOne(
-          { _id: payment._id },
-          { $set: { status: "REFUNDED" }, $addToSet: { processedEvents: eventId } },
-        );
+        { returnDocument: "after" },
+      ).lean<LeanOrder | null>();
+      if (refunded) {
+        // ponytail: A DB failure after this claim needs inventory reconciliation; use a Mongo transaction when available.
+        await restockSold(linesOf(refunded), refunded._id, "Refund processed");
+        if (refunded.couponCode) {
+          const coupon = await Coupon.findOne({ code: refunded.couponCode }).select("_id").lean();
+          if (coupon) await releaseCouponUse(coupon._id.toString());
+        }
+        if (payment) {
+          await Payment.updateOne(
+            { _id: payment._id },
+            { $set: { status: "REFUNDED" }, $addToSet: { processedEvents: eventId } },
+          );
+        }
+        await notifyRefund(refunded.userId.toString(), toOrderDTO(refunded));
+        return { ack: true, settled: true };
       }
-      const fresh = await Order.findById(order._id).lean<LeanOrder | null>();
-      if (fresh) await notifyRefund(order.userId.toString(), toOrderDTO(fresh));
-      return { ack: true, settled: true };
     }
     if (payment) {
       await Payment.updateOne({ _id: payment._id }, { $addToSet: { processedEvents: eventId } });
@@ -531,13 +538,8 @@ export async function cancelOrder(rawUserId: string, orderId: string, reason?: s
   if (order.orderStatus !== "PENDING" || order.paymentStatus !== "PENDING") {
     throw new AppError("CONFLICT", "Order can no longer be cancelled — contact support", 409);
   }
-  await releaseHold(linesOf(order), order._id, reason ?? "Customer cancelled");
-  if (order.couponCode) {
-    const coupon = await Coupon.findOne({ code: order.couponCode }).select("_id").lean();
-    if (coupon) await releaseCouponUse(coupon._id.toString());
-  }
   const updated = await Order.findOneAndUpdate(
-    { _id: order._id, orderStatus: "PENDING" },
+    { _id: order._id, orderStatus: "PENDING", paymentStatus: "PENDING" },
     {
       $set: { orderStatus: "CANCELLED" },
       $push: { timeline: { status: "CANCELLED" as OrderStatus, at: new Date(), note: reason ?? "Customer cancelled" } },
@@ -545,6 +547,12 @@ export async function cancelOrder(rawUserId: string, orderId: string, reason?: s
     { returnDocument: "after" },
   ).lean<LeanOrder | null>();
   if (!updated) throw new AppError("CONFLICT", "Order changed state — please refresh", 409);
+  // ponytail: A DB failure after this claim needs inventory reconciliation; use a Mongo transaction when available.
+  await releaseHold(linesOf(updated), updated._id, reason ?? "Customer cancelled");
+  if (updated.couponCode) {
+    const coupon = await Coupon.findOne({ code: updated.couponCode }).select("_id").lean();
+    if (coupon) await releaseCouponUse(coupon._id.toString());
+  }
   await notifyCancellation(userId.toString(), toOrderDTO(updated), reason);
   return toOrderDTO(updated);
 }

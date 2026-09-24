@@ -9,20 +9,22 @@ export function ReviewsTable() {
   const [hiddenOnly, setHiddenOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 });
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (page: number) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "20" });
+      const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (hiddenOnly) params.set("hidden", "true");
       const res = await fetch(`/api/admin/reviews?${params.toString()}`);
       const body = (await res.json()) as {
         success: boolean;
-        data?: { reviews: AdminReviewRow[] };
+        data?: { reviews: AdminReviewRow[]; pagination: { page: number; total: number; totalPages: number } };
         error?: { message: string };
       };
       if (!body.success || !body.data) throw new Error(body.error?.message ?? "Load failed");
       setRows(body.data.reviews);
+      setPagination(body.data.pagination);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Load failed");
     } finally {
@@ -33,7 +35,7 @@ export function ReviewsTable() {
   // Mount fetch of the moderation queue (async load, not a render cascade).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
+    void load(1);
   }, [load]);
 
   const moderate = async (id: string, isPublished: boolean) => {
@@ -46,7 +48,7 @@ export function ReviewsTable() {
       });
       const body = (await res.json()) as { success: boolean; error?: { message: string } };
       if (!body.success) throw new Error(body.error?.message ?? "Moderation failed");
-      await load();
+      await load(hiddenOnly && isPublished && rows.length === 1 && pagination.page > 1 ? pagination.page - 1 : pagination.page);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Moderation failed");
     }
@@ -56,10 +58,10 @@ export function ReviewsTable() {
     if (!window.confirm("Delete this review permanently?")) return;
     setNotice(null);
     try {
-      const res = await fetch(`/api/reviews/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
       const body = (await res.json()) as { success: boolean; error?: { message: string } };
       if (!body.success) throw new Error(body.error?.message ?? "Delete failed");
-      await load();
+      await load(rows.length === 1 && pagination.page > 1 ? pagination.page - 1 : pagination.page);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Delete failed");
     }
@@ -134,6 +136,13 @@ export function ReviewsTable() {
         )}
         {loading && <li className="p-8 text-center text-sm text-ivory/35">Loading…</li>}
       </ul>
+      {pagination.totalPages > 1 && (
+        <nav aria-label="Review pages" className="mt-4 flex items-center justify-center gap-3 text-sm">
+          <button type="button" disabled={loading || pagination.page <= 1} onClick={() => void load(pagination.page - 1)} className="border border-ivory/20 px-4 py-2 text-ivory/60 disabled:opacity-40">Previous</button>
+          <span className="text-ivory/50">{pagination.page} / {pagination.totalPages} ({pagination.total})</span>
+          <button type="button" disabled={loading || pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)} className="border border-ivory/20 px-4 py-2 text-ivory/60 disabled:opacity-40">Next</button>
+        </nav>
+      )}
     </div>
   );
 }

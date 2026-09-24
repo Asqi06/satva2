@@ -153,8 +153,17 @@ export async function releaseExpiredReservations(): Promise<number> {
     .lean();
   let count = 0;
   for (const order of expired) {
-    // One malformed legacy document must never 500 every new checkout:
-    // cancel it defensively and move on.
+    const cancelled = await Order.findOneAndUpdate(
+      { _id: order._id, orderStatus: "PENDING", paymentStatus: "PENDING", reservationExpiresAt: { $lt: new Date() } },
+      {
+        $set: { orderStatus: "CANCELLED" },
+        $push: { timeline: { status: "CANCELLED", at: new Date(), note: "Reservation expired" } },
+      },
+      { returnDocument: "after" },
+    ).lean();
+    if (!cancelled) continue;
+    // ponytail: Claim before releasing the hold; a DB failure afterward needs inventory reconciliation.
+    // One malformed legacy document must never 500 every new checkout.
     try {
       const items = Array.isArray(order.items) ? order.items : [];
       const lines: ReserveLine[] = [];
@@ -172,16 +181,8 @@ export async function releaseExpiredReservations(): Promise<number> {
         if (doc) await releaseCouponUse(doc._id.toString());
       }
     } catch {
-      // Holds stay as-is; the order is still cancelled below so this
-      // document can never poison the sweep again.
+      // The order stays cancelled so this document cannot poison the sweep again.
     }
-    await Order.updateOne(
-      { _id: order._id, orderStatus: "PENDING" },
-      {
-        $set: { orderStatus: "CANCELLED" },
-        $push: { timeline: { status: "CANCELLED", at: new Date(), note: "Reservation expired" } },
-      },
-    );
     count += 1;
   }
   return count;

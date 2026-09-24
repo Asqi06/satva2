@@ -19,7 +19,7 @@ import {
   refundOrder,
   updateOrderStatus,
 } from "@/services/admin-order-service";
-import { createOrder, getOrderForUser, listUserOrders } from "@/services/order-service";
+import { createOrder, getOrderForUser, handleWebhookEvent, listUserOrders } from "@/services/order-service";
 import {
   notifyCancellation,
   notifyRefund,
@@ -128,6 +128,8 @@ describe("admin orders", () => {
     const { order } = await createOrder(customer._id.toString(), { addressId });
     await expect(updateOrderStatus(order.id, "SHIPPED")).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(updateOrderStatus(order.id, "BOGUS")).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    await expect(updateOrderStatus(order.id, "CONFIRMED")).rejects.toMatchObject({ code: "CONFLICT" });
+    await Order.updateOne({ _id: order.id }, { $set: { paymentStatus: "PAID" } });
     for (const next of ["CONFIRMED", "PROCESSING", "PACKED", "SHIPPED", "OUT_FOR_DELIVERY", "DELIVERED"] as const) {
       const updated = await updateOrderStatus(order.id, next);
       expect(updated.orderStatus).toBe(next);
@@ -153,6 +155,19 @@ describe("admin orders", () => {
     expect(vi.mocked(notifyCancellation)).toHaveBeenCalledTimes(1);
   });
 
+  it("claims cancellation once before releasing inventory", async () => {
+    const { customer, product } = await fixtures();
+    const addressId = (await User.findById(customer._id).select("addresses").lean())?.addresses[0]?._id.toString() ?? "";
+    const { order } = await createOrder(customer._id.toString(), { addressId });
+    const attempts = await Promise.allSettled([
+      adminCancelOrder(order.id, "Admin cancel"),
+      adminCancelOrder(order.id, "Admin cancel"),
+    ]);
+    expect(attempts.filter((attempt) => attempt.status === "fulfilled")).toHaveLength(1);
+    expect((await Product.findById(product._id).lean())?.reservedStock).toBe(0);
+    expect(vi.mocked(notifyCancellation)).toHaveBeenCalledTimes(1);
+  });
+
   it("refuses paid cancels and refunds through Razorpay", async () => {
     const { customer, product } = await fixtures();
     const addressId = (await User.findById(customer._id).select("addresses").lean())?.addresses[0]?._id.toString() ?? "";
@@ -175,6 +190,25 @@ describe("admin orders", () => {
     expect(stored?.soldQuantity).toBe(0);
     await expect(refundOrder(created.order.id)).rejects.toMatchObject({ code: "CONFLICT" });
     expect(vi.mocked(notifyRefund)).toHaveBeenCalledTimes(1);
+  });
+
+  it("restocks once when admin and webhook refunds race", async () => {
+    const { customer, product } = await fixtures();
+    const addressId = (await User.findById(customer._id).select("addresses").lean())?.addresses[0]?._id.toString() ?? "";
+    const { order } = await createOrder(customer._id.toString(), { addressId });
+    await Order.updateOne({ _id: order.id }, { $set: {
+      paymentStatus: "PAID", razorpayPaymentId: "pay_race", razorpayOrderId: "order_race",
+    } });
+    await Payment.create({ orderId: order.id, razorpayOrderId: "order_race", razorpayPaymentId: "pay_race", amount: order.total, status: "PAID" });
+    await Product.updateOne({ _id: product._id }, { $set: { stock: 8, reservedStock: 0, soldQuantity: 2 } });
+
+    await Promise.allSettled([
+      refundOrder(order.id, "Admin refund"),
+      handleWebhookEvent("evt_refund_race", "refund.processed", { id: "rfnd_race", order_id: "order_race", payment_id: "pay_race" }),
+    ]);
+    expect((await Order.findById(order.id).lean())?.paymentStatus).toBe("REFUNDED");
+    expect((await Product.findById(product._id).lean())?.stock).toBe(10);
+    expect(await InventoryTransaction.countDocuments({ orderId: order.id, type: "RESTOCK" })).toBe(1);
   });
 
   it("lists with filters and customer emails", async () => {

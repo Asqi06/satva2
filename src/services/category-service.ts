@@ -116,6 +116,18 @@ export async function updateCategory(
     if (input.parentId && input.parentId === id) {
       throw new AppError("VALIDATION_ERROR", "Category cannot be its own parent", 400);
     }
+    let ancestorId = input.parentId;
+    const seen = new Set<string>();
+    while (ancestorId) {
+      if (seen.has(ancestorId)) throw new AppError("CONFLICT", "Category tree contains a cycle", 409);
+      seen.add(ancestorId);
+      const ancestor = await Category.findById(ancestorId).select("parentId").lean();
+      if (!ancestor) throw new AppError("NOT_FOUND", "Parent category not found", 404);
+      if (ancestor.parentId?.toString() === id) {
+        throw new AppError("VALIDATION_ERROR", "Category cannot be nested under its own child", 400);
+      }
+      ancestorId = ancestor.parentId?.toString() ?? null;
+    }
     doc.parentId = input.parentId ? new Types.ObjectId(input.parentId) : null;
   }
   if (input.isPublished !== undefined) doc.isPublished = input.isPublished;
@@ -133,6 +145,9 @@ export async function deleteCategory(id: string): Promise<void> {
   const inUse = await Product.exists({ categoryId: objectId });
   if (inUse) {
     throw new AppError("CONFLICT", "Category has products and cannot be deleted", 409);
+  }
+  if (await Category.exists({ parentId: objectId })) {
+    throw new AppError("CONFLICT", "Category has subcategories and cannot be deleted", 409);
   }
   const result = await Category.deleteOne({ _id: objectId });
   if (result.deletedCount === 0) throw notFound;

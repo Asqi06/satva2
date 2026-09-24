@@ -113,11 +113,14 @@ export function ProductForm({
     setUploading(true);
     setUploadError(null);
     try {
-      const current = getValues("images");
       for (const file of Array.from(files)) {
+        if (getValues("images").length >= 12) throw new Error("A product can have up to 12 images.");
         // Client-side guard: Vercel rejects >~4.5MB bodies before our API runs.
+        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) {
+          throw new Error(`${file.name}: choose a JPG, PNG, WebP or AVIF image.`);
+        }
         if (file.size > 4 * 1024 * 1024) {
-          throw new Error(`${file.name}: too large — use JPG/PNG/WebP under 4MB (phone photos: pick "Medium" size).`);
+          throw new Error(`${file.name}: too large — use an image under 4MB (phone photos: pick "Medium" size).`);
         }
         const form = new FormData();
         form.append("file", file);
@@ -142,7 +145,7 @@ export function ProductForm({
             alt: "",
             width: parsed.data.width,
             height: parsed.data.height,
-            isThumbnail: current.length === 0 && getValues("images").length === 0,
+            isThumbnail: getValues("images").length === 0,
           },
         ]);
       }
@@ -316,10 +319,10 @@ export function ProductForm({
         <h2 className="font-display italic text-2xl text-ivory">Images</h2>
         <p className={hintCls}>First upload (or ★) becomes the thumbnail. Empty alt text falls back to the product name.</p>
         <label className="mt-3 block border border-dashed border-ivory/20 p-6 text-center text-sm text-ivory/40 hover:border-gold/50 hover:text-ivory/60">
-          {uploading ? "Uploading…" : "Drop files or click to upload (JPG/PNG/WebP/AVIF ≤ 4MB, MP4 ≤ 25MB)"}
+          {uploading ? "Uploading…" : "Choose product images (JPG/PNG/WebP/AVIF ≤ 4MB)"}
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
+            accept="image/jpeg,image/png,image/webp,image/avif"
             multiple
             disabled={uploading}
             onChange={(e) => void uploadFiles(e.target.files)}
