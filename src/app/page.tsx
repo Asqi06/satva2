@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { getClientEnv } from "@/lib/env";
-import { cloudinaryResize } from "@/utils/cloudinary-url";
+import { CloudinaryImage as Image } from "@/components/CloudinaryImage";
 import { NewsletterForm } from "@/features/content/NewsletterForm";
 import { ProductCard } from "@/features/products/ProductCard";
 import { listLiveBanners } from "@/services/banner-service";
@@ -88,7 +87,7 @@ export default async function Home() {
             <Link href={hero.link} className="group relative block overflow-hidden bg-blush">
               <span className="relative block aspect-[5/4] w-full sm:aspect-[16/8] lg:aspect-[21/9]">
                 <Image
-                  src={cloudinaryResize(hero.image.secureUrl, 1600)}
+                  src={hero.image.secureUrl}
                   alt={hero.image.alt}
                   fill
                   priority
@@ -144,10 +143,10 @@ export default async function Home() {
                       <span className="relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition-transform group-hover:scale-[1.03]">
                         {img ? (
                           <Image
-                            src={cloudinaryResize(img.secureUrl, 400)}
+                            src={img.secureUrl}
                             alt={img.alt || c.name}
                             fill
-                            sizes="160px"
+                            sizes="(min-width: 640px) 128px, 96px"
                             loading="lazy"
                             className="object-cover"
                           />
@@ -181,10 +180,10 @@ export default async function Home() {
                   <Link href={t.href} className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-cream">
                     {img ? (
                       <Image
-                        src={cloudinaryResize(img.secureUrl, 500)}
+                        src={img.secureUrl}
                         alt={t.label}
                         fill
-                        sizes="300px"
+                        sizes="(min-width: 1280px) 300px, (min-width: 640px) 23vw, 160px"
                         loading="lazy"
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
@@ -217,7 +216,7 @@ export default async function Home() {
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
               {bestsellers.products.slice(0, 4).map((p, i) => (
                 <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
-                  <ProductCard product={p} badge="bestseller" eager={i < 2} />
+                  <ProductCard product={p} badge="bestseller" />
                 </div>
               ))}
             </div>
@@ -230,10 +229,10 @@ export default async function Home() {
             <Link href={promo.link} className="group relative block overflow-hidden rounded-2xl">
               <span className="relative block aspect-[4/3] w-full sm:aspect-[21/8]">
                 <Image
-                  src={cloudinaryResize(promo.image.secureUrl, 1400)}
+                  src={promo.image.secureUrl}
                   alt={promo.image.alt}
                   fill
-                  sizes="100vw"
+                  sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 64px), calc(100vw - 32px)"
                   loading="lazy"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
                 />

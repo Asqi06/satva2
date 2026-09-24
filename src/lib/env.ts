@@ -24,11 +24,17 @@ const clientEnvSchema = z.object({
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
 export function getClientEnv(): ClientEnv {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
+  // The apex redirects to www; never publish localhost or apex URLs in production metadata.
+  const appUrl = process.env.NODE_ENV === "production" &&
+    (!configuredUrl || /^https?:\/\/(?:(?:localhost|127\.0\.0\.1)(?::\d+)?|(?:www\.)?satvastones\.in)\/?$/i.test(configuredUrl))
+      ? "https://www.satvastones.in"
+      : configuredUrl;
   // Next.js injects unset vars as empty strings; treat those as absent
   // so optional keys fall back to undefined/defaults instead of failing min(1).
   const raw: Record<string, string> = {};
   for (const [key, value] of Object.entries({
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_APP_URL: appUrl,
     NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
     NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,

@@ -1,17 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ProductListItem } from "@/services/product-service";
-import { cloudinaryResize } from "@/utils/cloudinary-url";
+import { CloudinaryImage as Image } from "@/components/CloudinaryImage";
 import { formatINR } from "@/utils/format";
 
 /** Shared product card for the home, shop, and related-product grids. */
 export function ProductCard({
   product,
-  eager = false,
   badge,
 }: {
   product: ProductListItem;
-  eager?: boolean;
   badge?: "bestseller" | "new";
 }) {
   const cover = product.images[0];
@@ -24,11 +21,11 @@ export function ProductCard({
           <span className="relative block aspect-[4/5] overflow-hidden bg-cream">
             {cover ? (
               <Image
-                src={cloudinaryResize(cover.secureUrl, 600)}
+                src={cover.secureUrl}
                 alt={cover.alt}
                 fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                loading={eager ? "eager" : "lazy"}
+                sizes="(min-width: 1280px) 296px, (min-width: 1024px) calc((100vw - 80px) / 4), (min-width: 640px) calc((100vw - 80px) / 3), calc((100vw - 44px) / 2)"
+                loading="lazy"
                 decoding="async"
                 className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
               />

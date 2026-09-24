@@ -58,8 +58,6 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-display: var(--font-display);
-  --font-sticker: var(--font-sticker);
-  --font-script: var(--font-script);
 }
 
 /* ─────────────────────────────────────────────
@@ -220,17 +218,6 @@ video {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* Sticker headline (condensed poster type) */
-.font-sticker {
-  font-family: var(--font-sticker);
-  letter-spacing: 0.01em;
-  line-height: 0.95;
-}
-
-.font-script {
-  font-family: var(--font-script);
 }
 
 /* Outlined ghost text like "LIMITED TIME ONLY" */

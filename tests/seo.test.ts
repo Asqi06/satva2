@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connectDb, resetDbCache } from "@/lib/db";
 import { Banner } from "@/models/Banner";
@@ -106,6 +106,17 @@ describe("seo routes", () => {
     const disallow = (rule as { disallow: string | string[] }).disallow;
     for (const path of ["/api/", "/admin/", "/account/", "/checkout/"]) {
       expect(disallow).toContain(path);
+    }
+  });
+
+  it("keeps every production sitemap URL and robots pointer on the public host", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
+    try {
+      expect((await sitemap()).every((entry) => entry.url.startsWith("https://www.satvastones.in/" ) || entry.url === "https://www.satvastones.in")).toBe(true);
+      expect((await robots()).sitemap).toBe("https://www.satvastones.in/sitemap.xml");
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 });

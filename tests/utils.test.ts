@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ensureUnique, slugify } from "@/utils/slug";
 import { formatINR } from "@/utils/format";
+import { cloudinaryLoader } from "@/utils/cloudinary-url";
 
 describe("slugify", () => {
   it("lowercases and hyphenates", () => {
@@ -29,5 +30,13 @@ describe("formatINR", () => {
   it("formats whole rupees in en-IN", () => {
     expect(formatINR(999)).toContain("999");
     expect(formatINR(100000)).toContain("1,00,000");
+  });
+});
+
+describe("cloudinaryLoader", () => {
+  it("generates width-specific CDN URLs with automatic format and quality", () => {
+    const src = "https://res.cloudinary.com/store/image/upload/v1/ring.png";
+    expect(cloudinaryLoader({ src, width: 384 })).toBe("https://res.cloudinary.com/store/image/upload/f_auto,q_auto,w_384/v1/ring.png");
+    expect(cloudinaryLoader({ src, width: 750 })).toContain("w_750/");
   });
 });

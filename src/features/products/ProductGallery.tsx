@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { cloudinaryResize } from "@/utils/cloudinary-url";
+import { cloudinaryLoader } from "@/utils/cloudinary-url";
 
 /** Product image gallery. */
 export function ProductGallery({
@@ -35,12 +35,13 @@ export function ProductGallery({
             }`}
           >
             <Image
-              src={cloudinaryResize(img.secureUrl, 1000)}
+              src={img.secureUrl}
+              loader={cloudinaryLoader}
               alt={img.alt || productName}
               fill
               priority={i === 0}
               fetchPriority={i === 0 ? "high" : "auto"}
-              sizes="(min-width: 1024px) 50vw, 100vw"
+              sizes="(min-width: 1280px) 576px, (min-width: 1024px) calc((100vw - 128px) / 2), calc(100vw - 32px)"
               className="object-cover"
             />
           </div>
@@ -74,10 +75,11 @@ export function ProductGallery({
               }`}
             >
             <Image
-              src={cloudinaryResize(img.secureUrl, 200)}
+              src={img.secureUrl}
+              loader={cloudinaryLoader}
               alt=""
               fill
-              sizes="15vw"
+              sizes={`(min-width: 1280px) ${Math.floor(576 / Math.min(images.length, 6))}px, (min-width: 1024px) calc((100vw - 128px) / ${Math.min(images.length, 6) * 2}), calc((100vw - 44px) / ${Math.min(images.length, 6)})`}
               loading="lazy"
               decoding="async"
               className="object-cover"
