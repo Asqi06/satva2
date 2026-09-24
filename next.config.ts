@@ -17,6 +17,9 @@ const PROD_CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [{ source: "/qanda", destination: "/faq", permanent: true }];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },

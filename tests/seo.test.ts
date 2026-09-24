@@ -10,7 +10,7 @@ import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 import { generateMetadata as homeMetadata } from "@/app/page";
 import { generateMetadata as shopMetadata } from "@/app/shop/page";
-import { listPublicProducts } from "@/services/product-service";
+import { getPublicProductSlug, listPublicProducts } from "@/services/product-service";
 
 delete process.env.NEXT_PUBLIC_APP_URL;
 
@@ -85,6 +85,17 @@ describe("seo routes", () => {
       const result = await listPublicProducts({ q, sort: "featured", page: 1, limit: 12 });
       expect(result.products.map((product) => product.slug)).toContain("gold-hoops");
     }
+  });
+
+  it("resolves legacy product slugs and IDs only for published products", async () => {
+    const cat = await Category.create({ name: "Rings", slug: "rings" });
+    const published = await Product.create({ name: "Gold Ring", slug: "gold-ring", description: "Gold ring", categoryId: cat._id, images: [IMG], price: 500, sku: "GOLD-RING", stock: 1, isPublished: true });
+    const hidden = await Product.create({ name: "Hidden Ring", slug: "hidden-ring", description: "Hidden ring", categoryId: cat._id, images: [IMG], price: 500, sku: "HIDDEN-RING", stock: 1, isPublished: false });
+    expect(await getPublicProductSlug("gold-ring")).toBe("gold-ring");
+    expect(await getPublicProductSlug(published.id)).toBe("gold-ring");
+    expect(await getPublicProductSlug("hidden-ring")).toBeNull();
+    expect(await getPublicProductSlug(hidden.id)).toBeNull();
+    expect(await getPublicProductSlug("missing-ring")).toBeNull();
   });
 
   it("uses admin SEO copy and category images in page metadata", async () => {

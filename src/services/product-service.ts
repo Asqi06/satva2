@@ -339,6 +339,18 @@ export async function getPublicProductBySlug(slug: string): Promise<ProductDetai
   return toDetail(doc, related.map(toListItem));
 }
 
+/** Resolve legacy /product URLs without exposing unpublished products. */
+export async function getPublicProductSlug(identifier: string): Promise<string | null> {
+  await connectDb();
+  const filter = /^[0-9a-f]{24}$/i.test(identifier)
+    ? { _id: new Types.ObjectId(identifier) }
+    : { slug: identifier.toLowerCase() };
+  const product = await Product.findOne({ ...filter, isPublished: true })
+    .select("slug")
+    .lean<{ slug: string } | null>();
+  return product?.slug ?? null;
+}
+
 function notFound(): AppError {
   return new AppError("NOT_FOUND", "Product not found", 404);
 }
