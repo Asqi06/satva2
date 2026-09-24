@@ -57,7 +57,7 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
         onChange={(e) => setAnnouncement(e.target.value)}
         maxLength={200}
         rows={3}
-        placeholder="Free gift on order above INR 899 | COD available | Easy return"
+        placeholder="Free gift on order above INR 899 | Secure online payments | Easy return"
         className={`${inputCls} mt-3`}
       />
 

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { cloudinaryResize } from "@/utils/cloudinary-url";
 
-/** Bold & playful gallery — rounded images, bouncy thumbnails. */
+/** Product image gallery. */
 export function ProductGallery({
   images,
   productName,
@@ -17,16 +17,16 @@ export function ProductGallery({
 
   if (!current) {
     return (
-      <div className="flex aspect-[4/5] items-center justify-center rounded-3xl bg-gradient-to-br from-peach to-lavender font-display italic text-8xl text-white">
+      <div className="flex aspect-[4/5] items-center justify-center rounded-2xl bg-cream font-display text-8xl text-maroon/30">
         S
       </div>
     );
   }
 
   return (
-    <div className="lg:sticky lg:top-[76px]">
+    <div>
       {/* Main image */}
-      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border-2 border-light-gray bg-cream shadow-xl">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-light-gray bg-cream">
         {images.map((img, i) => (
           <div
             key={img.secureUrl}
@@ -67,10 +67,10 @@ export function ProductGallery({
               onClick={() => setActive(i)}
               aria-pressed={i === active}
               aria-label={`View image ${i + 1}`}
-              className={`relative aspect-square overflow-hidden rounded-2xl border-2 transition-all hover:scale-105 ${
+              className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-colors ${
                 i === active
-                  ? "border-primary opacity-100 shadow-lg shadow-primary/20"
-                  : "border-light-gray opacity-50 hover:opacity-100"
+                  ? "border-primary opacity-100"
+                  : "border-transparent opacity-65 hover:opacity-100"
               }`}
             >
             <Image

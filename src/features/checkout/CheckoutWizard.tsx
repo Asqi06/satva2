@@ -421,7 +421,7 @@ export function CheckoutWizard() {
             )}
             <div className="flex justify-between">
               <dt className="text-warm-gray">Shipping</dt>
-              <dd className="font-mono">{shippingPreview === 0 ? "Free ✓" : formatINR(shippingPreview)}</dd>
+              <dd className="font-mono">{shippingPreview === 0 ? "Free" : formatINR(shippingPreview)}</dd>
             </div>
             <div className="flex justify-between border-t border-light-gray pt-2 font-semibold">
               <dt>To pay</dt>
@@ -429,9 +429,9 @@ export function CheckoutWizard() {
             </div>
           </dl>
           <ul className="mt-3 space-y-1 text-xs leading-5 text-warm-gray">
-            <li>💳 Pay with <strong>GPay, PhonePe, Paytm UPI</strong>, cards, netbanking & wallets via Razorpay.</li>
-            <li>🔒 Final amounts are confirmed by our server when you pay — never from this screen.</li>
-            <li>🎁 Gift box + note included free. Online payments only, no COD.</li>
+                <li>Pay with <strong>GPay, PhonePe, Paytm UPI</strong>, cards, netbanking or wallets via Razorpay.</li>
+                <li>Your final total is confirmed before payment.</li>
+                <li>Gift box and note included. Online payments only; no COD at checkout.</li>
           </ul>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <button type="button" onClick={() => setStep("delivery")} className="btn-ghost">
@@ -451,8 +451,8 @@ export function CheckoutWizard() {
 
       {step === "done" && order && (
         <section aria-label="Order confirmation" className="mt-6 rounded-3xl border border-gold/30 bg-gold/10 p-8 text-center">
-          <p className="eyebrow">Payment confirmed ✓</p>
-          <h2 className="section-title mt-1 text-4xl">Shabaash — it&apos;s yours!</h2>
+          <p className="eyebrow">Payment confirmed</p>
+          <h2 className="section-title mt-1 text-4xl">Order confirmed.</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-warm-gray">We&apos;re packing it gift-ready in Vapi as you read this.</p>
           <dl className="mx-auto mt-6 max-w-sm space-y-2 text-sm">
             <div className="flex justify-between">

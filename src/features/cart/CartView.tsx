@@ -54,7 +54,7 @@ export function CartView() {
           )}
           {missing === 0 && lines.length > 0 && (
             <p className="mt-5 inline-block bg-mehendi px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ivory">
-              ✓ You unlocked free shipping
+              Free shipping unlocked
             </p>
           )}
         </div>
@@ -205,7 +205,7 @@ export function CartView() {
                 Proceed to checkout
               </Link>
               <p className="mt-3 text-center text-xs leading-5 text-muted">
-                UPI • Cards • Netbanking · 🎁 gift box free · 7-day easy cover
+                UPI • Cards • Netbanking · Gift-ready packaging · 7-day easy cover
               </p>
               <Link
                 href="/shop"

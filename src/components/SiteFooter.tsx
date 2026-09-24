@@ -35,7 +35,7 @@ const FOOTER_COLS = [
 ];
 
 const TRUST_ITEMS = [
-  { title: "Free shipping over ₹899", body: "COD available across India" },
+  { title: "Free shipping over ₹899", body: "Tracked delivery across India" },
   { title: "UPI • Cards • Netbanking", body: "Secure Razorpay checkout" },
   { title: "Easy return", body: "7-day cover on defects & damage" },
   { title: "Free gift above ₹899", body: "Gift-ready pouch in every order" },
