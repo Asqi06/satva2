@@ -109,7 +109,7 @@ export default async function ShopPage({
           <p className="mx-auto mt-2 max-w-xl text-[13px] text-ink/60">
             {pagination.total === 0
               ? "No pieces match — try clearing a filter."
-              : `${pagination.total} piece${pagination.total === 1 ? "" : "s"} · Free shipping over ₹899 · COD available`}
+              : `${pagination.total} piece${pagination.total === 1 ? "" : "s"} · Free shipping over ₹899 · Secure online payment`}
           </p>
         </div>
       </div>
@@ -133,8 +133,7 @@ export default async function ShopPage({
           </div>
         ) : (
           <div className="mt-6 rounded-2xl border-2 border-dashed border-primary/30 bg-blush/50 p-16 text-center">
-            <p className="text-4xl">🛍️</p>
-            <p className="section-title mt-3 text-2xl">Arre, the shelf is empty here.</p>
+            <p className="section-title mt-3 text-2xl">No pieces match these filters.</p>
             <p className="mt-2 text-sm text-muted">Try a different budget or occasion — pretty things await.</p>
             <Link
               href="/shop"

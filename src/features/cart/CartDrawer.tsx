@@ -203,7 +203,7 @@ export function CartDrawer() {
               <span className="text-sm text-muted">Subtotal (incl. taxes)</span>
               <span className="font-mono text-2xl font-semibold">{formatINR(subtotal)}</span>
             </div>
-            <p className="mt-1 text-xs text-muted">Shipping at checkout · Free over ₹899 · 🎁 free gift</p>
+              <p className="mt-1 text-xs text-muted">Shipping at checkout · Free over ₹899 · Gift-ready packaging</p>
             <Link
               href="/cart"
               onClick={() => setDrawerOpen(false)}

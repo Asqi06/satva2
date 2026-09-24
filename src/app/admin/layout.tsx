@@ -8,14 +8,14 @@ import { AppError } from "@/lib/errors";
 export const dynamic = "force-dynamic";
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: "◈" },
-  { href: "/admin/products", label: "Products", icon: "◻" },
-  { href: "/admin/categories", label: "Categories", icon: "◫" },
-  { href: "/admin/orders", label: "Orders", icon: "◪" },
-  { href: "/admin/reviews", label: "Reviews", icon: "◉" },
-  { href: "/admin/coupons", label: "Coupons", icon: "◎" },
-  { href: "/admin/banners", label: "Banners", icon: "◬" },
-  { href: "/admin/settings", label: "Settings", icon: "◈" },
+  { href: "/admin", label: "Dashboard" },
+  { href: "/admin/products", label: "Products" },
+  { href: "/admin/categories", label: "Categories" },
+  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/reviews", label: "Reviews" },
+  { href: "/admin/coupons", label: "Coupons" },
+  { href: "/admin/banners", label: "Banners" },
+  { href: "/admin/settings", label: "Settings" },
 ] as const;
 
 const COMING_SOON = ["Customers", "Inventory"];
@@ -37,7 +37,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <div className="flex items-center justify-between gap-3 border-b border-ivory/[0.06] px-4 py-4 sm:px-6 lg:block lg:py-5">
             <div>
               <Link href="/" className="font-display italic text-xl text-gold">
-                SatvaStones ✦
+                SatvaStones
               </Link>
               <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-ivory/30">
                 Back office · Vapi studio
@@ -61,9 +61,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                     href={item.href}
                     className="flex items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm font-medium text-ivory/55 transition-colors hover:bg-ivory/[0.06] hover:text-ivory lg:rounded-none"
                   >
-                    <span aria-hidden="true" className="text-gold">
-                      {item.icon}
-                    </span>
                     {item.label}
                   </Link>
                 </li>
@@ -78,7 +75,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               {COMING_SOON.map((label) => (
                 <li key={label} className="shrink-0">
                   <span className="flex items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-ivory/25">
-                    <span aria-hidden="true" className="text-ivory/15">◌</span>
                     {label}
                     <span className="ml-auto hidden rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-gold lg:block">
                       Soon

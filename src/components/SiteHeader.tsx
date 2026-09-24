@@ -17,7 +17,7 @@ const NAV_LINKS = [
 
 const DEFAULT_UTILITY_ITEMS = [
   "Free gift on order above INR 899",
-  "COD available",
+  "Secure online payments",
   "Easy return",
   "Free shipping above INR 899",
 ];
@@ -193,7 +193,7 @@ export function SiteHeader() {
                 className={`mx-6 inline-flex items-center gap-6 text-[9px] font-bold uppercase tracking-[0.2em] text-white/85 md:mx-4 ${i >= utilityItems.length ? "md:hidden" : ""}`}
               >
                 {item}
-                <span className="text-primary">✦</span>
+                <span className="h-1 w-1 rounded-full bg-primary" />
               </span>
             ))}
           </div>
@@ -242,7 +242,7 @@ export function SiteHeader() {
               </ul>
             </nav>
             <div className="border-t border-black/10 px-6 py-5 text-xs text-muted">
-              Crafted in Vapi, Gujarat · COD available
+              Crafted in Vapi, Gujarat · Secure online payments
             </div>
           </div>
         </>

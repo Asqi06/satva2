@@ -107,7 +107,7 @@ export default async function Home() {
                   Jewellery to make every day feel like an occasion.
                 </span>
                 <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-primary">
-                  Explore the collection <span aria-hidden="true">↗</span>
+                  Explore the collection
                 </span>
               </span>
             </Link>
@@ -193,9 +193,8 @@ export default async function Home() {
                       <span className={`absolute inset-0 ${t.bg}`} />
                     )}
                     <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" aria-hidden="true" />
-                    <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4 text-white sm:p-5">
-                      <span className="font-display text-xl font-semibold sm:text-2xl">{t.label}</span>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-ink transition-transform group-hover:-translate-y-1" aria-hidden="true">↗</span>
+                    <span className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+                      <span className="font-display text-xl font-semibold group-hover:underline sm:text-2xl">{t.label}</span>
                     </span>
                   </Link>
                 </li>
@@ -213,7 +212,7 @@ export default async function Home() {
                 <h2 id="popular-heading" className="section-title mt-1 text-3xl sm:text-4xl">The popular pieces</h2>
               </div>
               <Link href="/shop?sort=best-selling" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
-                View all best sellers ↗
+                View all best sellers
               </Link>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
@@ -254,7 +253,7 @@ export default async function Home() {
                 <h2 id="new-heading" className="section-title mt-1 text-3xl sm:text-4xl">New arrivals</h2>
               </div>
               <Link href="/shop?sort=newest" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
-                Shop all new ↗
+                Shop all new
               </Link>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">

@@ -15,7 +15,7 @@ export interface PurchaseVariant {
   stock: number;
 }
 
-/** Bold & playful buy box — pill variants, bouncy CTAs. */
+/** Product options and purchase actions. */
 export function PurchasePanel({
   product,
 }: {
@@ -90,12 +90,11 @@ export function PurchasePanel({
   };
 
   return (
-    <div className="mt-8 space-y-6">
-      {/* Variant pills */}
+    <div className="mt-7 space-y-6">
       {product.variants.length > 0 && (
         <fieldset>
           <legend className="eyebrow">
-            Pick your variant
+            Choose an option
           </legend>
           <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Variant">
             {product.variants.map((v) => {
@@ -113,9 +112,9 @@ export function PurchasePanel({
                     setSku(v.sku);
                     setQty(1);
                   }}
-                  className={`rounded-full border-2 px-5 py-2.5 text-sm font-bold transition-all hover:scale-105 disabled:opacity-35 ${
+                  className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-35 ${
                     active
-                      ? "border-primary bg-primary text-white shadow-lg shadow-primary/30"
+                      ? "border-ink bg-ink text-white"
                       : "border-light-gray bg-white hover:border-primary hover:text-primary"
                   }`}
                 >
@@ -127,13 +126,12 @@ export function PurchasePanel({
         </fieldset>
       )}
 
-      {/* Quantity + running total */}
       <div className="flex flex-wrap items-center gap-5">
         <fieldset className="flex items-center gap-3">
           <legend className="eyebrow">
-            Qty
+            Quantity
           </legend>
-          <div className="flex items-center rounded-full border-2 border-light-gray bg-white">
+          <div className="flex items-center rounded-full border border-light-gray bg-white">
             <button
               type="button"
               aria-label="Decrease quantity"
@@ -156,17 +154,16 @@ export function PurchasePanel({
           </div>
         </fieldset>
 
-        <p className="text-lg" aria-live="polite">
-          <span className="font-extrabold">{formatINR(price * qty)}</span>
+        <p className="text-sm text-muted" aria-live="polite">
+          Total <span className="ml-1 text-lg font-semibold text-ink">{formatINR(price * qty)}</span>
           {selected && stock > 0 && stock < 10 && (
-            <span className="ml-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-              Only {stock} left!
+            <span className="ml-2 text-xs font-semibold text-maroon">
+              Only {stock} left
             </span>
           )}
         </p>
       </div>
 
-      {/* CTA buttons */}
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
@@ -174,7 +171,7 @@ export function PurchasePanel({
           onClick={() => void addToBag()}
           className="btn-primary flex-1 disabled:opacity-40 sm:flex-initial"
         >
-          {busy ? "Adding…" : added ? "✓ Added to bag!" : stock === 0 ? "Out of stock" : "Add to bag 🛍️"}
+          {busy ? "Adding…" : added ? "Added to bag" : stock === 0 ? "Out of stock" : "Add to bag"}
         </button>
         <button
           type="button"
@@ -185,15 +182,9 @@ export function PurchasePanel({
             wished ? "!border-primary !text-primary !bg-primary/5" : ""
           }`}
         >
-          {wished ? "♥ Saved!" : "♡ Wishlist"}
+          {wished ? "Saved to wishlist" : "Save to wishlist"}
         </button>
       </div>
-      <p className="text-xs leading-5 text-muted">
-        {selected && stock > 0 && stock < 10
-          ? `Hurry — only ${stock} left in this variant. `
-          : ""}
-        Ships in 2–4 days · Free shipping over ₹899 · Free gift included 🎁
-      </p>
     </div>
   );
 }

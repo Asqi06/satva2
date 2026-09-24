@@ -18,7 +18,7 @@ export default function LoginPage() {
 
       <main className="w-full max-w-sm border border-light-gray bg-ivory px-8 py-12 shadow-[0_24px_80px_rgba(10,10,10,0.12)] animate-scale-in">
         {/* Wordmark */}
-        <p className="font-display italic text-2xl text-gold">SatvaStones ✦</p>
+        <p className="font-display text-2xl font-semibold text-primary">SatvaStones</p>
 
         <h1 className="mt-6 font-display italic text-5xl leading-[1.05] tracking-tight">
           Namaste,<br />welcome back.
@@ -33,10 +33,10 @@ export default function LoginPage() {
           <SignInButton />
         </div>
 
-        <ul className="mt-6 space-y-1.5 border-t border-light-gray pt-5 text-xs leading-5 text-muted">
-          <li>✓ Track orders live, 5–7 day delivery</li>
-          <li>✓ Wishlist syncs across phone & laptop</li>
-          <li>✓ UPI, cards & netbanking at checkout</li>
+        <ul className="mt-6 list-inside list-disc space-y-1.5 border-t border-light-gray pt-5 text-xs leading-5 text-muted">
+          <li>Track orders live, 5–7 day delivery</li>
+          <li>Wishlist syncs across phone & laptop</li>
+          <li>UPI, cards & netbanking at checkout</li>
         </ul>
 
         <p className="mt-5 text-xs text-muted">
