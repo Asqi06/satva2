@@ -101,6 +101,30 @@ describe("coupon admin service", () => {
     });
   });
 
+  it("clears optional limits and expiry when removed in the editor", async () => {
+    const created = await createAdminCoupon({
+      code: "LIMITED",
+      type: "PERCENTAGE",
+      value: 20,
+      minimumOrderValue: 0,
+      maximumDiscount: 100,
+      applicableProductIds: [],
+      applicableCategoryIds: [],
+      firstOrderOnly: false,
+      usageLimit: 10,
+      perUserLimit: 2,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      isActive: true,
+    });
+    const updated = await updateAdminCoupon(created.id, {
+      maximumDiscount: null,
+      usageLimit: null,
+      perUserLimit: null,
+      expiresAt: null,
+    });
+    expect(updated).toMatchObject({ maximumDiscount: undefined, usageLimit: undefined, perUserLimit: undefined, expiresAt: undefined });
+  });
+
   it("deletes only unused coupons", async () => {
     const fresh = await createAdminCoupon({
       code: "FRESH",

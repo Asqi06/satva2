@@ -61,6 +61,7 @@ export interface IOrder extends Document {
   orderStatus: OrderStatus;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
+  refundRequestedAt?: Date;
   reservationExpiresAt?: Date;
   timeline: ITimelineEntry[];
   createdAt: Date;
@@ -137,6 +138,7 @@ const orderSchema = new Schema<IOrder>(
     },
     razorpayOrderId: { type: String, sparse: true, unique: true },
     razorpayPaymentId: { type: String, sparse: true, unique: true },
+    refundRequestedAt: { type: Date },
     reservationExpiresAt: { type: Date },
     timeline: { type: [timelineSchema], default: [] },
   },

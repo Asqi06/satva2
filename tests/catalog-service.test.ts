@@ -9,6 +9,7 @@ import {
   createCategory,
   deleteCategory,
   listPublicCategories,
+  updateCategory,
 } from "@/services/category-service";
 import {
   bulkProductAction,
@@ -100,6 +101,18 @@ describe("catalog services", () => {
     expect(await getPublicProductBySlug("nope")).toBeNull();
   });
 
+  it("uses the selected thumbnail as the first storefront image", async () => {
+    const cat = await makeCategory();
+    const product = await createProduct(productInput(cat.id, {
+      images: [
+        { ...IMG, isThumbnail: false },
+        { ...IMG, publicId: "p/2", secureUrl: "https://res.cloudinary.com/x/image/upload/p/2", isThumbnail: true },
+      ],
+    }));
+    const detail = await getPublicProductBySlug(product.slug);
+    expect(detail?.images[0]?.publicId).toBe("p/2");
+  });
+
   it("rejects duplicate product SKUs and variant clashes", async () => {
     const cat = await makeCategory();
     await createProduct(productInput(cat.id));
@@ -124,6 +137,15 @@ describe("catalog services", () => {
     await expect(deleteCategory(cat.id)).rejects.toMatchObject({ code: "CONFLICT" });
     const empty = await makeCategory("Empty");
     await deleteCategory(empty.id);
+  });
+
+  it("keeps subcategories attached to valid parents", async () => {
+    const parent = await makeCategory("Jewellery");
+    const child = await createCategory({ name: "Rings", parentId: parent.id, isPublished: true, sortOrder: 0 });
+    await expect(deleteCategory(parent.id)).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(updateCategory(parent.id, { parentId: child.id })).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    await updateCategory(child.id, { parentId: null });
+    await deleteCategory(parent.id);
   });
 
   it("duplicates as an unpublished copy and bulk-publishes", async () => {

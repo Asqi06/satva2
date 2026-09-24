@@ -25,7 +25,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     await requireAdmin();
   } catch (error) {
     if (error instanceof AppError && error.status === 403) redirect("/account");
-    redirect("/login");
+    if (error instanceof AppError && error.status === 401) redirect("/login");
+    throw error;
   }
 
   return (

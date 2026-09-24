@@ -3,7 +3,7 @@ import { connectDb } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { Coupon, type ICoupon } from "@/models/Coupon";
 import { CouponRedemption } from "@/models/CouponRedemption";
-import type { CouponAdminInput } from "@/schemas/coupon";
+import type { CouponAdminInput, CouponAdminPatch } from "@/schemas/coupon";
 
 /** Admin coupon management. Validation math lives in coupon-service. */
 
@@ -83,7 +83,7 @@ export async function createAdminCoupon(input: CouponAdminInput): Promise<AdminC
 
 export async function updateAdminCoupon(
   id: string,
-  input: Partial<CouponAdminInput>,
+  input: CouponAdminPatch,
 ): Promise<AdminCouponRow> {
   await connectDb();
   if (!Types.ObjectId.isValid(id)) throw notFound();
@@ -100,7 +100,7 @@ export async function updateAdminCoupon(
     doc.value = input.value;
   }
   if (input.minimumOrderValue !== undefined) doc.minimumOrderValue = input.minimumOrderValue;
-  if (input.maximumDiscount !== undefined) doc.maximumDiscount = input.maximumDiscount;
+  if (input.maximumDiscount !== undefined) doc.maximumDiscount = input.maximumDiscount ?? undefined;
   if (input.applicableProductIds !== undefined) {
     doc.applicableProductIds = input.applicableProductIds.map((pid) => new Types.ObjectId(pid));
   }
@@ -109,13 +109,13 @@ export async function updateAdminCoupon(
   }
   if (input.firstOrderOnly !== undefined) doc.firstOrderOnly = input.firstOrderOnly;
   if (input.usageLimit !== undefined) {
-    if (input.usageLimit < doc.usageCount) {
+    if (input.usageLimit !== null && input.usageLimit < doc.usageCount) {
       throw new AppError("VALIDATION_ERROR", "Usage limit cannot go below current usage", 400);
     }
-    doc.usageLimit = input.usageLimit;
+    doc.usageLimit = input.usageLimit ?? undefined;
   }
-  if (input.perUserLimit !== undefined) doc.perUserLimit = input.perUserLimit;
-  if (input.expiresAt !== undefined) doc.expiresAt = new Date(input.expiresAt);
+  if (input.perUserLimit !== undefined) doc.perUserLimit = input.perUserLimit ?? undefined;
+  if (input.expiresAt !== undefined) doc.expiresAt = input.expiresAt ? new Date(input.expiresAt) : undefined;
   if (input.isActive !== undefined) doc.isActive = input.isActive;
   await doc.save();
   const fresh = await Coupon.findById(id).lean<LeanCoupon | null>();

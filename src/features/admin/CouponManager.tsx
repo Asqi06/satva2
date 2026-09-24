@@ -60,7 +60,7 @@ export function CouponManager() {
       firstOrderOnly: row.firstOrderOnly,
       usageLimit: row.usageLimit !== undefined ? String(row.usageLimit) : "",
       perUserLimit: row.perUserLimit !== undefined ? String(row.perUserLimit) : "",
-      expiresAt: row.expiresAt ? row.expiresAt.slice(0, 16) : "",
+      expiresAt: row.expiresAt ? new Date(row.expiresAt).toLocaleString("sv-SE").replace(" ", "T").slice(0, 16) : "",
       isActive: row.isActive,
     });
   };
@@ -79,11 +79,11 @@ export function CouponManager() {
         type: form.type,
         value: Number(form.value),
         minimumOrderValue: Number(form.minimumOrderValue) || 0,
-        ...(form.maximumDiscount ? { maximumDiscount: Number(form.maximumDiscount) } : {}),
+        ...(editingId || form.maximumDiscount ? { maximumDiscount: form.maximumDiscount ? Number(form.maximumDiscount) : null } : {}),
         firstOrderOnly: form.firstOrderOnly,
-        ...(form.usageLimit ? { usageLimit: Number(form.usageLimit) } : {}),
-        ...(form.perUserLimit ? { perUserLimit: Number(form.perUserLimit) } : {}),
-        ...(form.expiresAt ? { expiresAt: new Date(form.expiresAt).toISOString() } : {}),
+        ...(editingId || form.usageLimit ? { usageLimit: form.usageLimit ? Number(form.usageLimit) : null } : {}),
+        ...(editingId || form.perUserLimit ? { perUserLimit: form.perUserLimit ? Number(form.perUserLimit) : null } : {}),
+        ...(editingId || form.expiresAt ? { expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null } : {}),
         isActive: form.isActive,
       };
       const url = editingId ? `/api/admin/coupons/${editingId}` : "/api/admin/coupons";

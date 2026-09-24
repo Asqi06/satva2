@@ -44,7 +44,7 @@ export async function updateSettings(input: SettingsInput): Promise<ShippingSett
         freeShippingThreshold: input.freeShippingThreshold,
         shippingFlatFee: input.shippingFlatFee,
         reservationTtlMinutes: input.reservationTtlMinutes,
-        announcement,
+        announcement: announcement ?? "",
       },
     },
     { upsert: true, new: true },

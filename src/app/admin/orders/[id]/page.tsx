@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminOrder } from "@/services/admin-order-service";
+import { AppError } from "@/lib/errors";
 import { formatINR } from "@/utils/format";
 import { AdminOrderActions } from "@/features/admin/AdminOrderActions";
 import { OrderTimeline, StatusPill } from "@/features/orders/OrderTimeline";
@@ -12,8 +13,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   let order;
   try {
     order = await getAdminOrder(id);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof AppError && error.status === 404) notFound();
+    throw error;
   }
 
   return (

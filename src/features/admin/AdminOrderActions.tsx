@@ -56,7 +56,7 @@ export function AdminOrderActions({
     OUT_FOR_DELIVERY: ["DELIVERED"],
     DELIVERED: ["RETURNED"],
   };
-  const options = NEXT[orderStatus] ?? [];
+  const options = paymentStatus === "PAID" ? NEXT[orderStatus] ?? [] : [];
   const cancellable = ["PENDING", "CONFIRMED", "PROCESSING", "PACKED"].includes(orderStatus);
   const refundable = paymentStatus === "PAID";
 

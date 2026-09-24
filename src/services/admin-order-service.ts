@@ -11,6 +11,7 @@ import {
 import { refundRazorpayPayment } from "@/lib/razorpay";
 import { Coupon } from "@/models/Coupon";
 import { Order, type OrderStatus } from "@/models/Order";
+import { Payment } from "@/models/Payment";
 import { User } from "@/models/User";
 import { releaseCouponUse } from "./coupon-service";
 import { releaseHold, restockSold, type ReserveLine } from "./inventory-service";import { toOrderDTO, type LeanOrder, type OrderDTO } from "./order-service";
@@ -157,8 +158,11 @@ export async function updateOrderStatus(
   if (target === "CANCELLED") {
     return adminCancelOrder(orderId, note ?? "Cancelled by admin");
   }
+  if (order.paymentStatus !== "PAID") {
+    throw new AppError("CONFLICT", "Only paid orders can enter fulfilment", 409);
+  }
   const updated = await Order.findOneAndUpdate(
-    { _id: order._id, orderStatus: order.orderStatus },
+    { _id: order._id, orderStatus: order.orderStatus, paymentStatus: "PAID" },
     {
       $set: { orderStatus: target },
       $push: { timeline: { status: target, at: new Date(), note } },
@@ -202,13 +206,8 @@ export async function adminCancelOrder(orderId: string, reason: string): Promise
   if (order.paymentStatus === "REFUNDED") {
     throw new AppError("CONFLICT", "Order is already refunded", 409);
   }
-  await releaseHold(linesOf(order), order._id, reason);
-  if (order.couponCode) {
-    const coupon = await Coupon.findOne({ code: order.couponCode }).select("_id").lean();
-    if (coupon) await releaseCouponUse(coupon._id.toString());
-  }
   const updated = await Order.findOneAndUpdate(
-    { _id: order._id, orderStatus: order.orderStatus },
+    { _id: order._id, orderStatus: order.orderStatus, paymentStatus: order.paymentStatus },
     {
       $set: { orderStatus: "CANCELLED" },
       $push: { timeline: { status: "CANCELLED" as OrderStatus, at: new Date(), note: reason } },
@@ -216,6 +215,12 @@ export async function adminCancelOrder(orderId: string, reason: string): Promise
     { returnDocument: "after" },
   ).lean<LeanOrder | null>();
   if (!updated) throw new AppError("CONFLICT", "Order changed state — please refresh", 409);
+  // ponytail: A DB failure after this claim needs inventory reconciliation; use a Mongo transaction when available.
+  await releaseHold(linesOf(updated), updated._id, reason);
+  if (updated.couponCode) {
+    const coupon = await Coupon.findOne({ code: updated.couponCode }).select("_id").lean();
+    if (coupon) await releaseCouponUse(coupon._id.toString());
+  }
   await notifyCancellation(updated.userId.toString(), toOrderDTO(updated), reason);
   return toOrderDTO(updated);
 }
@@ -236,11 +241,19 @@ export async function refundOrder(orderId: string, reason?: string): Promise<Ord
   if (!order.razorpayPaymentId) {
     throw new AppError("CONFLICT", "No captured payment to refund", 409);
   }
-  await refundRazorpayPayment(order.razorpayPaymentId);
-  await restockSold(linesOf(order), order._id, reason ?? "Admin refund");
-  if (order.couponCode) {
-    const coupon = await Coupon.findOne({ code: order.couponCode }).select("_id").lean();
-    if (coupon) await releaseCouponUse(coupon._id.toString());
+  const claimed = await Order.findOneAndUpdate(
+    { _id: order._id, paymentStatus: "PAID", refundRequestedAt: { $exists: false } },
+    { $set: { refundRequestedAt: new Date() } },
+    { returnDocument: "after" },
+  ).lean<LeanOrder | null>();
+  if (!claimed) throw new AppError("CONFLICT", "Refund already requested — check Razorpay before retrying", 409);
+  try {
+    await refundRazorpayPayment(order.razorpayPaymentId);
+  } catch {
+    const current = await Order.findById(order._id).lean<LeanOrder | null>();
+    if (current?.paymentStatus === "REFUNDED") return toOrderDTO(current);
+    // ponytail: An uncertain provider response stays claimed; reconcile in Razorpay before a manual retry.
+    throw new AppError("PAYMENT_ERROR", "Refund outcome unclear — check Razorpay before retrying", 502);
   }
   const updated = await Order.findOneAndUpdate(
     { _id: order._id, paymentStatus: "PAID" },
@@ -252,7 +265,18 @@ export async function refundOrder(orderId: string, reason?: string): Promise<Ord
     },
     { returnDocument: "after" },
   ).lean<LeanOrder | null>();
-  if (!updated) throw new AppError("CONFLICT", "Order changed state — please refresh", 409);
+  if (!updated) {
+    const current = await Order.findById(order._id).lean<LeanOrder | null>();
+    if (current?.paymentStatus === "REFUNDED") return toOrderDTO(current);
+    throw new AppError("CONFLICT", "Order changed state — please refresh", 409);
+  }
+  // ponytail: A DB failure after this claim needs inventory reconciliation; use a Mongo transaction when available.
+  await restockSold(linesOf(updated), updated._id, reason ?? "Admin refund");
+  if (updated.couponCode) {
+    const coupon = await Coupon.findOne({ code: updated.couponCode }).select("_id").lean();
+    if (coupon) await releaseCouponUse(coupon._id.toString());
+  }
+  await Payment.updateOne({ orderId: updated._id }, { $set: { status: "REFUNDED" } });
   await notifyRefund(updated.userId.toString(), toOrderDTO(updated), reason);
   return toOrderDTO(updated);
 }

@@ -22,7 +22,7 @@ export interface ProductListItem {
   compareAtPrice?: number;
   discountPercent: number;
   sku: string;
-  images: { publicId: string; secureUrl: string; alt: string }[];
+  images: { publicId: string; secureUrl: string; alt: string; isThumbnail: boolean }[];
   ratingAverage: number;
   ratingCount: number;
   stock: number;
@@ -116,7 +116,7 @@ function toListItem(doc: LeanProduct): ProductListItem {
   const rawImages = Array.isArray(doc.images) ? doc.images : [];
   const normalizedImages = rawImages.map((i: unknown) => {
     if (typeof i === "string") {
-      return { publicId: "", secureUrl: i, alt: name };
+      return { publicId: "", secureUrl: i, alt: name, isThumbnail: false };
     }
     if (i && typeof i === "object") {
       const obj = i as Record<string, unknown>;
@@ -129,10 +129,11 @@ function toListItem(doc: LeanProduct): ProductListItem {
               ? obj.url
               : "",
         alt: typeof obj.alt === "string" ? obj.alt : name,
+        isThumbnail: obj.isThumbnail === true,
       };
     }
-    return { publicId: "", secureUrl: "", alt: name };
-  });
+    return { publicId: "", secureUrl: "", alt: name, isThumbnail: false };
+  }).sort((a, b) => Number(b.isThumbnail) - Number(a.isThumbnail));
 
   const price = typeof doc.price === "number" ? doc.price : 0;
   const compareAtPrice =
