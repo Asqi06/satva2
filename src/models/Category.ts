@@ -15,6 +15,7 @@ export interface ICategory extends Document {
   name: string;
   slug: string;
   description?: string;
+  searchTerms?: string[];
   image?: ICategoryImage;
   parentId?: Types.ObjectId | null;
   isPublished: boolean;
@@ -45,6 +46,7 @@ const categorySchema = new Schema<ICategory>(
       maxlength: 140,
     },
     description: { type: String, trim: true, maxlength: 2000 },
+    searchTerms: [{ type: String, trim: true, maxlength: 60 }],
     image: { type: categoryImageSchema, required: false },
     parentId: { type: Schema.Types.ObjectId, ref: "Category", default: null },
     isPublished: { type: Boolean, default: true },

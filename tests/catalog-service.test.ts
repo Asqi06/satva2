@@ -148,6 +148,18 @@ describe("catalog services", () => {
     await deleteCategory(parent.id);
   });
 
+  it("saves and clears editable category image, aliases and SEO copy", async () => {
+    const created = await createCategory({ name: "Earrings", isPublished: true, sortOrder: 0,
+      image: { publicId: "c/1", secureUrl: IMG.secureUrl, alt: "Gold jhumka earrings" },
+      searchTerms: ["jhumka"], seoTitle: "Buy Jhumkas Online", seoDescription: "Shop jhumka earrings." });
+    expect(created.image?.alt).toBe("Gold jhumka earrings");
+    expect(created.seo.title).toBe("Buy Jhumkas Online");
+    const updated = await updateCategory(created.id, { image: null, searchTerms: ["bali"], seoTitle: "Bali Earrings" });
+    expect(updated.image).toBeUndefined();
+    expect(updated.searchTerms).toEqual(["bali"]);
+    expect(updated.seo.title).toBe("Bali Earrings");
+  });
+
   it("duplicates as an unpublished copy and bulk-publishes", async () => {
     const cat = await makeCategory();
     const original = await createProduct(productInput(cat.id));

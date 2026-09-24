@@ -7,6 +7,10 @@ export interface ISettings extends Document {
   shippingFlatFee: number;
   reservationTtlMinutes: number;
   announcement?: string;
+  homeSeoTitle?: string;
+  homeSeoDescription?: string;
+  shopSeoTitle?: string;
+  shopSeoDescription?: string;
 }
 
 const settingsSchema = new Schema<ISettings>(
@@ -16,6 +20,10 @@ const settingsSchema = new Schema<ISettings>(
     shippingFlatFee: { type: Number, min: 0, default: 49 },
     reservationTtlMinutes: { type: Number, min: 5, default: 30 },
     announcement: { type: String, maxlength: 200 },
+    homeSeoTitle: { type: String, trim: true, maxlength: 160 },
+    homeSeoDescription: { type: String, trim: true, maxlength: 320 },
+    shopSeoTitle: { type: String, trim: true, maxlength: 160 },
+    shopSeoDescription: { type: String, trim: true, maxlength: 320 },
   },
   { collection: "settings" },
 );

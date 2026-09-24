@@ -9,6 +9,10 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
   const [flatFee, setFlatFee] = useState(String(initial.shippingFlatFee));
   const [ttl, setTtl] = useState(String(initial.reservationTtlMinutes));
   const [announcement, setAnnouncement] = useState(initial.announcement ?? "");
+  const [homeSeoTitle, setHomeSeoTitle] = useState(initial.homeSeoTitle ?? "");
+  const [homeSeoDescription, setHomeSeoDescription] = useState(initial.homeSeoDescription ?? "");
+  const [shopSeoTitle, setShopSeoTitle] = useState(initial.shopSeoTitle ?? "");
+  const [shopSeoDescription, setShopSeoDescription] = useState(initial.shopSeoDescription ?? "");
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -25,6 +29,10 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
           shippingFlatFee: Number(flatFee),
           reservationTtlMinutes: Number(ttl),
           announcement: announcement.trim() ? announcement.trim() : undefined,
+          homeSeoTitle,
+          homeSeoDescription,
+          shopSeoTitle,
+          shopSeoDescription,
         }),
       });
       const body = (await res.json()) as { success: boolean; error?: { message: string } };
@@ -96,6 +104,15 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
             className={inputCls}
           />
         </label>
+      </div>
+
+      <h2 className="mt-8 font-display italic text-2xl text-ivory">Search appearance</h2>
+      <p className="mt-1 text-sm text-ivory/50">Write clear titles and descriptions for the homepage and all-jewellery page. Edit collection copy in Categories and individual item copy in Products. Keep claims accurate.</p>
+      <div className="mt-4 grid gap-4 text-ivory/70">
+        <label className="flex flex-col gap-1 text-sm">Homepage title<input value={homeSeoTitle} onChange={(e) => setHomeSeoTitle(e.target.value)} maxLength={160} placeholder="SatvaStones — Everyday Jewellery Online in India" className={inputCls} /></label>
+        <label className="flex flex-col gap-1 text-sm">Homepage description<textarea value={homeSeoDescription} onChange={(e) => setHomeSeoDescription(e.target.value)} maxLength={320} rows={2} className={inputCls} /></label>
+        <label className="flex flex-col gap-1 text-sm">Shop title<input value={shopSeoTitle} onChange={(e) => setShopSeoTitle(e.target.value)} maxLength={160} placeholder="Buy Jewellery Online in India | SatvaStones" className={inputCls} /></label>
+        <label className="flex flex-col gap-1 text-sm">Shop description<textarea value={shopSeoDescription} onChange={(e) => setShopSeoDescription(e.target.value)} maxLength={320} rows={2} className={inputCls} /></label>
       </div>
 
       <button

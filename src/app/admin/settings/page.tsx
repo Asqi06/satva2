@@ -16,8 +16,7 @@ export default async function AdminSettingsPage() {
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Storefront</p>
       <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Store settings</h1>
       <p className="mt-2 max-w-xl text-sm text-ivory/45">
-        Controls the black announcement strip on every page, plus the shipping
-        threshold and fee shown at checkout.
+        Controls the announcement strip, shipping at checkout, and the homepage and shop search snippets.
       </p>
       <SettingsForm initial={settings} />
     </div>

@@ -5,6 +5,7 @@ import { listPublicProducts } from "@/services/product-service";
 import { productQuerySchema } from "@/schemas/product";
 import { ProductCard } from "@/features/products/ProductCard";
 import { ShopFilters } from "@/features/products/ShopFilters";
+import { getSettings } from "@/services/settings-service";
 
 export async function generateMetadata({
   searchParams,
@@ -13,24 +14,33 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const raw = await searchParams;
   const category = (Array.isArray(raw.category) ? raw.category[0] : raw.category)?.toLowerCase();
+  const categories = category ? await listPublicCategories() : [];
+  const selected = categories.find((item) => item.slug === category && (item.productCount ?? 0) > 0);
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
-  if (category) {
-    const title = `${category.charAt(0).toUpperCase() + category.slice(1)} jewellery | SatvaStones`;
-    const description = `Shop ${category} — Korean, Western and Pinterest-inspired jewellery. Anti-tarnish, honestly priced.`;
+  if (selected) {
+    const title = selected.seo.title || `Buy ${selected.name} Online in India | SatvaStones`;
+    const description = selected.seo.description || selected.description?.slice(0, 160) || `Shop ${selected.name.toLowerCase()} online at SatvaStones. Explore the collection, prices and product details.`;
+    const canonical = `${appUrl}/shop?category=${encodeURIComponent(selected.slug)}`;
+    const images = selected.image ? [{ url: selected.image.secureUrl, alt: selected.image.alt }] : undefined;
     return {
-      title,
+      title: { absolute: title },
       description,
-      alternates: { canonical: `${appUrl}/shop?category=${encodeURIComponent(category)}` },
-      openGraph: { title, description, url: `${appUrl}/shop?category=${encodeURIComponent(category)}`, type: "website", siteName: "SatvaStones" },
+      alternates: { canonical },
+      openGraph: { title, description, url: canonical, images, type: "website", siteName: "SatvaStones" },
       twitter: { card: "summary_large_image", title, description },
+      ...(raw.q ? { robots: { index: false, follow: true } } : {}),
     };
   }
+  const settings = await getSettings();
+  const title = settings.shopSeoTitle || "Buy Jewellery Online in India | SatvaStones";
+  const description = settings.shopSeoDescription || "Shop rings, bracelets, necklaces, earrings and oxidised jewellery online in India at SatvaStones.";
   return {
-    title: "Shop all jewellery",
-    description: "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced. Korean & Western styles, anti-tarnish.",
+    title: { absolute: title },
+    description,
     alternates: { canonical: `${appUrl}/shop` },
-    openGraph: { title: "Shop all jewellery | SatvaStones", description: "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced.", url: `${appUrl}/shop`, type: "website", siteName: "SatvaStones" },
-    twitter: { card: "summary_large_image", title: "Shop all jewellery | SatvaStones", description: "Rings, bracelets, necklaces, earrings and oxidised jewellery — premium-looking, honestly priced." },
+    openGraph: { title, description, url: `${appUrl}/shop`, type: "website", siteName: "SatvaStones" },
+    twitter: { card: "summary_large_image", title, description },
+    ...(raw.q || category ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -69,7 +79,8 @@ export default async function ShopPage({
   ]);
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.satvastones.in").replace(/\/$/, "");
-  const categoryName = flat.category ? categories.find((c) => c.slug === flat.category.toLowerCase())?.name ?? flat.category : null;
+  const selectedCategory = flat.category ? categories.find((c) => c.slug === flat.category.toLowerCase()) : undefined;
+  const categoryName = selectedCategory?.name ?? null;
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -106,6 +117,7 @@ export default async function ShopPage({
           <h1 className="section-title mt-2 text-3xl sm:text-4xl">
             {heading}
           </h1>
+          {selectedCategory?.description && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-ink/70">{selectedCategory.description}</p>}
           <p className="mx-auto mt-2 max-w-xl text-[13px] text-ink/60">
             {pagination.total === 0
               ? "No pieces match — try clearing a filter."

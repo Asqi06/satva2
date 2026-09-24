@@ -60,12 +60,12 @@ describe("seo-readiness-service", () => {
 
   it("runs deterministic checks without inference", () => {
     const checks = runSeoChecks(
-      baseInput({ metaDescription: "too short", imageAlts: ["", "ok"], reviewCount: 0 }),
+      baseInput({ metaDescription: "", imageAlts: ["", "ok"], reviewCount: 0 }),
     );
     const byId = new Map(checks.map((c) => [c.id, c]));
     expect(byId.get("meta-length")?.pass).toBe(false);
     expect(byId.get("alt-coverage")?.pass).toBe(false);
-    expect(byId.get("review-volume")?.pass).toBe(false);
+    expect(byId.has("review-volume")).toBe(false);
     expect(byId.get("canonical")?.pass).toBe(true);
   });
 

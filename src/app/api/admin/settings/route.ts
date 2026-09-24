@@ -11,6 +11,10 @@ const settingsInputSchema = z.object({
   shippingFlatFee: z.number().min(0).max(10000),
   reservationTtlMinutes: z.number().min(5).max(1440),
   announcement: z.string().trim().max(200).optional(),
+  homeSeoTitle: z.string().trim().max(160).optional(),
+  homeSeoDescription: z.string().trim().max(320).optional(),
+  shopSeoTitle: z.string().trim().max(160).optional(),
+  shopSeoDescription: z.string().trim().max(320).optional(),
 });
 
 export async function GET(): Promise<Response> {

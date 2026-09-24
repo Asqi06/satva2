@@ -218,6 +218,14 @@ const SORT_MAP: Record<ProductQuery["sort"], Record<string, 1 | -1>> = {
   rating: { ratingAverage: -1, ratingCount: -1 },
 };
 
+const COMMON_CATEGORY_TERMS: Record<string, string[]> = {
+  earrings: ["jhumka", "jhumkas", "jhumke", "bali", "baali", "jhumka earrings"],
+  rings: ["anguthi", "angoothi", "finger ring"],
+  necklaces: ["haar", "mala", "gale ka haar"],
+  bracelets: ["kangan", "kada", "chudi", "chura"],
+  anklets: ["payal", "paayal"],
+};
+
 export async function listPublicProducts(
   query: ProductQuery,
 ): Promise<{ products: ProductListItem[]; pagination: Pagination }> {
@@ -239,7 +247,19 @@ export async function listPublicProducts(
     }
     filter.categoryId = category._id;
   }
-  if (query.q) filter.$text = { $search: query.q };
+  if (query.q) {
+    const term = query.q.trim().toLocaleLowerCase("en-IN");
+    // ponytail: category count is small; if it grows into thousands, index a normalized alias field.
+    const categories = query.category ? [] : await Category.find({ isPublished: true })
+      .select("_id name slug searchTerms")
+      .lean<{ _id: Types.ObjectId; name: string; slug: string; searchTerms?: string[] }[]>();
+    const alias = categories.find((category) =>
+      [category.name, category.slug, ...(category.searchTerms ?? []), ...(COMMON_CATEGORY_TERMS[category.slug] ?? [])]
+        .some((value) => value.toLocaleLowerCase("en-IN") === term),
+    );
+    if (alias) filter.categoryId = alias._id;
+    else filter.$text = { $search: query.q };
+  }
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
     filter.price = {
       ...(query.minPrice !== undefined ? { $gte: query.minPrice } : {}),

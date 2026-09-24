@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { analytics } from "@/lib/analytics";
@@ -76,7 +77,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             name="q"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search rings, jhumkas, oxidised, gifts under ₹499…"
+            placeholder="Search rings, jhumka, anguthi, oxidised…"
             className="w-full scroll-mt-40 rounded-full border-2 border-light-gray bg-white py-3 pl-11 pr-4 text-sm placeholder:text-muted focus:border-primary focus:outline-none transition-colors"
           />
         </label>
@@ -90,14 +91,8 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
       </form>
 
       <div role="group" aria-label="Filter by category" className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() =>
-            push((p) => {
-              p.delete("category");
-              p.delete("page");
-            })
-          }
+        <Link
+          href="/shop"
           className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-xs font-bold uppercase tracking-[0.1em] transition-colors ${
             currentCategory === ""
               ? "border-ink bg-ink text-white"
@@ -105,14 +100,11 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
           }`}
         >
           All
-        </button>
+        </Link>
         {categories.map((c) => (
-          <button
+          <Link
             key={c.id}
-            type="button"
-            onClick={() =>
-              push((p) => setParam(p, "category", c.slug))
-            }
+            href={`/shop?category=${encodeURIComponent(c.slug)}`}
             className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-xs font-bold uppercase tracking-[0.1em] transition-colors ${
               currentCategory === c.slug
                 ? "border-primary bg-primary text-white"
@@ -120,7 +112,7 @@ export function ShopFilters({ categories }: { categories: CategoryDTO[] }) {
             }`}
           >
             {c.name}
-          </button>
+          </Link>
         ))}
       </div>
 
