@@ -32,11 +32,17 @@ const cartItemSchema = new Schema<ICartItem>(
 
 const cartSchema = new Schema<ICart>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     items: { type: [cartItemSchema], default: [] },
   },
   { timestamps: true, collection: "carts" },
 );
+
+// Legacy email-keyed carts have no userId; preserve them while enforcing one cart per current owner.
+cartSchema.index({ userId: 1 }, {
+  unique: true,
+  partialFilterExpression: { userId: { $type: "objectId" } },
+});
 
 export const Cart: Model<ICart> =
   (mongoose.models.Cart as Model<ICart> | undefined) ??
