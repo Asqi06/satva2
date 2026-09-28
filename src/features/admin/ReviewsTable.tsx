@@ -69,60 +69,60 @@ export function ReviewsTable() {
 
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Voices</p>
-      <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Reviews</h1>
+      <p className="admin-eyebrow">Voices</p>
+      <h1 className="admin-title">Reviews</h1>
 
-      <label className="mt-4 flex items-center gap-2 text-sm text-ivory/60">
+      <label className="mt-4 flex items-center gap-2 text-sm text-muted">
         <input
           type="checkbox"
           checked={hiddenOnly}
           onChange={(e) => setHiddenOnly(e.target.checked)}
-          className="h-4 w-4 accent-gold"
+          className="h-4 w-4 accent-primary"
         />
         Hidden only
       </label>
 
       {notice && (
-        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-primary/30 bg-primary/10 p-3 text-sm text-ink">
           {notice}
         </p>
       )}
 
       <ul className="mt-4 space-y-3">
         {rows.map((r) => (
-          <li key={r.id} className="border border-ivory/[0.07] bg-ivory/[0.03] p-4 text-sm">
+          <li key={r.id} className="admin-card p-4 text-sm">
             <p className="flex flex-wrap items-center gap-2">
-              <strong className="text-ivory">{r.productName}</strong>
-              <span className="text-gold">{"★".repeat(r.rating)}</span>
+              <strong className="text-ink">{r.productName}</strong>
+              <span className="text-primary">{"★".repeat(r.rating)}</span>
               {r.isVerifiedPurchase && (
-                <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-400">
+                <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                   Verified
                 </span>
               )}
               {!r.isPublished && (
-                <span className="rounded-full bg-red-400/15 px-2 py-0.5 text-xs font-semibold text-red-400">
+                <span className="rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
                   Hidden
                 </span>
               )}
             </p>
-            <p className="mt-1 text-ivory/75">
-              {r.comment ?? <span className="text-ivory/40">(no comment)</span>}
+            <p className="mt-1 text-ink">
+              {r.comment ?? <span className="text-muted">(no comment)</span>}
             </p>
-            <p className="mt-1 text-xs text-ivory/50">
+            <p className="mt-1 text-xs text-muted">
               {r.authorName} · {new Date(r.createdAt).toLocaleDateString("en-IN")}
             </p>
-            <span className="mt-2 flex gap-3 text-ivory/60">
+            <span className="mt-2 flex gap-3 text-muted">
               <button
                 type="button"
                 onClick={() => void moderate(r.id, !r.isPublished)}
-                className="underline underline-offset-4 hover:text-ivory"
+                className="underline underline-offset-4 hover:text-ink"
               >
                 {r.isPublished ? "Hide" : "Publish"}
               </button>
               <button
                 type="button"
                 onClick={() => void removeOne(r.id)}
-                className="underline underline-offset-4 hover:text-red-400"
+                className="underline underline-offset-4 hover:text-red-700"
               >
                 Delete
               </button>
@@ -130,17 +130,17 @@ export function ReviewsTable() {
           </li>
         ))}
         {rows.length === 0 && !loading && (
-          <li className="border border-ivory/[0.07] p-8 text-center text-sm text-ivory/35">
+          <li className="border border-light-gray p-8 text-center text-sm text-muted">
             Nothing in this view.
           </li>
         )}
-        {loading && <li className="p-8 text-center text-sm text-ivory/35">Loading…</li>}
+        {loading && <li className="p-8 text-center text-sm text-muted">Loading…</li>}
       </ul>
       {pagination.totalPages > 1 && (
         <nav aria-label="Review pages" className="mt-4 flex items-center justify-center gap-3 text-sm">
-          <button type="button" disabled={loading || pagination.page <= 1} onClick={() => void load(pagination.page - 1)} className="border border-ivory/20 px-4 py-2 text-ivory/60 disabled:opacity-40">Previous</button>
-          <span className="text-ivory/50">{pagination.page} / {pagination.totalPages} ({pagination.total})</span>
-          <button type="button" disabled={loading || pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)} className="border border-ivory/20 px-4 py-2 text-ivory/60 disabled:opacity-40">Next</button>
+          <button type="button" disabled={loading || pagination.page <= 1} onClick={() => void load(pagination.page - 1)} className="border border-light-gray px-4 py-2 text-muted disabled:opacity-40">Previous</button>
+          <span className="text-muted">{pagination.page} / {pagination.totalPages} ({pagination.total})</span>
+          <button type="button" disabled={loading || pagination.page >= pagination.totalPages} onClick={() => void load(pagination.page + 1)} className="border border-light-gray px-4 py-2 text-muted disabled:opacity-40">Next</button>
         </nav>
       )}
     </div>

@@ -6,8 +6,17 @@
  */
 import { spawn } from "node:child_process";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
+import { MongoClient, ObjectId } from "mongodb";
 
 const mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+// Only the throwaway database gets this account; production auth stays unchanged.
+const fixtureDb = new MongoClient(mongod.getUri("satvastones-e2e"));
+await fixtureDb.connect();
+await fixtureDb.db().collection("users").insertOne({
+  _id: new ObjectId("000000000000000000000001"),
+  email: "e2e-admin@example.com", name: "E2E Admin", role: "ADMIN", addresses: [],
+});
+await fixtureDb.close();
 const child = spawn("npx", ["next", "dev", "--port", "3100"], {
   stdio: "inherit",
   shell: true,

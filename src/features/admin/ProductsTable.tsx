@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { CloudinaryImage as Image } from "@/components/CloudinaryImage";
+import { Icon } from "@/components/Icon";
 import { useCallback, useEffect, useState } from "react";
 import type { AdminProductRow, Pagination } from "@/services/product-service";
 import type { BulkAction } from "@/schemas/product";
@@ -115,21 +117,21 @@ export function ProductsTable() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">
+          <p className="admin-eyebrow">
             Catalogue
           </p>
-          <h1 className="mt-1 font-display italic text-4xl text-ivory">Products</h1>
+          <h1 className="admin-title">Products</h1>
         </div>
         <Link
           href="/admin/products/new"
-          className="border border-gold bg-gold/10 px-6 py-2.5 text-sm font-medium text-gold hover:bg-gold hover:text-ink"
+          className="btn-primary"
         >
           + New product
         </Link>
       </div>
 
       <form
-        className="flex flex-col gap-2 sm:flex-row"
+        className="admin-card flex flex-col gap-3 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           void load(1, q);
@@ -144,22 +146,22 @@ export function ProductsTable() {
           className="admin-input w-full px-4 py-2.5 text-base sm:max-w-sm sm:py-2 sm:text-sm"
         />
         <button
-          type="submit"
-          className="shrink-0 border border-ivory/20 px-5 py-2.5 text-sm text-ivory/60 hover:border-gold hover:text-gold sm:py-2"
+          type="submit" disabled={loading}
+          className="btn-ghost"
         >
           Search
         </button>
       </form>
 
       {notice && (
-        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-primary/30 bg-primary/10 p-3 text-sm text-ink">
           {notice}
         </p>
       )}
 
       {selected.size > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 border border-ivory/[0.08] bg-ivory/[0.04] p-3 text-sm">
-          <span className="text-ivory/50">{selected.size} selected:</span>
+        <div className="mt-4 flex flex-wrap items-center gap-2 border border-light-gray bg-slate-50 p-3 text-sm">
+          <span className="text-muted">{selected.size} selected:</span>
           {(["publish", "unpublish", "feature", "unfeature", "delete"] as const).map((a) => (
             <button
               key={a}
@@ -173,8 +175,8 @@ export function ProductsTable() {
               }
               className={`border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors ${
                 a === "delete"
-                  ? "border-red-400/30 text-red-400 hover:bg-red-400/10"
-                  : "border-ivory/20 text-ivory/50 hover:border-gold hover:text-gold"
+                  ? "border-red-200 text-red-700 hover:bg-red-50"
+                  : "border-light-gray text-muted hover:border-primary hover:text-primary"
               }`}
             >
               {a}
@@ -186,29 +188,29 @@ export function ProductsTable() {
       {/* Mobile cards — full actions without horizontal scrolling */}
       <ul className="mt-4 space-y-3 md:hidden">
         {rows.map((r) => (
-          <li key={r.id} className="border border-ivory/[0.07] bg-ivory/[0.03] p-4">
+          <li key={r.id} className="admin-card p-4">
             <div className="flex items-start gap-3">
               <input
                 type="checkbox"
                 aria-label={`Select ${r.name}`}
                 checked={selected.has(r.id)}
                 onChange={() => toggleSelect(r.id)}
-                className="mt-1 h-5 w-5 shrink-0 accent-gold"
+                className="mt-1 h-5 w-5 shrink-0 accent-primary"
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-ivory">{r.name}</p>
-                <p className="mt-0.5 font-mono text-xs text-ivory/50">{r.sku}</p>
+                <Link href={`/admin/products/${r.id}/edit`} className="clamp-2 font-medium text-ink hover:underline">{r.name}</Link>
+                <p className="mt-0.5 font-mono text-xs text-muted">{r.sku}</p>
                 <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-mono text-ivory/80">{formatINR(r.price)}</span>
-                  <span className="text-xs text-ivory/50">Stock {r.stock}</span>
+                  <span className="font-mono text-ink">{formatINR(r.price)}</span>
+                  <span className="text-xs text-muted">Stock {r.stock}{r.reservedStock > 0 && ` · ${r.reservedStock} reserved`}</span>
                   {r.stock - r.reservedStock <= r.lowStockThreshold && (
-                    <span className="bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-gold">
+                    <span className="bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
                       low
                     </span>
                   )}
                   <span
                     className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-                      r.isPublished ? "bg-emerald-400/15 text-emerald-400" : "bg-ivory/[0.07] text-ivory/35"
+                      r.isPublished ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-muted"
                     }`}
                   >
                     {r.isPublished ? "Live" : "Draft"}
@@ -216,47 +218,47 @@ export function ProductsTable() {
                 </p>
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-ivory/[0.06] pt-3 text-sm">
-              <Link href={`/admin/products/${r.id}/edit`} className="text-ivory/60 underline underline-offset-4">
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-light-gray pt-3 text-sm">
+              <Link href={`/admin/products/${r.id}/edit`} className="text-muted underline underline-offset-4">
                 Edit
               </Link>
               <button
                 type="button"
                 onClick={() => void mutate(r.isPublished ? "unpublish" : "publish", [r.id])}
-                className="text-ivory/60 underline underline-offset-4"
+                className="text-muted underline underline-offset-4"
               >
                 {r.isPublished ? "Unpublish" : "Publish"}
               </button>
-              <button type="button" onClick={() => void duplicateOne(r.id)} className="text-ivory/60 underline underline-offset-4">
+              <button type="button" onClick={() => void duplicateOne(r.id)} className="text-muted underline underline-offset-4">
                 Duplicate
               </button>
-              <button type="button" onClick={() => void removeOne(r.id, r.name)} className="text-red-400/70 underline underline-offset-4">
+              <button type="button" onClick={() => void removeOne(r.id, r.name)} className="text-red-700 underline underline-offset-4">
                 Delete
               </button>
             </div>
           </li>
         ))}
         {rows.length === 0 && !loading && (
-          <li className="border border-ivory/[0.07] p-10 text-center text-ivory/30">
-            No products yet. Create the first one.
+          <li className="border border-light-gray p-10 text-center text-muted">
+            No products in this view. Try another search or create a product.
           </li>
         )}
         {loading && (
-          <li className="border border-ivory/[0.07] p-10 text-center text-ivory/30">Loading…</li>
+          <li className="border border-light-gray p-10 text-center text-muted">Loading…</li>
         )}
       </ul>
 
-      <div className="mt-4 hidden overflow-x-auto border border-ivory/[0.07] md:block">
+      <div className="mt-4 hidden overflow-x-auto rounded-lg border border-light-gray md:block">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
-            <tr className="border-b border-ivory/[0.07] bg-ivory/[0.04]">
-              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">
+            <tr className="border-b border-light-gray bg-slate-50">
+              <th className="p-3 text-xs font-medium text-muted">
                 <span className="sr-only">Select</span>
               </th>
               {["Product", "SKU", "Price", "Stock", "Status", "Actions"].map((h) => (
                 <th
                   key={h}
-                  className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30"
+                  className="p-3 text-xs font-medium text-muted"
                 >
                   {h}
                 </th>
@@ -265,23 +267,24 @@ export function ProductsTable() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-ivory/[0.04] last:border-0 hover:bg-ivory/[0.02]">
+              <tr key={r.id} className="border-b border-light-gray last:border-0 hover:bg-slate-50">
                 <td className="p-3">
                   <input
                     type="checkbox"
                     aria-label={`Select ${r.name}`}
                     checked={selected.has(r.id)}
                     onChange={() => toggleSelect(r.id)}
-                    className="h-4 w-4 accent-gold"
+                    className="h-4 w-4 accent-primary"
                   />
                 </td>
-                <td className="p-3 font-medium text-ivory">{r.name}</td>
-                <td className="p-3 font-mono text-xs text-ivory/50">{r.sku}</td>
-                <td className="p-3 font-mono text-ivory/70">{formatINR(r.price)}</td>
-                <td className="p-3 text-ivory/70">
+                <td className="p-3"><Link href={`/admin/products/${r.id}/edit`} className="flex min-w-[180px] max-w-[280px] items-center gap-3 font-medium hover:underline"><span className="relative flex h-12 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-50">{r.images[0] ? <Image src={r.images[0].secureUrl} alt="" fill sizes="40px" className="object-cover" /> : <Icon name="box" />}</span><span className="clamp-2">{r.name}</span></Link></td>
+                <td className="p-3 font-mono text-xs text-muted">{r.sku}</td>
+                <td className="p-3 font-mono text-ink">{formatINR(r.price)}</td>
+                <td className="p-3 text-ink">
                   {r.stock}
+                  {r.reservedStock > 0 && <span className="mt-1 block text-xs text-muted">{r.reservedStock} reserved</span>}
                   {r.stock - r.reservedStock <= r.lowStockThreshold && (
-                    <span className="ml-2 bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-gold">
+                    <span className="ml-2 bg-primary/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
                       low
                     </span>
                   )}
@@ -290,8 +293,8 @@ export function ProductsTable() {
                   <span
                     className={`px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
                       r.isPublished
-                        ? "bg-emerald-400/15 text-emerald-400"
-                        : "bg-ivory/[0.07] text-ivory/35"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-slate-50 text-muted"
                     }`}
                   >
                     {r.isPublished ? "Live" : "Draft"}
@@ -301,28 +304,28 @@ export function ProductsTable() {
                   <span className="flex flex-wrap gap-3 text-xs">
                     <Link
                       href={`/admin/products/${r.id}/edit`}
-                      className="text-ivory/50 underline underline-offset-4 hover:text-ivory"
+                      className="text-muted underline underline-offset-4 hover:text-ink"
                     >
                       Edit
                     </Link>
                     <button
                       type="button"
                       onClick={() => void mutate(r.isPublished ? "unpublish" : "publish", [r.id])}
-                      className="text-ivory/50 underline underline-offset-4 hover:text-ivory"
+                      className="text-muted underline underline-offset-4 hover:text-ink"
                     >
                       {r.isPublished ? "Unpublish" : "Publish"}
                     </button>
                     <button
                       type="button"
                       onClick={() => void duplicateOne(r.id)}
-                      className="text-ivory/50 underline underline-offset-4 hover:text-ivory"
+                      className="text-muted underline underline-offset-4 hover:text-ink"
                     >
                       Duplicate
                     </button>
                     <button
                       type="button"
                       onClick={() => void removeOne(r.id, r.name)}
-                      className="text-red-400/60 underline underline-offset-4 hover:text-red-400"
+                      className="text-red-700 underline underline-offset-4 hover:text-red-700"
                     >
                       Delete
                     </button>
@@ -332,14 +335,14 @@ export function ProductsTable() {
             ))}
             {rows.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="p-10 text-center text-ivory/30">
-                  No products yet. Create the first one.
+                <td colSpan={7} className="p-10 text-center text-muted">
+                  No products in this view. Try another search or create a product.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={7} className="p-10 text-center text-ivory/30">
+                <td colSpan={7} className="p-10 text-center text-muted">
                   Loading…
                 </td>
               </tr>
@@ -354,18 +357,18 @@ export function ProductsTable() {
             type="button"
             disabled={pagination.page <= 1}
             onClick={() => void load(pagination.page - 1, q)}
-            className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-gold hover:text-gold"
+            className="border border-light-gray px-5 py-2 text-muted disabled:opacity-40 hover:border-primary hover:text-primary"
           >
             ← Previous
           </button>
-          <span className="text-ivory/35">
+          <span className="text-muted">
             {pagination.page} / {pagination.totalPages} ({pagination.total})
           </span>
           <button
             type="button"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => void load(pagination.page + 1, q)}
-            className="border border-ivory/20 px-5 py-2 text-ivory/50 disabled:opacity-40 hover:border-gold hover:text-gold"
+            className="border border-light-gray px-5 py-2 text-muted disabled:opacity-40 hover:border-primary hover:text-primary"
           >
             Next →
           </button>

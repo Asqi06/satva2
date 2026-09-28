@@ -15,6 +15,13 @@ const paths = {
   zoom: "M21 21l-5-5M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0M7 11h8M11 7v8",
   filter: "M4 7h16M4 17h16M8 4v6M16 14v6",
   star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z",
+  dashboard: "M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z",
+  box: "m12 3 9 5v8l-9 5-9-5V8l9-5Zm-9 5 9 5 9-5M12 13v8M7.5 5.5l9 5V15",
+  tag: "M3 3h8l10 10-8 8L3 11V3Zm4 4h.01",
+  ticket: "M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V7Zm11 0v2m0 3v2m0 3v2",
+  image: "M3 3h18v18H3V3Zm0 14 5-5 4 4 3-3 6 6M16 7h.01",
+  settings: "M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6",
+  external: "M14 3h7v7M21 3l-9 9M10 3H3v18h18v-7",
 } as const;
 
 export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: keyof typeof paths }) {

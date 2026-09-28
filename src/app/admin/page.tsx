@@ -1,180 +1,234 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Icon } from "@/components/Icon";
 import { getDashboardStats } from "@/services/admin-dashboard-service";
 import { formatINR } from "@/utils/format";
 
 export const metadata: Metadata = {
-  title: { absolute: "Admin — SatvaStones" },
+  title: { absolute: "Dashboard — SatvaStones Admin" },
   description: "SatvaStones store management.",
 };
-
 export const dynamic = "force-dynamic";
-
-const SECTIONS = [
-  { href: "/admin/products", label: "Products", body: "Create, publish, price and stock the catalogue." },
-  { href: "/admin/categories", label: "Categories", body: "Organise departments and subcategories." },
-  { href: "/admin/orders", label: "Orders", body: "Fulfil, track, cancel and refund customer orders." },
-  { href: "/admin/reviews", label: "Reviews", body: "Moderate what shoppers say." },
-  { href: "/admin/coupons", label: "Coupons", body: "Create codes, caps and first-order treats." },
-  { href: "/admin/banners", label: "Banners", body: "Hero image + sale strip on the homepage." },
-  { href: "/admin/settings", label: "Settings", body: "Announcement strip, shipping threshold and fees." },
-] as const;
 
 export default async function AdminHome() {
   const stats = await getDashboardStats();
-  const kpis: { label: string; value: string; accent?: boolean }[] = [
-    { label: "Total sales", value: formatINR(stats.totalSales), accent: true },
-    { label: "Today", value: formatINR(stats.todaySales) },
-    { label: "Paid orders", value: String(stats.paidOrderCount) },
-    { label: "All orders", value: String(stats.orderCount) },
-    { label: "Avg order value", value: formatINR(stats.avgOrderValue) },
-    { label: "Units sold", value: String(stats.productsSold) },
-    { label: "Customers", value: String(stats.customerCount) },
-    { label: "Pending", value: String(stats.pendingOrders) },
-  ];
-  const maxDay = Math.max(1, ...stats.salesByDay.map((d) => d.sales));
+  const metrics = [
+    {
+      label: "Total sales",
+      value: formatINR(stats.totalSales),
+      detail: "All paid orders",
+      icon: "dashboard",
+      accent: true,
+    },
+    {
+      label: "Today’s sales",
+      value: formatINR(stats.todaySales),
+      detail: "Paid orders today",
+      icon: "ticket",
+    },
+    {
+      label: "Paid orders",
+      value: String(stats.paidOrderCount),
+      detail: "Confirmed payments",
+      icon: "bag",
+    },
+    {
+      label: "Pending orders",
+      value: String(stats.pendingOrders),
+      detail: "Review in Orders",
+      icon: "truck",
+    },
+  ] as const;
+  const top = stats.topProducts.filter((product) => product.sold > 0);
+  const maxDay = Math.max(1, ...stats.salesByDay.map((day) => day.sales));
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8 border-b border-ivory/[0.06] pb-6">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">
-          Back office · Namaste, admin
-        </p>
-        <h1 className="mt-1 font-display italic text-4xl text-ivory sm:text-5xl">
-          Dashboard
-        </h1>
-        <p className="mt-2 max-w-xl text-sm text-ivory/45">
-          Sales in ₹, stock alerts and fulfilment — everything priced inclusive of taxes,
-          just like the storefront.
-        </p>
+      <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="admin-eyebrow">Store overview</p>
+          <h1 className="admin-title">Dashboard</h1>
+          <p className="mt-2 text-sm text-muted">
+            Paid sales, stock and fulfilment at a glance.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/orders" className="btn-ghost">
+            View orders
+          </Link>
+          <Link href="/admin/products/new" className="btn-primary">
+            <Icon name="box" width="18" height="18" />
+            New product
+          </Link>
+        </div>
       </div>
-
-      {/* KPI grid */}
-      <section aria-label="Sales overview">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-ivory/30">
-          At a glance · All amounts in ₹
-        </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {kpis.map((kpi) => (
-            <div key={kpi.label} className={kpi.accent ? "admin-kpi-accent" : "admin-kpi"}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ivory/35">
-                {kpi.label}
-              </p>
-              <p
-                className={`mt-1.5 font-mono text-2xl font-semibold ${
-                  kpi.accent ? "text-gold" : "text-ivory"
-                }`}
-              >
-                {kpi.value}
+      <section
+        aria-label="Sales overview"
+        className="grid grid-cols-2 gap-3 xl:grid-cols-4"
+      >
+        {metrics.map((metric) => (
+          <div
+            key={metric.label}
+            className={"accent" in metric ? "admin-kpi-accent" : "admin-kpi"}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-xs font-medium text-muted">{metric.label}</h2>
+              <Icon
+                name={metric.icon}
+                width="18"
+                height="18"
+                className="text-muted"
+              />
+            </div>
+            <p className="mt-4 break-words text-2xl font-semibold tracking-tight sm:text-3xl">
+              {metric.value}
+            </p>
+            <p className="mt-2 text-xs text-muted">{metric.detail}</p>
+          </div>
+        ))}
+      </section>
+      <dl className="admin-card mt-4 grid grid-cols-2 gap-x-6 gap-y-5 xl:grid-cols-4">
+        {[
+          ["Average order", formatINR(stats.avgOrderValue)],
+          ["Units sold", stats.productsSold],
+          ["Customers", stats.customerCount],
+          ["All orders", stats.orderCount],
+        ].map(([label, value]) => (
+          <div key={label}>
+            <dt className="text-xs text-muted">{label}</dt>
+            <dd className="mt-1 text-lg font-semibold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <section aria-label="Sales last 14 days" className="admin-card">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Sales activity</h2>
+              <p className="mt-1 text-xs text-muted">
+                Last 14 days · paid orders
               </p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Charts */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        {/* 14-day bar chart */}
-        <section
-          aria-label="Sales last 14 days"
-          className="border border-ivory/[0.07] bg-ivory/[0.03] p-5"
-        >
-          <h2 className="font-display italic text-2xl text-ivory">Last 14 days</h2>
-          {stats.salesByDay.length === 0 ? (
-            <p className="mt-3 text-sm text-ivory/35">No paid sales yet.</p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {stats.salesByDay.map((d) => (
-                <li key={d.date} className="flex items-center gap-3 text-xs">
-                  <span className="w-20 shrink-0 font-mono text-ivory/35">{d.date}</span>
-                  <span
-                    aria-hidden="true"
-                    style={{ width: `${Math.max(4, Math.round((d.sales / maxDay) * 100))}%` }}
-                    className="h-2.5 bg-gold/60 transition-all"
+            <span className="rounded-md bg-slate-50 px-2.5 py-1 text-xs text-muted">
+              INR
+            </span>
+          </div>
+          {stats.salesByDay.length ? (
+            <ul className="mt-6 space-y-4">
+              {stats.salesByDay.map((day) => (
+                <li
+                  key={day.date}
+                  className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[76px_minmax(0,1fr)_auto]"
+                >
+                  <span className="text-xs text-muted">{day.date}</span>
+                  <meter
+                    min={0}
+                    max={maxDay}
+                    value={day.sales}
+                    className="admin-meter"
+                    aria-label={`Sales on ${day.date}: ${formatINR(day.sales)}`}
                   />
-                  <span className="whitespace-nowrap text-ivory/50">
-                    {formatINR(d.sales)} · {d.orders} order{d.orders === 1 ? "" : "s"}
+                  <span className="col-start-2 text-xs sm:col-start-auto">
+                    {formatINR(day.sales)}{" "}
+                    <span className="text-muted">
+                      · {day.orders} order{day.orders === 1 ? "" : "s"}
+                    </span>
                   </span>
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-
-        {/* Top products + low stock */}
-        <section
-          aria-label="Top products"
-          className="border border-ivory/[0.07] bg-ivory/[0.03] p-5"
-        >
-          <h2 className="font-display italic text-2xl text-ivory">Top products</h2>
-          {stats.topProducts.filter((p) => p.sold > 0).length === 0 ? (
-            <p className="mt-3 text-sm text-ivory/35">Nothing sold yet.</p>
           ) : (
-            <ol className="mt-4 space-y-2">
-              {stats.topProducts
-                .filter((p) => p.sold > 0)
-                .map((p, i) => (
-                  <li key={p.id} className="flex justify-between gap-3 text-sm">
-                    <span className="text-ivory/60">
-                      <span className="mr-2 font-mono text-ivory/30">{i + 1}</span>
-                      {p.name}
-                    </span>
-                    <span className="shrink-0 font-mono font-semibold text-ivory/80">
-                      {p.sold} sold
-                    </span>
-                  </li>
-                ))}
-            </ol>
+            <div className="py-14 text-center">
+              <Icon
+                name="dashboard"
+                width="28"
+                height="28"
+                className="mx-auto text-muted"
+              />
+              <p className="mt-4 text-sm font-medium">No paid sales yet</p>
+              <p className="mt-2 text-xs text-muted">
+                Sales activity will appear here as orders are paid.
+              </p>
+            </div>
           )}
-
-          {/* Low stock */}
-          {stats.lowStock.length > 0 && (
-            <div className="mt-5 border-t border-ivory/[0.06] pt-4">
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold">
-                Low stock
-              </h3>
-              <ul className="mt-2 space-y-1.5">
-                {stats.lowStock.slice(0, 5).map((p) => (
-                  <li key={p.id} className="flex justify-between gap-3 text-xs">
-                    <span className="font-mono text-ivory/40">{p.sku}</span>
-                    <span
-                      className={`font-semibold ${p.stock <= 0 ? "text-red-400" : "text-gold"}`}
+          <p className="mt-5 border-t border-light-gray pt-4 text-xs text-muted">
+            Sales dates use UTC. Amounts include only paid orders.
+          </p>
+        </section>
+        <div className="space-y-5">
+          <section aria-label="Stock alerts" className="admin-card">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">Stock alerts</h2>
+              <Link
+                href="/admin/products"
+                className="min-h-11 py-3 text-xs underline underline-offset-4"
+              >
+                Manage stock
+              </Link>
+            </div>
+            {stats.lowStock.length ? (
+              <ul className="mt-2 divide-y divide-light-gray">
+                {stats.lowStock.slice(0, 5).map((product) => (
+                  <li
+                    key={product.id}
+                    className="flex items-center justify-between gap-3 py-3"
+                  >
+                    <Link
+                      href={`/admin/products/${product.id}/edit`}
+                      className="min-w-0 py-1"
                     >
-                      {p.stock} left
+                      <span className="clamp-2 text-sm font-medium hover:underline">
+                        {product.name}
+                      </span>
+                      <span className="mt-1 block break-all font-mono text-xs text-muted">
+                        {product.sku}
+                      </span>
+                    </Link>
+                    <span
+                      className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium ${product.stock <= 0 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800"}`}
+                    >
+                      {product.stock <= 0
+                        ? "Out of stock"
+                        : `${product.stock} available`}
                     </span>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* Quick navigation sections */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {SECTIONS.map((s) => (
-          <Link key={s.href} href={s.href} className="admin-card group">
-            <h2 className="font-display italic text-xl text-ivory group-hover:text-gold">
-              {s.label}
-            </h2>
-            <p className="mt-1 text-sm text-ivory/40">{s.body}</p>
-            <span aria-hidden="true" className="mt-3 block text-gold/40 group-hover:text-gold">
-              →
-            </span>
-          </Link>
-        ))}
-        {/* Coming soon */}
-        {["Inventory", "Customers"].map((label) => (
-          <div
-            key={label}
-            className="border border-ivory/[0.04] p-6 opacity-40"
-            aria-disabled="true"
-          >
-            <h2 className="font-display italic text-xl text-ivory">{label}</h2>
-            <p className="mt-1 text-sm text-ivory/40">Coming soon.</p>
-          </div>
-        ))}
+            ) : (
+              <p className="py-6 text-sm text-muted">
+                No products are below their stock alert threshold.
+              </p>
+            )}
+          </section>
+          <section aria-label="Top products" className="admin-card">
+            <h2 className="text-base font-semibold">Top products</h2>
+            <p className="mt-1 text-xs text-muted">Ranked by units sold</p>
+            {top.length ? (
+              <ol className="mt-4 divide-y divide-light-gray">
+                {top.map((product, index) => (
+                  <li key={product.id} className="flex items-center gap-3 py-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-50 text-xs text-muted">
+                      {index + 1}
+                    </span>
+                    <Link
+                      href={`/admin/products/${product.id}/edit`}
+                      className="min-w-0 flex-1 text-sm hover:underline"
+                    >
+                      {product.name}
+                    </Link>
+                    <span className="shrink-0 text-xs font-medium">
+                      {product.sold} sold
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="py-6 text-sm text-muted">
+                Products will appear here after their first sale.
+              </p>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );

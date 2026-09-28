@@ -63,8 +63,8 @@ export function AdminOrderActions({
   const refundable = paymentStatus === "PAID" && !refundRequestedAt;
 
   return (
-    <div className="h-fit border border-ivory/[0.07] bg-ivory/[0.03] p-5">
-      <h2 className="font-display italic text-xl text-ivory">Actions</h2>
+    <div className="admin-card h-fit p-5">
+      <h2 className="text-base font-semibold text-ink">Actions</h2>
       <div className="mt-3 flex flex-wrap gap-2 text-sm">
         {options.map((next) => (
           <button
@@ -72,7 +72,7 @@ export function AdminOrderActions({
             type="button"
             disabled={busy}
             onClick={() => void advance(next)}
-            className="border border-gold bg-gold/10 px-4 py-2 text-gold hover:bg-gold hover:text-ink disabled:opacity-50"
+            className="btn-primary"
           >
             → {(next ?? "").replaceAll("_", " ")}
           </button>
@@ -92,7 +92,7 @@ export function AdminOrderActions({
                 "Cancel this order and release its stock?",
               )
             }
-            className="border border-red-400/40 px-4 py-2 text-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            className="border border-red-200 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
           >
             Cancel order
           </button>
@@ -112,15 +112,15 @@ export function AdminOrderActions({
                 "Request a full refund via Razorpay? Shipped items are restocked only after a recorded return.",
               )
             }
-            className="border border-red-400/40 px-4 py-2 text-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            className="border border-red-200 px-4 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50"
           >
             Refund in full
           </button>
         )}
       </div>
-      {refundRequestedAt && paymentStatus === "PAID" && <p className="mt-3 text-sm text-ivory/60">Refund requested. Check Razorpay and await confirmation before retrying.</p>}
+      {refundRequestedAt && paymentStatus === "PAID" && <p className="mt-3 text-sm text-muted">Refund requested. Check Razorpay and await confirmation before retrying.</p>}
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-400">
+        <p role="alert" className="mt-3 text-sm text-red-700">
           {error}
         </p>
       )}
