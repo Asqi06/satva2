@@ -1,4 +1,6 @@
 import mongoose, { Types } from "mongoose";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connectDb, resetDbCache } from "@/lib/db";
@@ -70,6 +72,7 @@ describe("cart service", () => {
   });
 
   afterEach(async () => {
+    if (await Cart.collection.indexExists("email_1")) await Cart.collection.dropIndex("email_1");
     await Cart.deleteMany({});
     await Product.deleteMany({});
     await Category.deleteMany({});
@@ -89,6 +92,35 @@ describe("cart service", () => {
     expect(view.subtotal).toBe(1000);
     expect(view.items[0]?.price).toBe(500);
   });
+
+  it("repairs legacy email uniqueness without deleting carts or weakening owner uniqueness", async () => {
+    const { live } = await seed();
+    await Cart.collection.createIndex({ email: 1 }, { unique: true });
+    const legacyItems = [{ productId: live._id, qty: 1 }];
+    await Cart.collection.insertMany([
+      { email: "legacy-one@example.com", items: legacyItems },
+      { email: "legacy-two@example.com", items: [] },
+    ]);
+    await addCartItem(USER, { productId: live.id, qty: 2 });
+    const secondUser = new Types.ObjectId().toString();
+    await expect(addCartItem(secondUser, { productId: live.id, qty: 1 })).rejects.toMatchObject({ code: 11000 });
+    const runRepair = (args: string[]) => promisify(execFile)(process.execPath,
+      ["--import", "tsx", "scripts/repair-cart-indexes.ts", ...args],
+      { env: { ...process.env, MONGODB_URI: mongod!.getUri() } });
+    await runRepair([]);
+    expect(await Cart.collection.indexExists("email_1")).toBe(true);
+    await runRepair(["--apply"]);
+    await runRepair(["--apply"]);
+    const second = await addCartItem(secondUser, { productId: live.id, qty: 1 });
+    expect(second.view.count).toBe(1);
+    const first = await setCartQty(USER, cartKey(live.id), 2);
+    expect(first.view.count).toBe(2);
+    expect(await Cart.collection.countDocuments({ email: { $exists: true } })).toBe(2);
+    expect(await Cart.collection.countDocuments()).toBe(4);
+    const legacy = await Cart.collection.findOne({ email: "legacy-one@example.com" });
+    expect(legacy?.items).toEqual(legacyItems);
+    await expect(Cart.collection.insertOne({ userId: new Types.ObjectId(USER), items: [] })).rejects.toMatchObject({ code: 11000 });
+  }, 30000);
 
   it("caps quantities at available stock and flags adjustments", async () => {
     const { live } = await seed();
