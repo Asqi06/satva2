@@ -19,3 +19,16 @@ export function cloudinaryResize(url: string, width: number): string {
 export function cloudinaryLoader({ src, width }: { src: string; width: number }): string {
   return cloudinaryResize(src, width);
 }
+
+/** Recover missing migration metadata only from unambiguous versioned image URLs. */
+export function cloudinaryPublicId(secureUrl: string): string {
+  try {
+    const url = new URL(secureUrl);
+    if (url.protocol !== "https:" || url.hostname !== "res.cloudinary.com" || url.username || url.password) return "";
+    const match = url.pathname.match(/^\/[^/]+\/image\/upload\/(?:[^/]+\/)*?v\d+\/(.+)$/);
+    if (!match) return "";
+    return decodeURIComponent(match[1]).replace(/\.[^/.]+$/, "");
+  } catch {
+    return "";
+  }
+}

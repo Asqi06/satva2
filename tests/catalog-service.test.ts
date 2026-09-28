@@ -19,6 +19,7 @@ import {
   deleteProduct,
   duplicateProduct,
   getPublicProductBySlug,
+  getAdminProductById,
   listPublicProducts,
   getCatalogueFilters,
   updateProduct,
@@ -115,6 +116,21 @@ describe("catalog services", () => {
     }));
     const detail = await getPublicProductBySlug(product.slug);
     expect(detail?.images[0]?.publicId).toBe("p/2");
+  });
+
+  it("saves migrated products using their existing Cloudinary images without re-uploading", async () => {
+    const cat = await makeCategory();
+    const image = { ...IMG, publicId: "legacy/ring", secureUrl: "https://res.cloudinary.com/x/image/upload/v1777711970/legacy/ring.jpg" };
+    const created = await createProduct(productInput(cat.id, { images: [image] }));
+    // The migration wrote empty upload IDs directly to MongoDB.
+    await Product.collection.updateOne({ _id: new Types.ObjectId(created.id) }, { $set: { "images.0.publicId": "" } });
+    const edit = await getAdminProductById(created.id);
+    expect(edit?.images[0]?.publicId).toBe("legacy/ring");
+    const saved = await updateProduct(created.id, productInput(cat.id, { images: edit!.images, price: 599 }));
+    expect(saved.price).toBe(599);
+    expect(saved.images[0]).toMatchObject(image);
+    const stored = await Product.findById(created.id).lean();
+    expect(stored?.images[0]?.publicId).toBe("legacy/ring");
   });
 
   it("rejects duplicate product SKUs and variant clashes", async () => {
