@@ -11,7 +11,7 @@ import { productBaseSchema, productInputSchema, type ProductInput } from "@/sche
 
 /** Form shape: tags edited as comma text, image alt auto-filled from name. */
 const formImageSchema = z.object({
-  publicId: z.string().min(1),
+  publicId: z.string().min(1, "This image is missing its upload ID. Remove it and upload it again."),
   secureUrl: z.string().url(),
   alt: z.string().max(200).default(""),
   width: z.number().int().positive().optional(),
@@ -21,7 +21,11 @@ const formImageSchema = z.object({
 
 const formSchema = productBaseSchema
   .omit({ tags: true })
-  .extend({ images: z.array(formImageSchema).min(1, "At least one image is required").max(12), tagsText: z.string().default("") });
+  .extend({
+    slug: productBaseSchema.shape.slug.or(z.literal("")).transform((value) => value || undefined),
+    images: z.array(formImageSchema).min(1, "At least one image is required").max(12),
+    tagsText: z.string().default(""),
+  });
 
 export type ProductFormValues = z.output<typeof formSchema>;
 type FormInput = z.input<typeof formSchema>;
@@ -34,6 +38,21 @@ const inputCls =
   "admin-input w-full px-3 py-2.5 text-sm";
 const labelCls = "flex flex-col gap-1 text-sm text-ink";
 const hintCls = "text-xs text-muted";
+
+function fieldLabel(path: string[]) {
+  return path.filter((part) => part !== "root").map((part) =>
+    /^\d+$/.test(part) ? String(Number(part) + 1) : part.replace(/([A-Z])/g, " $1").trim(),
+  ).join(" → ");
+}
+
+function validationMessages(errors: FieldErrors<FormInput>, path: string[] = []): string[] {
+  return Object.entries(errors).flatMap(([key, value]) => {
+    if (!value || typeof value !== "object" || ["ref", "types"].includes(key)) return [];
+    const nextPath = [...path, key];
+    if (typeof value.message === "string") return [`${fieldLabel(nextPath)}: ${value.message}`];
+    return validationMessages(value as FieldErrors<FormInput>, nextPath);
+  });
+}
 
 function FieldError({ errors, name }: { errors: FieldErrors<FormInput>; name: string }) {
   const parts = name.split(".");
@@ -85,6 +104,8 @@ export function ProductForm({
     formState: { errors },
   } = useForm<FormInput>({
     resolver: zodResolver(formSchema),
+    // defaultValues are cached; values follows the product opened by navigation.
+    values: initial,
     defaultValues: initial ?? {
       name: "",
       description: "",
@@ -200,14 +221,18 @@ export function ProductForm({
       }
       router.push("/admin/products");
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "Save failed");
+      setServerError(error instanceof z.ZodError
+        ? `Please fix the following before saving: ${error.issues.map((issue) => `${fieldLabel(issue.path.map(String))}: ${issue.message}`).join("; ")}`
+        : error instanceof Error ? error.message : "Save failed");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form noValidate onSubmit={handleSubmit(onSubmit, (invalid) => {
+      setServerError(`Please fix the following before saving: ${validationMessages(invalid).join("; ")}`);
+    })} className="space-y-6">
       <div className="sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-3 border-b border-light-gray bg-[#f5f6f7] py-3">
         <div><Link href="/admin/products" className="mb-2 inline-block text-xs text-muted underline underline-offset-4">All products</Link><h1 className="admin-title">
           {mode === "create" ? "New product" : "Edit product"}
@@ -219,12 +244,12 @@ export function ProductForm({
         >
           {saving ? "Saving…" : mode === "create" ? "Create product" : "Save changes"}
         </button>
+        {serverError && (
+          <p role="alert" className="w-full border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {serverError}
+          </p>
+        )}
       </div>
-      {serverError && (
-        <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {serverError}
-        </p>
-      )}
 
       <fieldset disabled={saving} aria-label="Basics" className="admin-card p-5">
         <h2 className="text-base font-semibold text-ink">Basics</h2>
