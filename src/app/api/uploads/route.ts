@@ -23,16 +23,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       throw new AppError("VALIDATION_ERROR", "Only images are allowed here", 400);
     }
     const buffer = Buffer.from(await file.arrayBuffer());
-    let result;
-    try {
-      result = await uploadBuffer(buffer, { folder: "satvastones/reviews", resourceType: "image" });
-    } catch {
-      throw new AppError(
-        "INTERNAL_ERROR",
-        "Cloudinary rejected the upload — verify the Cloudinary keys on the server, then redeploy.",
-        502,
-      );
-    }
+    const result = await uploadBuffer(buffer, { folder: "satvastones/reviews", resourceType: "image" });
     return successResponse(result, 201);
   } catch (error) {
     return errorResponse(error);
