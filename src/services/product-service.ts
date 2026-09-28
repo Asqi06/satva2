@@ -7,6 +7,7 @@ import { Category } from "@/models/Category";
 import { Product, type IProduct } from "@/models/Product";
 import type { BulkAction, ProductInput, ProductQuery } from "@/schemas/product";
 import { ensureUnique, slugify } from "@/utils/slug";
+import { cloudinaryPublicId } from "@/utils/cloudinary-url";
 
 /** Escape user text for safe case-insensitive regex matching (no ReDoS). */
 export function escapeRegExp(input: string): string {
@@ -220,8 +221,13 @@ function toDetail(doc: LeanProduct, related: ProductListItem[]): ProductDetail {
 }
 
 function toAdminDetail(doc: LeanProduct): AdminProductDetail {
+  const detail = toDetail(doc, []);
   return {
-    ...toDetail(doc, []),
+    ...detail,
+    images: detail.images.map((image) => ({
+      ...image,
+      publicId: image.publicId || cloudinaryPublicId(image.secureUrl),
+    })),
     price: doc.price,
     variants: (doc.variants ?? []).map((variant) => ({ ...variant })),
     isPublished: Boolean(doc.isPublished),
