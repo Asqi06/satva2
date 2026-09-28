@@ -24,6 +24,13 @@ export const createOrderSchema = z.object({
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
+export const guestOrderSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address").max(254),
+  address: addressInputSchema,
+  couponCode: z.string().trim().max(32).optional(),
+});
+export type GuestOrderInput = z.infer<typeof guestOrderSchema>;
+
 export const couponValidateSchema = z.object({
   code: z.string().trim().min(1).max(32),
 });

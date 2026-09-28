@@ -7,6 +7,20 @@ export interface ISettings extends Document {
   shippingFlatFee: number;
   reservationTtlMinutes: number;
   announcement?: string;
+  legalName?: string;
+  businessAddress?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  grievanceContact?: string;
+  gstin?: string;
+  dispatchInformation?: string;
+  deliveryInformation?: string;
+  returnPolicy?: string;
+  cancellationPolicy?: string;
+  privacyPolicy?: string;
+  termsPolicy?: string;
+  aboutInformation?: string;
+
   homeSeoTitle?: string;
   homeSeoDescription?: string;
   shopSeoTitle?: string;
@@ -20,6 +34,20 @@ const settingsSchema = new Schema<ISettings>(
     shippingFlatFee: { type: Number, min: 0, default: 49 },
     reservationTtlMinutes: { type: Number, min: 5, default: 30 },
     announcement: { type: String, maxlength: 200 },
+    legalName: { type: String, trim: true, maxlength: 5000 },
+    businessAddress: { type: String, trim: true, maxlength: 5000 },
+    supportEmail: { type: String, trim: true, maxlength: 5000 },
+    supportPhone: { type: String, trim: true, maxlength: 5000 },
+    grievanceContact: { type: String, trim: true, maxlength: 5000 },
+    gstin: { type: String, trim: true, maxlength: 5000 },
+    dispatchInformation: { type: String, trim: true, maxlength: 5000 },
+    deliveryInformation: { type: String, trim: true, maxlength: 5000 },
+    returnPolicy: { type: String, trim: true, maxlength: 5000 },
+    cancellationPolicy: { type: String, trim: true, maxlength: 5000 },
+    privacyPolicy: { type: String, trim: true, maxlength: 5000 },
+    termsPolicy: { type: String, trim: true, maxlength: 5000 },
+    aboutInformation: { type: String, trim: true, maxlength: 5000 },
+
     homeSeoTitle: { type: String, trim: true, maxlength: 160 },
     homeSeoDescription: { type: String, trim: true, maxlength: 320 },
     shopSeoTitle: { type: String, trim: true, maxlength: 160 },

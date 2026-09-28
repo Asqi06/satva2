@@ -1,18 +1,21 @@
+import { getSettings } from "@/services/settings-service";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of service — SatvaStones",
+  title: { absolute: "Terms of service — SatvaStones" },
   description: "The rules of shopping at SatvaStones.",
   alternates: { canonical: "/terms" },
-  robots: { index: true, follow: true },
+  openGraph: { title: "Terms of service — SatvaStones", description: "The rules of shopping at SatvaStones.", url: "/terms", type: "website", siteName: "SatvaStones" },
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const settings = await getSettings();
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">The fine print</p>
-        <h1 className="mt-2 font-display text-5xl tracking-tight">Terms of service.</h1>
+        <h1 className="mt-2 font-display text-3xl sm:text-4xl">Terms of service.</h1>
+        {settings.termsPolicy ? <div className="mt-6 whitespace-pre-line leading-8 text-ink/85">{settings.termsPolicy}</div> : (
         <div className="mt-6 space-y-5 leading-8 text-ink/85">
           <p>
             <strong>What we sell:</strong> gold-coloured imitation jewellery — stainless steel, brass
@@ -21,7 +24,7 @@ export default function TermsPage() {
           <p>
             <strong>Prices & payment:</strong> prices in Indian Rupees, inclusive of taxes. Payment
             is captured online via Razorpay at checkout; orders ship after successful payment
-            verification. Unpaid reservations expire after 30 minutes.
+            verification. Unpaid reservations expire after {settings.reservationTtlMinutes} minutes.
           </p>
           <p>
             <strong>Accounts:</strong> one account per person, via Google login. You&apos;re
@@ -38,6 +41,7 @@ export default function TermsPage() {
             courts in Valsad, Gujarat.
           </p>
         </div>
+        )}
       </div>
     </div>
   );

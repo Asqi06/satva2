@@ -33,6 +33,10 @@ export const analytics = {
 
   search: (term: string) => track("search", { search_term: term.slice(0, 100) }),
 
+  filterApplied: (filters: string[], count: number) => track("filter_applied", { filter_names: filters, filter_count: count }),
+
+  checkoutStepCompleted: (step: "information") => track("checkout_step_completed", { step }),
+
   addToCart: (input: { id: string; name: string; price: number; qty: number }) =>
     track("add_to_cart", {
       currency: "INR",

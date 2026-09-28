@@ -5,13 +5,13 @@
  * without touching any shared database; everything vanishes on exit.
  */
 import { spawn } from "node:child_process";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 
-const mongod = await MongoMemoryServer.create();
+const mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
 const child = spawn("npx", ["next", "dev", "--port", "3100"], {
   stdio: "inherit",
   shell: true,
-  env: { ...process.env, MONGODB_URI: mongod.getUri("satvastones-e2e") },
+  env: { ...process.env, MONGODB_URI: mongod.getUri("satvastones-e2e"), E2E_DIST_DIR: ".next-e2e" },
 });
 
 let stopping = false;

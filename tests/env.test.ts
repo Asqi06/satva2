@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getClientEnv, getServerEnv, requireServerVar, serverEnvPresence } from "@/lib/env";
+import { getClientEnv, isIndexingEnabled, getServerEnv, requireServerVar, serverEnvPresence } from "@/lib/env";
 
 const FULL_SERVER_ENV = {
   MONGODB_URI: "mongodb://localhost:27017/test",
@@ -54,6 +54,17 @@ describe("serverEnvPresence", () => {
     expect(presence.MONGODB_URI).toBe(true);
     expect(JSON.stringify(presence)).not.toContain("super-secret-uri");
   });
+});
+
+it("only enables indexing for the public production deployment", () => {
+  vi.stubEnv("NODE_ENV", "production");
+  vi.stubEnv("VERCEL_ENV", "preview");
+  expect(isIndexingEnabled()).toBe(false);
+  vi.stubEnv("VERCEL_ENV", "production");
+  expect(isIndexingEnabled()).toBe(true);
+  vi.stubEnv("SITE_INDEXING_ENABLED", "false");
+  expect(isIndexingEnabled()).toBe(false);
+  vi.unstubAllEnvs();
 });
 
 describe("getClientEnv", () => {

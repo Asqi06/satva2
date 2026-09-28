@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/razorpay";
 import { handleWebhookEvent } from "@/services/order-service";
@@ -11,7 +13,6 @@ const entitySchema = z.object({
 });
 
 const webhookSchema = z.object({
-  id: z.string(),
   event: z.string(),
   payload: z
     .object({
@@ -23,8 +24,8 @@ const webhookSchema = z.object({
 
 /**
  * Razorpay webhook. Signature verified on the RAW body; processing is
- * idempotent via processed event ids. Always 200-acks validly signed
- * events (even unknown ones) so Razorpay stops retrying.
+ * idempotent via processed event ids. Successful and unknown events receive 200;
+ * transient processing failures receive 503 so Razorpay retries.
  */
 export async function POST(req: NextRequest): Promise<Response> {
   const raw = await req.text();
@@ -54,7 +55,8 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (!envelope.success) {
     return NextResponse.json({ success: true, data: { ack: true, settled: false } });
   }
-  const { id: eventId, event, payload } = envelope.data;
+  const { event, payload } = envelope.data;
+  const eventId = req.headers.get("x-razorpay-event-id") || createHash("sha256").update(raw).digest("hex");
   const entity = payload.payment?.entity ?? payload.refund?.entity;
   if (!entity) {
     return NextResponse.json({ success: true, data: { ack: true, settled: false } });
@@ -67,8 +69,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
     return NextResponse.json({ success: true, data: result });
   } catch {
-    // Service errors must not trigger Razorpay retries for poison events;
-    // the failure is logged server-side with the event id.
-    return NextResponse.json({ success: true, data: { ack: true, settled: false } });
+    logger.error("webhook processing failed", { eventId, event });
+    return NextResponse.json({ success: false, error: { code: "INTERNAL_ERROR", message: "Webhook processing failed" } }, { status: 503 });
   }
 }

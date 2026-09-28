@@ -7,7 +7,8 @@ import { logger } from "./logger";
  * Optional unsigned-upload preset (public name, not a secret). When the
  * API key/secret are absent, uploads go through this preset instead of
  * signed calls — validation, auth and size checks still run server-side
- * in our API routes, so the security model is unchanged.
+ * in our API routes. The public preset also permits direct uploads; restrict
+ * its formats, size and folder in Cloudinary, or use signed credentials.
  */
 function uploadPreset(): string | null {
   const preset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
@@ -43,7 +44,7 @@ export function assertCloudinaryConfigured(): void {
 // 4MB: Vercel serverless bodies cap ~4.5MB, so 5MB uploads die at the
 // platform before reaching this code. Multipart overhead needs headroom.
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 4 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
@@ -57,7 +58,7 @@ export function assertUploadFileOk(file: { type: string; size: number; name: str
   }
   if (ALLOWED_VIDEO_TYPES.includes(file.type)) {
     if (file.size > MAX_VIDEO_BYTES) {
-      throw new AppError("VALIDATION_ERROR", `Video too large (max 25MB): ${file.name}`, 413);
+      throw new AppError("VALIDATION_ERROR", `Video too large (max 4MB): ${file.name}`, 413);
     }
     return "video";
   }
@@ -116,11 +117,11 @@ export async function uploadBuffer(
       preset !== null
         ? cloud.uploader.unsigned_upload_stream(
             preset,
-            { folder: opts.folder, resource_type: opts.resourceType },
+            { folder: opts.folder, resource_type: opts.resourceType, allowed_formats: opts.resourceType === "image" ? ["jpg", "png", "webp", "avif"] : ["mp4", "webm", "mov"] },
             done,
           )
         : cloud.uploader.upload_stream(
-            { folder: opts.folder, resource_type: opts.resourceType },
+            { folder: opts.folder, resource_type: opts.resourceType, allowed_formats: opts.resourceType === "image" ? ["jpg", "png", "webp", "avif"] : ["mp4", "webm", "mov"] },
             done,
           );
     stream.end(buffer);

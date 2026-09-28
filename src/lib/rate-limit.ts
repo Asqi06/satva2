@@ -1,7 +1,8 @@
 import { AppError } from "./errors";
 
 /**
- * In-memory per-key rate limiting (single instance). Covers MVP abuse
+ * ponytail: in-memory limits reset and multiply across instances; use hosting WAF or a shared store for distributed abuse protection.
+ * Covers MVP abuse
  * targets; distributed limiting is a documented future step (ADR-019).
  */
 

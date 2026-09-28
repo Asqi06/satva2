@@ -32,7 +32,7 @@ async function seed() {
     price: 500,
     compareAtPrice: 1000,
     sku: "LIVE-001",
-    variants: [{ sku: "LIVE-001-S6", size: "6", price: 600, stock: 2 }],
+    variants: [],
     stock: 5,
     isPublished: true,
   });
@@ -108,6 +108,8 @@ describe("cart service", () => {
 
   it("prices variants independently", async () => {
     const { live } = await seed();
+    await Product.updateOne({ _id: live._id }, { $set: { variants: [{ sku: "LIVE-001-S6", size: "6", price: 600, stock: 2, reservedStock: 1 }] } });
+    await expect(addCartItem(USER, { productId: live.id, qty: 1 })).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
     const { view } = await addCartItem(USER, {
       productId: live._id.toString(),
       variantSku: "live-001-s6",

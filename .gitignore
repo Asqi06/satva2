@@ -46,3 +46,6 @@ antigravity.config.yaml
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Isolated browser test server build output
+.next-e2e/

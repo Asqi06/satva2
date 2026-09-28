@@ -1,8 +1,8 @@
 import mongoose, { Types } from "mongoose";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { connectDb, resetDbCache } from "@/lib/db";
-import { refundRazorpayPayment } from "@/lib/razorpay";
+import { fetchRazorpayPayment, refundRazorpayPayment } from "@/lib/razorpay";
 import { Cart } from "@/models/Cart";
 import { Category } from "@/models/Category";
 import { Coupon } from "@/models/Coupon";
@@ -30,7 +30,8 @@ vi.mock("@/lib/razorpay", async (importOriginal) => {
   const mod = await importOriginal<typeof import("@/lib/razorpay")>();
   return {
     ...mod,
-    refundRazorpayPayment: vi.fn(async () => "rfnd_test123"),
+    fetchRazorpayPayment: vi.fn(async () => ({ order_id: "order_race", amount: 100000, currency: "INR", amount_refunded: 100000 })),
+    refundRazorpayPayment: vi.fn(async () => ({ id: "rfnd_test123", status: "processed" })),
   };
 });
 
@@ -88,10 +89,10 @@ async function fixtures() {
 }
 
 describe("admin orders", () => {
-  let mongod: MongoMemoryServer | undefined;
+  let mongod: MongoMemoryReplSet | undefined;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     process.env.MONGODB_URI = mongod.getUri();
     resetDbCache();
     await connectDb();
@@ -239,4 +240,42 @@ describe("admin orders", () => {
       code: "NOT_FOUND",
     });
   });
+  it("waits for pending gateway refunds and blocks duplicate requests", async () => {
+    const { customer } = await fixtures();
+    const addressId = (await User.findById(customer._id).lean())!.addresses[0]!._id.toString();
+    const { order } = await createOrder(customer._id.toString(), { addressId });
+    await Order.updateOne({ _id: order.id }, { $set: { paymentStatus: "PAID", razorpayPaymentId: "pay_pending" } });
+    vi.mocked(refundRazorpayPayment).mockResolvedValueOnce({ id: "rfnd_pending", status: "pending" });
+    expect((await refundOrder(order.id)).paymentStatus).toBe("PAID");
+    await expect(updateOrderStatus(order.id, "CONFIRMED")).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(refundOrder(order.id)).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(await InventoryTransaction.countDocuments({ orderId: order.id, type: "RESTOCK" })).toBe(0);
+  });
+
+  it("does not restock a shipped refund before the goods are returned", async () => {
+    const { customer, product } = await fixtures();
+    const addressId = (await User.findById(customer._id).lean())!.addresses[0]!._id.toString();
+    const { order } = await createOrder(customer._id.toString(), { addressId });
+    await Order.updateOne({ _id: order.id }, { $set: { paymentStatus: "PAID", orderStatus: "SHIPPED", razorpayPaymentId: "pay_shipped" } });
+    await Product.updateOne({ _id: product._id }, { $set: { stock: 8, reservedStock: 0, soldQuantity: 2 } });
+    await refundOrder(order.id);
+    expect((await Product.findById(product._id).lean())?.stock).toBe(8);
+    expect(await InventoryTransaction.countDocuments({ orderId: order.id, type: "RESTOCK" })).toBe(0);
+  });
+
+  it("uses current fulfilment status if shipping wins while a refund webhook fetches payment", async () => {
+    const { customer, product } = await fixtures();
+    const addressId = (await User.findById(customer._id).lean())!.addresses[0]!._id.toString();
+    const { order } = await createOrder(customer._id.toString(), { addressId });
+    await Order.updateOne({ _id: order.id }, { $set: { paymentStatus: "PAID", orderStatus: "PACKED", razorpayPaymentId: "pay_race", razorpayOrderId: "order_race" } });
+    await Product.updateOne({ _id: product._id }, { $set: { stock: 8, reservedStock: 0, soldQuantity: 2 } });
+    vi.mocked(fetchRazorpayPayment).mockImplementationOnce(async () => {
+      await Order.updateOne({ _id: order.id }, { $set: { orderStatus: "SHIPPED" } });
+      return { order_id: "order_race", amount: 100000, currency: "INR", amount_refunded: 100000 } as Awaited<ReturnType<typeof fetchRazorpayPayment>>;
+    });
+    await handleWebhookEvent("evt_ship_refund", "refund.processed", { id: "rfnd_ship", payment_id: "pay_race", order_id: "order_race" });
+    expect((await Product.findById(product._id).lean())?.stock).toBe(8);
+    expect((await Order.findById(order.id).lean())?.paymentStatus).toBe("REFUNDED");
+  });
+
 });

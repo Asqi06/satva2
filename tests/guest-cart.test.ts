@@ -4,8 +4,6 @@ import {
   guestCount,
   guestSubtotal,
   loadGuestCart,
-  markMerged,
-  mergedEmails,
   setGuestQty,
   type GuestCartItem,
   type StorageLike,
@@ -72,11 +70,4 @@ describe("guest cart", () => {
     expect(guestSubtotal(items)).toBe(499 + 200);
   });
 
-  it("tracks merged emails once", () => {
-    const s = fakeStorage();
-    expect(mergedEmails(s)).toEqual([]);
-    markMerged(s, "a@x.co");
-    markMerged(s, "a@x.co");
-    expect(mergedEmails(s)).toEqual(["a@x.co"]);
-  });
 });

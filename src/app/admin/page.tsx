@@ -4,7 +4,7 @@ import { getDashboardStats } from "@/services/admin-dashboard-service";
 import { formatINR } from "@/utils/format";
 
 export const metadata: Metadata = {
-  title: "Admin — SatvaStones",
+  title: { absolute: "Admin — SatvaStones" },
   description: "SatvaStones store management.",
 };
 

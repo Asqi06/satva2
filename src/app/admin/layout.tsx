@@ -100,9 +100,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </aside>
 
         {/* ── Main content ── */}
-        <main className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );

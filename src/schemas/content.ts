@@ -1,14 +1,18 @@
 import { z } from "zod";
+import { publicMediaUrlSchema } from "./category";
 
 export const bannerInputSchema = z.object({
   title: z.string().trim().min(1).max(120),
   subtitle: z.string().trim().max(280).optional(),
   image: z.object({
     publicId: z.string().min(1).max(512),
-    secureUrl: z.string().url().max(2048),
+    secureUrl: publicMediaUrlSchema,
     alt: z.string().min(1).max(200),
   }),
-  link: z.string().trim().min(1).max(512),
+  link: z.string().trim().min(1).max(512).refine((value) => {
+    if (value.startsWith("/") && !value.startsWith("//") && !value.includes("\\")) return true;
+    try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; }
+  }, "Use a site path or HTTPS link"),
   sortOrder: z.number().int().default(0),
   isActive: z.boolean().default(true),
   startsAt: z.string().datetime({ offset: true }).optional(),

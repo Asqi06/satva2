@@ -1,7 +1,15 @@
+import { jsonLd } from "@/utils/jsonld";
 import { describe, expect, it } from "vitest";
 import { ensureUnique, slugify } from "@/utils/slug";
 import { formatINR } from "@/utils/format";
 import { cloudinaryLoader } from "@/utils/cloudinary-url";
+
+it("serializes hostile catalogue copy without closing a script element", () => {
+  const value = { name: "</script><script>alert(1)</script>" };
+  const serialized = jsonLd(value);
+  expect(serialized).not.toContain("<");
+  expect(JSON.parse(serialized)).toEqual(value);
+});
 
 describe("slugify", () => {
   it("lowercases and hyphenates", () => {

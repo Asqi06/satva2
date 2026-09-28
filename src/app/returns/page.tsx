@@ -1,38 +1,29 @@
+import { getSettings } from "@/services/settings-service";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Returns & exchanges — SatvaStones",
-  description: "SatvaStones return policy — defects, transit damage and size help. 7-day cover.",
+  title: { absolute: "Returns & exchanges — SatvaStones" },
+  description: "Return, exchange, refund and cancellation information for SatvaStones orders.",
   alternates: { canonical: "/returns" },
-  openGraph: { title: "Returns & exchanges — SatvaStones", description: "7-day cover for defects and transit damage.", url: "/returns", type: "website", siteName: "SatvaStones" },
+  openGraph: { title: "Returns & exchanges — SatvaStones", description: "Return, exchange, refund and cancellation information for SatvaStones orders.", url: "/returns", type: "website", siteName: "SatvaStones" },
 };
 
-export default function ReturnsPage() {
+export default async function ReturnsPage() {
+  const settings = await getSettings();
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
-        <p className="eyebrow">Reader services · 7-day cover</p>
-        <h1 className="section-title mt-2 text-5xl tracking-tight">Returns & exchanges.</h1>
-        <div className="mt-6 space-y-5 leading-8 text-warm-gray">
-          <p>
-            <strong>7-day cover:</strong> manufacturing defects and transit damage are replaced or
-            refunded within 7 days of delivery — photo required, questions minimal.
-          </p>
-          <p>
-            <strong>Size help:</strong> rings that don&apos;t fit can be exchanged once for another
-            size of the same piece, within 7 days, unworn.
-          </p>
-          <p>
-            <strong>Not covered:</strong> change-of-mind returns, worn pieces, and damage from
-            water, perfume or drops. Imitation jewellery can&apos;t be resold once worn — we keep
-            prices honest instead of building returns into them.
-          </p>
-          <p>
-            To start a claim, <Link href="/contact" className="underline underline-offset-4">write to us</Link> with
-            your order number and a photo.
-          </p>
-        </div>
+        <p className="eyebrow">Reader services</p>
+        <h1 className="section-title mt-2 text-3xl sm:text-4xl">Returns & exchanges.</h1>
+        {settings.returnPolicy ? <div className="mt-6 whitespace-pre-line leading-8 text-ink/85">{settings.returnPolicy}</div> : (
+        <div className="mt-6 space-y-5 text-sm leading-8 text-muted"><p>Contact us with your order number before requesting a return, exchange or refund. Our team can confirm the eligibility and steps for your order.</p><p>If a product arrives damaged or incorrect, include clear photos and your order details so we can investigate.</p><Link href="/contact" className="inline-block min-h-11 underline underline-offset-4">Contact support</Link></div>
+        )}
+        <section className="mt-8 space-y-3 leading-8 text-warm-gray">
+          <h2 className="section-title text-2xl">Cancellation</h2>
+          <p className="whitespace-pre-line">{settings.cancellationPolicy || "Unpaid pending orders can be cancelled on your order status page. For paid orders, contact support before dispatch."}</p>
+          <Link href="/contact" className="underline underline-offset-4">Contact support</Link>
+        </section>
       </div>
     </div>
   );

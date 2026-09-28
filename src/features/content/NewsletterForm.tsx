@@ -22,7 +22,7 @@ export function NewsletterForm() {
       const body = (await res.json()) as { success: boolean; error?: { message: string } };
       if (!body.success) throw new Error(body.error?.message ?? "Signup failed");
       setState("done");
-      setMessage("You're on the list — see you Sunday.");
+      setMessage("You're subscribed. Thanks for joining.");
     } catch (err) {
       setState("error");
       setMessage(err instanceof Error ? err.message : "Signup failed");
@@ -31,7 +31,7 @@ export function NewsletterForm() {
 
   if (state === "done") {
     return (
-      <p role="status" className="rounded-2xl border border-ink/10 bg-white/60 p-4 text-sm">
+      <p role="status" className="rounded-[3px] border border-ink/10 bg-white/60 p-4 text-sm">
         {message}
       </p>
     );
@@ -51,12 +51,12 @@ export function NewsletterForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.in"
           autoComplete="email"
-          className="w-full rounded-full border border-ink/15 bg-ivory px-4 py-2.5 text-sm"
+          className="field min-w-0"
         />
         <button
           type="submit"
           disabled={state === "busy"}
-          className="shrink-0 rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-60"
+          className="btn-gold shrink-0"
         >
           {state === "busy" ? "Joining…" : "Join"}
         </button>

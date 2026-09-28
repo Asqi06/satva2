@@ -1,3 +1,4 @@
+import { jsonLd as serializeJsonLd } from "@/utils/jsonld";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getClientEnv } from "@/lib/env";
@@ -24,21 +25,15 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 60;
 export const dynamic = "force-static";
 
-const TRENDS = [
-  { label: "Office Girl", href: "/shop?sort=best-selling", bg: "bg-stone-700" },
-  { label: "Dreamy Girl", href: "/shop?sort=newest", bg: "bg-rose-300" },
-  { label: "Island", href: "/shop", bg: "bg-amber-600" },
-  { label: "Party Night", href: "/shop?maxPrice=999", bg: "bg-zinc-500" },
-];
-
 export default async function Home() {
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const [banners, categories, newest, bestsellers, wall] = await Promise.all([
+  const [banners, categories, newest, bestsellers, wall, settings] = await Promise.all([
     listLiveBanners(),
     listPublicCategories(),
     listPublicProducts({ sort: "newest", page: 1, limit: 8 }),
     listPublicProducts({ sort: "best-selling", page: 1, limit: 8 }),
     listFeaturedReviews(6),
+    getSettings(),
   ]);
   const hero = banners[0];
 
@@ -47,8 +42,15 @@ export default async function Home() {
     "@type": "Organization",
     name: "SatvaStones",
     url: appUrl,
-    logo: `${appUrl}/icon.png`,
-    description: "Everyday aesthetic jewellery for India — Korean, Western and Pinterest-inspired, anti-tarnish, crafted in Vapi, Gujarat.",
+
+    description: "Jewellery online in India with current prices and product details.",
+    ...(settings.legalName ? { legalName: settings.legalName } : {}),
+    ...(settings.businessAddress ? { address: settings.businessAddress } : {}),
+    ...(settings.supportEmail || settings.supportPhone ? { contactPoint: {
+      "@type": "ContactPoint", contactType: "customer service",
+      ...(settings.supportEmail ? { email: settings.supportEmail } : {}),
+      ...(settings.supportPhone ? { telephone: settings.supportPhone } : {}),
+    } } : {}),
     sameAs: [],
   };
 
@@ -67,248 +69,45 @@ export default async function Home() {
   };
 
   const allProducts = [...bestsellers.products, ...newest.products];
-  const imgForCategory = (name: string) => {
-    const found = allProducts.find((p) => p.category.name.toLowerCase() === name.toLowerCase());
-    return found?.images[0];
-  };
-  const trendImgs = [0, 1, 2, 3].map((i) => allProducts[i]?.images[0]);
-  // banners[0] = main hero image, banners[1] = sale strip image (Admin → Banners, ordered by Sort order).
-  const promo = banners[1];
-
   return (
     <div className="flex flex-1 flex-col bg-white font-sans text-ink">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(orgLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteLd) }} />
 
-      <main>
-        {/* ───────── HERO — full banner image, edited in Admin → Banners ───────── */}
-        <section aria-label="Featured collection">
-          {hero ? (
-            <Link href={hero.link} className="group relative block overflow-hidden bg-blush">
-              <span className="relative block aspect-[5/4] w-full sm:aspect-[16/8] lg:aspect-[21/9]">
-                <Image
-                  src={hero.image.secureUrl}
-                  alt={hero.image.alt}
-                  fill
-                  priority
-                  fetchPriority="high"
-                  sizes="100vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
-                />
-              </span>
-              <span className="block bg-cream px-6 py-7 sm:absolute sm:bottom-8 sm:left-8 sm:max-w-md sm:rounded-2xl sm:bg-white/95 sm:p-8 sm:shadow-xl lg:bottom-12 lg:left-12">
-                <span className="eyebrow block">Featured collection · {hero.title}</span>
-                <h1 className="section-title mt-2 block text-3xl text-ink sm:text-4xl">
-                  {hero.title}
-                </h1>
-                <span className="mt-3 block max-w-sm text-sm leading-6 text-warm-gray">
-                  {hero.subtitle || "Jewellery to make every day feel like an occasion."}
-                </span>
-                <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-primary">
-                  Explore the collection
-                </span>
-              </span>
-            </Link>
-          ) : (
-            <div className="bg-blush">
-              <div className="mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-14 text-center sm:px-8">
-                <p className="eyebrow">Everyday jewellery, made to gift</p>
-                <h1 className="section-title mt-2 text-3xl sm:text-5xl">
-                  Pretty things for every-day you.
-                </h1>
-                <p className="lede mt-3 max-w-md text-sm">
-                  Rings, bracelets, necklaces and oxidised pieces — premium-looking,
-                  honestly priced and made to gift.
-                </p>
-                <Link href="/shop" className="btn-primary mt-6">
-                  Browse the collection →
-                </Link>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* ───────── CATEGORY STRIP ───────── */}
-        {categories.length > 0 && (
-          <section aria-labelledby="category-heading" className="border-y border-light-gray bg-cream">
-            <div className="mx-auto w-full max-w-7xl px-4 pb-8 pt-9 sm:px-8">
-              <p className="eyebrow">Find your kind of sparkle</p>
-              <h2 id="category-heading" className="section-title mt-1 text-2xl sm:text-3xl">Shop by category</h2>
-            <ul className="no-scrollbar mt-6 flex gap-4 overflow-x-auto pb-1 sm:gap-6">
-              {categories.slice(0, 6).map((c) => {
-                const img = c.image ?? imgForCategory(c.name);
-                return (
-                  <li key={c.id} className="w-24 shrink-0 sm:w-32">
-                    <Link href={`/shop?category=${c.slug}`} className="group block text-center">
-                      <span className="relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition-transform group-hover:scale-[1.03]">
-                        {img ? (
-                          <Image
-                            src={img.secureUrl}
-                            alt={img.alt || c.name}
-                            fill
-                            sizes="(min-width: 640px) 128px, 96px"
-                            loading="lazy"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-full items-center justify-center bg-gradient-to-br from-blush via-[#f6e4dd] to-peach/60 font-display text-5xl font-semibold text-maroon/80">
-                            {c.name.charAt(0)}
-                          </span>
-                        )}
-                      </span>
-                      <span className="mt-2 block text-xs font-semibold text-ink sm:text-sm">
-                        {c.name}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-            </div>
-          </section>
-        )}
-
-        {/* ───────── SHOP BY TREND ───────── */}
-        <section aria-labelledby="trend-heading" className="mx-auto w-full max-w-7xl px-4 pt-14 sm:px-8">
-          <p className="eyebrow">A mood for every moment</p>
-          <h2 id="trend-heading" className="section-title mt-1 text-3xl sm:text-4xl">Shop by trend</h2>
-          <ul className="no-scrollbar mt-6 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible">
-            {TRENDS.map((t, i) => {
-              const img = trendImgs[i];
-              return (
-                <li key={t.label} className="w-40 shrink-0 sm:w-auto">
-                  <Link href={t.href} className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-cream">
-                    {img ? (
-                      <Image
-                        src={img.secureUrl}
-                        alt={t.label}
-                        fill
-                        sizes="(min-width: 1280px) 300px, (min-width: 640px) 23vw, 160px"
-                        loading="lazy"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <span className={`absolute inset-0 ${t.bg}`} />
-                    )}
-                    <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" aria-hidden="true" />
-                    <span className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
-                      <span className="font-display text-xl font-semibold group-hover:underline sm:text-2xl">{t.label}</span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        {/* ───────── INSTAGRAM VIRAL ───────── */}
-        {bestsellers.products.length > 0 && (
-          <section aria-labelledby="popular-heading" className="mx-auto mt-14 w-full max-w-7xl rounded-[28px] bg-cream px-4 py-9 sm:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="eyebrow">Most loved</p>
-                <h2 id="popular-heading" className="section-title mt-1 text-3xl sm:text-4xl">The popular pieces</h2>
-              </div>
-              <Link href="/shop?sort=best-selling" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
-                View all best sellers
-              </Link>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              {bestsellers.products.slice(0, 4).map((p, i) => (
-                <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
-                  <ProductCard product={p} badge="bestseller" />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ───────── SALE STRIP — 2nd banner image, edited in Admin → Banners ───────── */}
-        {promo && (
-          <section aria-label={promo.title} className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-8">
-            <Link href={promo.link} className="group relative block overflow-hidden rounded-2xl">
-              <span className="relative block aspect-[4/3] w-full sm:aspect-[21/8]">
-                <Image
-                  src={promo.image.secureUrl}
-                  alt={promo.image.alt}
-                  fill
-                  sizes="(min-width: 1280px) 1216px, (min-width: 640px) calc(100vw - 64px), calc(100vw - 32px)"
-                  loading="lazy"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.01]"
-                />
-              </span>
-              <span className="sr-only">{promo.title}{promo.subtitle ? ` — ${promo.subtitle}` : ""}</span>
-            </Link>
-          </section>
-        )}
-
-        {/* ───────── NEW ARRIVALS ───────── */}
-        {newest.products.length > 0 && (
-          <section aria-labelledby="new-heading" className="mx-auto w-full max-w-7xl px-4 pt-14 sm:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="eyebrow">Fresh finds</p>
-                <h2 id="new-heading" className="section-title mt-1 text-3xl sm:text-4xl">New arrivals</h2>
-              </div>
-              <Link href="/shop?sort=newest" className="text-sm font-bold text-primary underline-offset-4 hover:underline">
-                Shop all new
-              </Link>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              {newest.products.slice(0, 4).map((p, i) => (
-                <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 7) * 40}ms` }}>
-                  <ProductCard product={p} badge="new" />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ───────── REVIEWS ───────── */}
-        {wall.length > 0 && (
-          <section aria-label="Customer reviews" className="mx-auto w-full max-w-7xl px-4 pt-14 sm:px-8">
-            <p className="eyebrow">From the community</p>
-            <h2 className="section-title mt-1 text-3xl sm:text-4xl">Worn & loved</h2>
-            <ul className="no-scrollbar mt-6 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
-              {wall.slice(0, 6).map((r) => (
-                <li key={r.id} className="w-72 shrink-0 rounded-2xl border border-light-gray bg-white p-6 shadow-sm sm:w-auto">
-                  <p aria-label={`${r.rating} out of 5 stars`} className="text-sm font-bold text-amber-500">
-                    {"★".repeat(r.rating)}
-                    <span className="text-black/15">{"★".repeat(5 - r.rating)}</span>
-                  </p>
-                  <blockquote className="clamp-2 mt-2 text-sm leading-6 text-ink/80">
-                    &ldquo;{r.comment}&rdquo;
-                  </blockquote>
-                  <p className="mt-3 text-xs text-muted">
-                    {r.authorName} ·{" "}
-                    <Link href={`/products/${r.productSlug}`} className="font-semibold text-primary hover:underline">
-                      {r.productName}
-                    </Link>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* ───────── NEWSLETTER ───────── */}
-        <section aria-label="Newsletter" className="mt-12 bg-blush py-12">
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 sm:px-8 lg:grid-cols-2 lg:items-center">
-            <div>
-              <p className="eyebrow">The Sunday note</p>
-              <h2 className="section-title mt-2 text-3xl sm:text-4xl">
-                First dibs, little notes.
-              </h2>
-              <p className="lede mt-3 max-w-sm text-sm">
-                Fresh drops and quiet offers, once a week. Never noise.
-              </p>
-            </div>
-            <div>
-              <NewsletterForm />
-            </div>
-          </div>
-        </section>
-      </main>
+      <section className="mx-auto grid w-full max-w-7xl bg-cream md:grid-cols-2" aria-label="Featured collection">
+        <div className="flex flex-col items-start justify-center px-6 py-10 sm:px-10 md:py-16 lg:px-16">
+          <p className="eyebrow">Everyday jewellery</p>
+          <h1 className="section-title mt-4 max-w-md text-4xl sm:text-5xl lg:text-6xl">{hero?.title || "Small pieces. Everyday favourites."}</h1>
+          <p className="mt-5 max-w-sm text-sm leading-7 text-muted">{hero?.subtitle || "Discover rings, earrings, necklaces and bracelets to wear your way."}</p>
+          <Link href={hero?.link || "/shop"} className="btn-primary mt-7">Explore the collection</Link>
+        </div>
+        <div className="relative aspect-[5/4] md:aspect-[4/5] lg:aspect-square">
+          {(hero?.image || allProducts[0]?.images[0]) && <Image src={(hero?.image || allProducts[0].images[0]).secureUrl} alt={(hero?.image || allProducts[0].images[0]).alt || "SatvaStones jewellery collection"} fill priority fetchPriority="high" sizes="(min-width: 1280px) 640px, (min-width: 768px) 50vw, 100vw" className="object-cover" />}
+        </div>
+      </section>
+      {categories.length > 0 && <section aria-labelledby="category-heading" className="shopping-section">
+        <div className="flex items-baseline justify-between gap-4"><h2 id="category-heading" className="section-title text-2xl sm:text-3xl">Shop by category</h2><Link href="/shop" className="text-sm underline underline-offset-4">View all</Link></div>
+        <ul className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-6 sm:gap-5">{categories.filter(c => c.image || (c.productCount ?? 0) > 0).slice(0,6).map(c => {
+          const image = c.image;
+          return <li key={c.id}><Link href={`/shop/${c.slug}`} className="group block"><span className="relative block aspect-square overflow-hidden rounded-[3px] bg-cream">{image ? <Image src={image.secureUrl} alt={image.alt || c.name} fill sizes="(min-width: 1280px) 186px, (min-width: 640px) calc((100vw - 164px) / 6), calc((100vw - 56px) / 3)" className="object-cover transition-opacity duration-200 group-hover:opacity-90" /> : <span className="flex h-full items-center justify-center px-2 text-center text-xs text-muted">{c.name}</span>}</span><span className="mt-3 block text-center text-xs font-medium sm:text-sm">{c.name}</span></Link></li>;
+        })}</ul>
+      </section>}
+      {bestsellers.products.length > 0 && <section aria-labelledby="popular-heading" className="shopping-section">
+        <div className="flex items-baseline justify-between gap-4"><h2 id="popular-heading" className="section-title text-2xl sm:text-3xl">{bestsellers.products.some(p => (p.soldQuantity ?? 0) > 0) ? "Bestsellers" : "Explore the collection"}</h2><Link href="/shop?sort=best-selling" className="text-sm underline underline-offset-4">Shop all</Link></div>
+        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-6">{bestsellers.products.slice(0,4).map(p => <ProductCard key={p.id} product={p} sizes="(min-width: 1280px) 286px, (min-width: 640px) calc((100vw - 136px) / 4), calc((100vw - 48px) / 2)" badge={(p.soldQuantity ?? 0) > 0 ? "bestseller" : undefined} />)}</div>
+      </section>}
+      <section aria-label="Shopping information" className="shopping-section"><div className="grid gap-6 border-y border-light-gray py-7 sm:grid-cols-3 sm:gap-10">
+        <div><h2 className="text-sm font-medium">Delivery, clearly priced</h2><p className="mt-2 text-xs leading-6 text-muted">Free from ₹{settings.freeShippingThreshold}; otherwise ₹{settings.shippingFlatFee}. Threshold applies after discounts.</p><Link href="/shipping" className="mt-2 inline-block py-1 text-xs underline underline-offset-4">Shipping information</Link></div>
+        <div><h2 className="text-sm font-medium">Secure payments</h2><p className="mt-2 text-xs leading-6 text-muted">Pay through Razorpay. See your final amount before you pay.</p></div>
+        <div><h2 className="text-sm font-medium">Help when you need it</h2><p className="mt-2 text-xs leading-6 text-muted">Questions about a piece or your order? Get in touch with our team.</p><Link href="/contact" className="mt-2 inline-block py-1 text-xs underline underline-offset-4">Contact us</Link></div>
+      </div></section>
+      {newest.products.length > 0 && <section aria-labelledby="new-heading" className="shopping-section">
+        <div className="flex items-baseline justify-between gap-4"><h2 id="new-heading" className="section-title text-2xl sm:text-3xl">New arrivals</h2><Link href="/shop?sort=newest" className="text-sm underline underline-offset-4">View all</Link></div>
+        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-6">{newest.products.slice(0,4).map(p => <ProductCard key={p.id} product={p} sizes="(min-width: 1280px) 286px, (min-width: 640px) calc((100vw - 136px) / 4), calc((100vw - 48px) / 2)" badge="new" />)}</div>
+      </section>}
+      {wall.length > 0 && <section aria-label="Customer reviews" className="shopping-section"><h2 className="section-title text-2xl sm:text-3xl">From our customers</h2><ul className="mt-6 grid gap-6 sm:grid-cols-3">{wall.slice(0,3).map(r => <li key={r.id} className="border-t border-light-gray pt-5"><p className="text-xs text-muted">{r.rating} / 5 · Verified purchase</p><blockquote className="mt-3 text-sm leading-7">“{r.comment}”</blockquote><p className="mt-4 text-xs text-muted">{r.authorName} · <Link href={`/products/${r.productSlug}`} className="underline">{r.productName}</Link></p></li>)}</ul></section>}
+      <section className="shopping-section"><div className="grid gap-8 bg-cream px-6 py-8 sm:grid-cols-2 sm:p-10"><div><h2 className="section-title text-2xl">Get to know SatvaStones</h2><p className="mt-3 max-w-md text-sm leading-7 text-muted">{settings.aboutInformation?.split("\n")[0] || "Explore the collection and find the details that matter to you. Our team is here to help you choose."}</p><Link href="/about" className="mt-4 inline-block py-2 text-sm underline underline-offset-4">Our story</Link></div><div><h2 className="section-title text-2xl">Shopping questions?</h2><div className="mt-3 flex flex-col items-start text-sm">{[["/shipping", "Delivery & shipping fees"], ["/returns", "Returns & refunds"], ["/faq", "Frequently asked questions"]].map(([href,label]) => <Link key={href} className="py-3 underline underline-offset-4" href={href}>{label}</Link>)}</div></div></div></section>
+      <section aria-label="Newsletter" className="shopping-section"><div className="grid items-center gap-6 border-t border-light-gray pt-8 md:grid-cols-2"><div><h2 className="section-title text-2xl">New pieces, in your inbox</h2><p className="mt-2 text-sm text-muted">Sign up for collection updates and offers.</p></div><NewsletterForm /></div></section>
     </div>
   );
 }

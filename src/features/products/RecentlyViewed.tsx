@@ -49,21 +49,21 @@ export function RecentlyViewed({ current }: { current: RecentPiece }) {
 
   return (
     <section aria-label="Recently viewed" className="mt-16">
-      <h2 className="font-display text-3xl">Recently viewed</h2>
+      <h2 className="section-title text-2xl sm:text-3xl">Recently viewed</h2>
       <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
         {items.map((p) => (
-          <article key={p.slug} className="overflow-hidden rounded-2xl border border-ink/10 bg-white/60">
+          <article key={p.slug} className="overflow-hidden">
             <Link href={`/products/${p.slug}`} aria-label={p.name}>
               <span className="relative block aspect-[4/5] overflow-hidden bg-ivory">
                 {p.image ? (
-                  <Image src={p.image.secureUrl} alt="" fill sizes="25vw" className="object-cover" />
+                  <Image src={p.image.secureUrl} alt="" fill sizes="(min-width: 1280px) 286px, (min-width: 1024px) 23vw, 46vw" className="object-cover" />
                 ) : (
                   <span className="flex h-full items-center justify-center font-display text-4xl text-ink/30">S</span>
                 )}
               </span>
             </Link>
-            <div className="p-4">
-              <h3 className="font-display text-lg leading-snug">
+            <div className="pt-3">
+              <h3 className="clamp-2 min-h-[2.8em] text-sm font-medium leading-[1.4]">
                 <Link href={`/products/${p.slug}`} className="hover:underline underline-offset-4">
                   {p.name}
                 </Link>

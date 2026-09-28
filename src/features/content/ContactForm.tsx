@@ -36,14 +36,14 @@ export function ContactForm() {
   if (state === "done") {
     return (
       <p role="status" className="rounded-2xl border border-ink/10 bg-white/60 p-6 text-center">
-        Message received — we reply within 2 working days.
+        Message received. Our team will reply using the email you provided.
       </p>
     );
   }
 
-  const inputCls = "w-full rounded-xl border border-ink/15 bg-ivory px-3 py-2 text-sm";
+  const inputCls = "field";
   return (
-    <form onSubmit={submit} className="grid gap-3 rounded-3xl border border-ink/10 bg-white/60 p-6">
+    <form onSubmit={submit} className="grid gap-5 border border-light-gray p-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           Name
@@ -68,7 +68,7 @@ export function ContactForm() {
           {message}
         </p>
       )}
-      <button type="submit" disabled={state === "busy"} className="rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-60">
+      <button type="submit" disabled={state === "busy"} className="btn-primary">
         {state === "busy" ? "Sending…" : "Send message"}
       </button>
     </form>

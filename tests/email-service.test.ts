@@ -74,6 +74,15 @@ describe("templates", () => {
     expect(refundEmail(DATA).text).toContain("900");
   });
 
+  it("escapes customer and catalogue text in HTML while preserving readable plain text", () => {
+    const hostile = '<img src=x onerror="alert(1)">';
+    const email = orderConfirmationEmail({ ...DATA, customerName: hostile, city: hostile, items: [{ ...DATA.items[0]!, name: hostile }] });
+    expect(email.html).not.toContain("<img");
+    expect(email.html).toContain("&lt;img");
+    expect(email.text).toContain(hostile);
+    expect(welcomeEmail(hostile).html).not.toContain("<img");
+  });
+
   it("html is a complete shell", () => {
     for (const email of all) {
       expect(email.html).toContain("SatvaStones");
@@ -146,6 +155,12 @@ describe("delivery", () => {
     expect(sendMock).toHaveBeenCalledTimes(2);
     const logged = await Notification.findOne({ type: "ORDER_CONFIRMATION" }).lean();
     expect(logged).toMatchObject({ status: "FAILED" });
+  });
+
+  it("records API error responses as failed deliveries", async () => {
+    sendMock.mockResolvedValue({ data: null, error: { message: "Sender domain unverified" } });
+    await notifyWelcome("failed@x.co", "Buyer");
+    expect((await Notification.findOne({ to: "failed@x.co" }).lean())?.status).toBe("FAILED");
   });
 
   it("recovers on the second attempt", async () => {

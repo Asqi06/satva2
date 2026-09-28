@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import mongoose, { Types } from "mongoose";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { connectDb, resetDbCache } from "@/lib/db";
-import { createRazorpayOrder } from "@/lib/razorpay";
+import { createRazorpayOrder, fetchRazorpayPayment } from "@/lib/razorpay";
 import { Cart } from "@/models/Cart";
 import { Category } from "@/models/Category";
 import { Coupon } from "@/models/Coupon";
@@ -26,19 +26,21 @@ import {
   notifyPaymentReceipt,
   notifyRefund,
 } from "@/lib/email";
-import { releaseExpiredReservations } from "@/services/inventory-service";
+import { reserveUnits, releaseExpiredReservations } from "@/services/inventory-service";
+import { replaceGuestCart } from "@/services/cart-service";
 
 let rzpCounter = 0;
+let paymentAmount = 0;
 
 vi.mock("@/lib/razorpay", async (importOriginal) => {
   const mod = await importOriginal<typeof import("@/lib/razorpay")>();
   return {
     ...mod,
-    createRazorpayOrder: vi.fn(async (opts: { amountPaise: number }) => ({
-      id: `order_mock_${++rzpCounter}`,
-      amount: opts.amountPaise,
-      currency: "INR",
-    })),
+    createRazorpayOrder: vi.fn(async (opts: { amountPaise: number }) => {
+      paymentAmount = opts.amountPaise;
+      return { id: `order_mock_${++rzpCounter}`, amount: opts.amountPaise, currency: "INR" };
+    }),
+    fetchRazorpayPayment: vi.fn(async (id: string) => ({ id, order_id: `order_mock_${rzpCounter}`, amount: paymentAmount, currency: "INR", status: "captured", amount_refunded: paymentAmount })),
   };
 });
 
@@ -81,13 +83,13 @@ function paymentSig(orderId: string, paymentId: string): string {
 }
 
 describe("order service", () => {
-  let mongod: MongoMemoryServer | undefined;
+  let mongod: MongoMemoryReplSet | undefined;
   let userId: string;
   let addressId: string;
   let productId: string;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     process.env.MONGODB_URI = mongod.getUri();
     resetDbCache();
     await connectDb();
@@ -113,6 +115,7 @@ describe("order service", () => {
     await Product.deleteMany({});
     await User.deleteMany({});
     vi.mocked(createRazorpayOrder).mockClear();
+    vi.mocked(fetchRazorpayPayment).mockClear();
     vi.mocked(notifyOrderConfirmation).mockClear();
     vi.mocked(notifyPaymentReceipt).mockClear();
     vi.mocked(notifyCancellation).mockClear();
@@ -148,6 +151,36 @@ describe("order service", () => {
     expect(product?.stock).toBe(10);
     const cart = await Cart.findOne({ userId: new Types.ObjectId(userId) }).lean();
     expect(cart?.items).toEqual([]);
+  });
+
+  it("creates guest orders without accounts, reprices the cart and protects payment ownership", async () => {
+    const guestId = new Types.ObjectId().toString();
+    const stranger = new Types.ObjectId().toString();
+    const items = [{ productId, qty: 2 }];
+    await replaceGuestCart(guestId, { items });
+    const cart = await replaceGuestCart(guestId, { items });
+    expect(cart.count).toBe(2);
+    await Product.updateOne({ _id: productId }, { $set: { price: 550 } });
+    const { order } = await createOrder(guestId, { email: "guest@example.com", address: ADDRESS }, true);
+    expect(order).toMatchObject({ isGuest: true, customerEmail: "guest@example.com", subtotal: 1100, total: 1100 });
+    expect(await User.findById(guestId)).toBeNull();
+    expect(await User.countDocuments()).toBe(1);
+    await expect(createPaymentOrder(stranger, order.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(cancelOrder(stranger, order.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const payment = await createPaymentOrder(guestId, order.id);
+    expect(payment.amount).toBe(110000);
+    const paid = await verifyPayment(guestId, { razorpayOrderId: payment.razorpayOrderId, razorpayPaymentId: "pay_guest", razorpaySignature: paymentSig(payment.razorpayOrderId, "pay_guest") });
+    expect(paid.paymentStatus).toBe("PAID");
+    expect(vi.mocked(notifyOrderConfirmation)).toHaveBeenCalledWith(guestId, expect.objectContaining({ customerEmail: "guest@example.com" }));
+  });
+
+  it("validates guest contact details and prevents resetting anonymous identity to reuse account-only coupons", async () => {
+    const guestId = new Types.ObjectId().toString();
+    await replaceGuestCart(guestId, { items: [{ productId, qty: 1 }] });
+    await expect(createOrder(guestId, { email: "invalid", address: ADDRESS }, true)).rejects.toThrow();
+    await Coupon.create({ code: "MEMBER", type: "FIXED", value: 50, firstOrderOnly: true, isActive: true });
+    await expect(createOrder(guestId, { email: "guest@example.com", address: ADDRESS, couponCode: "MEMBER" }, true)).rejects.toMatchObject({ code: "CONFLICT", message: expect.stringContaining("SIGN_IN_REQUIRED") });
+    expect(await Order.countDocuments()).toBe(0);
   });
 
   it("charges shipping below the free threshold", async () => {
@@ -287,7 +320,7 @@ describe("order service", () => {
     });
     expect(failed).toEqual({ ack: true, settled: false });
     const stored = await Order.findById(second.order.id).lean();
-    expect(stored?.paymentStatus).toBe("FAILED");
+    expect(stored?.paymentStatus).toBe("PENDING");
   });
 
   it("refunds restock inventory", async () => {
@@ -352,4 +385,94 @@ describe("order service", () => {
     await expect(createPaymentOrder(stranger, order.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(cancelOrder(stranger, order.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
+  it("rolls back every line if one reservation fails", async () => {
+    const id = new Types.ObjectId();
+    await expect(reserveUnits([
+      { productId, qty: 1 }, { productId: new Types.ObjectId().toString(), qty: 1 },
+    ], id)).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await Product.findById(productId).lean())?.reservedStock).toBe(0);
+    expect(await InventoryTransaction.countDocuments({ orderId: id })).toBe(0);
+  });
+
+  it("reserves the final variant unit for only one concurrent buyer", async () => {
+    await Product.updateOne({ _id: productId }, { $set: { variants: [{ sku: "LAST", stock: 1 }] } });
+    const results = await Promise.allSettled([1, 2].map(() => reserveUnits([{ productId, qty: 1, variantSku: "LAST" }], new Types.ObjectId())));
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    const product = await Product.findById(productId).lean();
+    expect(product?.reservedStock).toBe(1);
+    expect(product?.variants[0]?.reservedStock).toBe(1);
+  });
+
+  it("rejects authorized, wrong-currency and wrong-amount payments even with a valid signature", async () => {
+    const { order } = await createOrder(userId, { addressId });
+    const pay = await createPaymentOrder(userId, order.id);
+    for (const mismatch of [{ status: "authorized" }, { currency: "USD" }, { amount: 1 }]) {
+      vi.mocked(fetchRazorpayPayment).mockResolvedValueOnce({ id: "pay_1", order_id: pay.razorpayOrderId, amount: pay.amount, currency: "INR", status: "captured", ...mismatch } as Awaited<ReturnType<typeof fetchRazorpayPayment>>);
+      await expect(verifyPayment(userId, { razorpayOrderId: pay.razorpayOrderId, razorpayPaymentId: "pay_1", razorpaySignature: paymentSig(pay.razorpayOrderId, "pay_1") })).rejects.toMatchObject({ code: "PAYMENT_ERROR" });
+    }
+    expect((await Order.findById(order.id).lean())?.paymentStatus).toBe("PENDING");
+  });
+
+  it("rolls back a failed sale and settles successfully on webhook retry", async () => {
+    const { order } = await createOrder(userId, { addressId });
+    const pay = await createPaymentOrder(userId, order.id);
+    const log = vi.spyOn(InventoryTransaction, "create").mockRejectedValueOnce(new Error("write failed"));
+    await expect(handleWebhookEvent("evt_retry", "payment.captured", { id: "pay_retry", order_id: pay.razorpayOrderId })).rejects.toThrow("write failed");
+    log.mockRestore();
+    expect((await Order.findById(order.id).lean())?.paymentStatus).toBe("PENDING");
+    expect((await Product.findById(productId).lean())?.stock).toBe(10);
+    expect((await Payment.findOne({ orderId: order.id }).lean())?.processedEvents).not.toContain("evt_retry");
+    await handleWebhookEvent("evt_retry", "payment.captured", { id: "pay_retry", order_id: pay.razorpayOrderId });
+    expect((await Product.findById(productId).lean())?.stock).toBe(8);
+  });
+
+  it("keeps failed attempts retryable and ignores failures arriving after capture", async () => {
+    const { order } = await createOrder(userId, { addressId });
+    const pay = await createPaymentOrder(userId, order.id);
+    await handleWebhookEvent("evt_failed", "payment.failed", { id: "pay_fail", order_id: pay.razorpayOrderId });
+    await handleWebhookEvent("evt_paid", "payment.captured", { id: "pay_ok", order_id: pay.razorpayOrderId });
+    await handleWebhookEvent("evt_late_fail", "payment.failed", { id: "pay_fail", order_id: pay.razorpayOrderId });
+    expect((await Payment.findOne({ orderId: order.id }).lean())?.status).toBe("PAID");
+  });
+
+  it("does not restore stock or mark a partial refund as a full refund", async () => {
+    const { order } = await createOrder(userId, { addressId });
+    const pay = await createPaymentOrder(userId, order.id);
+    await handleWebhookEvent("evt_capture", "payment.captured", { id: "pay_ref", order_id: pay.razorpayOrderId });
+    vi.mocked(fetchRazorpayPayment).mockResolvedValueOnce({ id: "pay_ref", order_id: pay.razorpayOrderId, amount: pay.amount, currency: "INR", amount_refunded: 100 } as Awaited<ReturnType<typeof fetchRazorpayPayment>>);
+    await handleWebhookEvent("evt_partial", "refund.processed", { id: "rfnd_partial", payment_id: "pay_ref" });
+    expect((await Order.findById(order.id).lean())?.paymentStatus).toBe("PAID");
+    expect((await Product.findById(productId).lean())?.stock).toBe(8);
+  });
+
+  it("enforces category-scoped coupons and reserves the per-user limit", async () => {
+    const product = await Product.findById(productId).lean();
+    await Coupon.create({ code: "CATEGORY", type: "FIXED", value: 50, applicableCategoryIds: [product!.categoryId], perUserLimit: 1, usageLimit: 1, isActive: true });
+    const first = await createOrder(userId, { addressId, couponCode: "CATEGORY" });
+    expect(first.order.discount).toBe(50);
+    await Cart.updateOne({ userId }, { $set: { items: [{ productId: new Types.ObjectId(productId), qty: 1, addedAt: new Date() }] } });
+    await expect(createOrder(userId, { addressId, couponCode: "CATEGORY" })).rejects.toMatchObject({ code: "CONFLICT" });
+    await cancelOrder(userId, first.order.id);
+    expect((await createOrder(userId, { addressId, couponCode: "CATEGORY" })).order.discount).toBe(50);
+  });
+
+  it("creates only one order when checkout is submitted twice concurrently", async () => {
+    const results = await Promise.allSettled([createOrder(userId, { addressId }), createOrder(userId, { addressId })]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(await Order.countDocuments({ userId, orderStatus: "PENDING" })).toBe(1);
+    expect((await Product.findById(productId).lean())?.reservedStock).toBe(2);
+  });
+
+  it("retries expiry without losing stock holds after an inventory write fails", async () => {
+    const { order } = await createOrder(userId, { addressId });
+    await Order.updateOne({ _id: order.id }, { $set: { reservationExpiresAt: new Date(0), paymentStatus: "FAILED" } });
+    const log = vi.spyOn(InventoryTransaction, "create").mockRejectedValueOnce(new Error("release failed"));
+    await expect(releaseExpiredReservations()).rejects.toThrow("release failed");
+    log.mockRestore();
+    expect((await Order.findById(order.id).lean())?.orderStatus).toBe("PENDING");
+    expect((await Product.findById(productId).lean())?.reservedStock).toBe(2);
+    expect(await releaseExpiredReservations()).toBe(1);
+    expect((await Product.findById(productId).lean())?.reservedStock).toBe(0);
+  });
+
 });

@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { getSettings } from "@/services/settings-service";
 import { AnalyticsLoader } from "@/components/Analytics";
-import { LenisProvider } from "@/components/LenisProvider";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { listPublicCategories } from "@/services/category-service";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { AuthSessionProvider } from "@/features/auth/SessionProvider";
 import { CartDrawer } from "@/features/cart/CartDrawer";
 import { CartProvider } from "@/features/cart/CartProvider";
-import { getClientEnv } from "@/lib/env";
+import { getClientEnv, isIndexingEnabled } from "@/lib/env";
 
 const display = Fraunces({
   variable: "--font-display",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     template: "%s | SatvaStones",
   },
   description:
-    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers. Anti-tarnish, honestly priced, crafted in Vapi, Gujarat.",
+    "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers. Explore current prices, product details and availability.",
   applicationName: "SatvaStones",
   category: "jewelry",
   authors: [{ name: "SatvaStones", url: appUrl }],
@@ -68,24 +68,24 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SatvaStones — Everyday Aesthetic Jewellery",
-    description:
-      "Korean, Western and Pinterest-inspired jewellery for India: rings, bracelets, necklaces, earrings, oxidised pieces and gift hampers.",
     creator: "@satvastones",
   },
   robots: {
-    index: true,
+    index: isIndexingEnabled(),
     follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-video-preview": -1, "max-snippet": -1 },
+    googleBot: { index: isIndexingEnabled(), follow: true, "max-image-preview": "large", "max-video-preview": -1, "max-snippet": -1 },
   },
   icons: { icon: "/favicon.ico" },
 };
 
-export default function RootLayout({
+export const revalidate = 60;
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [settings, categories] = await Promise.all([getSettings(), listPublicCategories()]);
   return (
     <html
       lang="en"
@@ -93,7 +93,6 @@ export default function RootLayout({
     >
       <head><link rel="preconnect" href="https://res.cloudinary.com" /></head>
       <body className="flex min-h-screen flex-col bg-background font-sans text-foreground">
-        <LenisProvider />
         <AnalyticsLoader />
         <a
           href="#main-content"
@@ -103,13 +102,12 @@ export default function RootLayout({
         </a>
         <AuthSessionProvider>
           <CartProvider>
-            <SiteHeader />
-            <div id="main-content" className="flex flex-1 flex-col pb-16 md:pb-0">
+            <SiteHeader settings={settings} categories={categories} />
+            <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
               {children}
-            </div>
-            <SiteFooter />
-            <CartDrawer />
-            <MobileBottomNav />
+            </main>
+            <SiteFooter settings={settings} categories={categories} />
+            <CartDrawer settings={settings} />
           </CartProvider>
         </AuthSessionProvider>
       </body>

@@ -1,6 +1,8 @@
+import { Types } from "mongoose";
+import { Review } from "@/models/Review";
 import mongoose from "mongoose";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { connectDb, resetDbCache } from "@/lib/db";
 import { Category } from "@/models/Category";
 import { Product } from "@/models/Product";
@@ -18,6 +20,7 @@ import {
   duplicateProduct,
   getPublicProductBySlug,
   listPublicProducts,
+  getCatalogueFilters,
   updateProduct,
 } from "@/services/product-service";
 
@@ -52,10 +55,10 @@ function productInput(categoryId: string, overrides: Partial<ProductInput> = {})
 }
 
 describe("catalog services", () => {
-  let mongod: MongoMemoryServer | undefined;
+  let mongod: MongoMemoryReplSet | undefined;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     process.env.MONGODB_URI = mongod.getUri();
     process.env.CLOUDINARY_CLOUD_NAME = "test";
     process.env.CLOUDINARY_API_KEY = "test";
@@ -75,6 +78,7 @@ describe("catalog services", () => {
   afterEach(async () => {
     await Product.deleteMany({});
     await Category.deleteMany({});
+    await Review.deleteMany({});
   });
 
   it("auto-slugs categories and suffixes collisions", async () => {
@@ -173,6 +177,35 @@ describe("catalog services", () => {
     expect(relisted.pagination.total).toBe(0);
   });
 
+  it("finds partial names, common category misspellings and SKUs, with real multiselect variant facets", async () => {
+    const category = await makeCategory("Bracelets");
+    const product = await createProduct(productInput(category.id, { name: "Everyday Chain", sku: "BR-104", color: "Gold", variants: [{ sku: "BR-104-S", size: "S", color: "Silver", stock: 3 }, { sku: "BR-104-M", size: "M", color: "Gold", stock: 2 }] }));
+    for (const q of ["brace", "braclet", "kangan", "chain", "BR-104-S"]) {
+      const found = await listPublicProducts(productQuerySchema.parse({ q }));
+      expect(found.products.map(p => p.id), q).toContain(product.id);
+    }
+    expect((await listPublicProducts(productQuerySchema.parse({ q: "[" }))).pagination.total).toBe(0);
+    expect((await listPublicProducts(productQuerySchema.parse({ color: "Silver|Gold", size: "S" }))).pagination.total).toBe(1);
+    expect((await listPublicProducts(productQuerySchema.parse({ color: "Gold", size: "S" }))).pagination.total).toBe(0);
+    expect((await listPublicProducts(productQuerySchema.parse({ color: "Gold", size: "M" }))).pagination.total).toBe(1);
+    const facets = await getCatalogueFilters(category.slug);
+    expect(facets.color).toEqual([{ value: "Gold", count: 1 }, { value: "Silver", count: 1 }]);
+    expect(facets.size).toEqual([{ value: "M", count: 1 }, { value: "S", count: 1 }]);
+  });
+
+  it("gives duplicated variants fresh SKUs and no copied reservations", async () => {
+    const cat = await makeCategory();
+    const source = await createProduct(productInput(cat.id, { variants: [{ sku: "OPTION", size: "S", stock: 3 }] }));
+    await Product.updateOne({ _id: source.id }, { $set: { reservedStock: 1, "variants.0.reservedStock": 1 } });
+    const copy = await duplicateProduct(source.id);
+    const second = await duplicateProduct(source.id);
+    expect(copy.variants[0]?.sku).not.toBe("OPTION");
+    expect(second.variants[0]?.sku).not.toBe(copy.variants[0]?.sku);
+    const stored = await Product.findById(copy.id).lean();
+    expect(stored?.variants[0]).toMatchObject({ size: "S", stock: 3, reservedStock: 0 });
+    expect(stored?.reservedStock).toBe(0);
+  });
+
   it("filters by stock, discount and category", async () => {
     const cat = await makeCategory();
     const other = await makeCategory("Necklaces");
@@ -218,4 +251,42 @@ describe("catalog services", () => {
     expect(productQuerySchema.parse({ limit: "100" }).limit).toBe(50);
     expect(productQuerySchema.parse({}).limit).toBe(12);
   });
+  it("preserves product and category aliases when slugs are edited", async () => {
+    const cat = await makeCategory();
+    const product = await createProduct(productInput(cat.id));
+    await updateProduct(product.id, productInput(cat.id, { slug: "renamed-ring" }));
+    expect((await getPublicProductBySlug(product.slug))?.slug).toBe("renamed-ring");
+    const renamed = await updateCategory(cat.id, { slug: "everyday-rings" });
+    expect(renamed.previousSlugs).toContain("rings");
+    expect((await listPublicProducts(productQuerySchema.parse({ category: "rings" }))).pagination.total).toBe(1);
+    await expect(createProduct(productInput(cat.id, { slug: product.slug, sku: "NEW-SKU" }))).resolves.toMatchObject({ slug: `${product.slug}-2` });
+  });
+
+  it("filters and sorts by displayed variant prices and published review ratings", async () => {
+    const cat = await makeCategory();
+    const variant = await createProduct(productInput(cat.id, { price: 999, variants: [{ sku: "SMALL", size: "S", price: 299, stock: 1 }] }));
+    expect(variant.price).toBe(999); // The editor must retain the base price, not the listing minimum.
+    expect((await getPublicProductBySlug(variant.slug))?.price).toBe(299);
+    const fake = await createProduct(productInput(cat.id, { slug: "other-ring", sku: "OTHER" }));
+    await Product.updateOne({ _id: fake.id }, { $set: { ratingAverage: 5, ratingCount: 999 } });
+    await Review.create({ productId: variant.id, userId: new Types.ObjectId(), authorName: "Buyer", rating: 4, isPublished: true });
+    await Review.create({ productId: fake.id, userId: new Types.ObjectId(), authorName: "Hidden", rating: 5, isPublished: false });
+    expect((await listPublicProducts(productQuerySchema.parse({ maxPrice: 300 }))).products.map((product) => product.id)).toEqual([variant.id]);
+    expect((await listPublicProducts(productQuerySchema.parse({ minRating: 4 }))).products.map((product) => product.id)).toEqual([variant.id]);
+    const sorted = await listPublicProducts(productQuerySchema.parse({ sort: "rating" }));
+    expect(sorted.products.map((product) => product.ratingCount)).toEqual([1, 0]);
+    expect((await listPublicProducts(productQuerySchema.parse({ q: "minimal" }))).pagination.total).toBe(2);
+  });
+
+  it("rejects removal or reduction of reserved variants and preserves active holds", async () => {
+    const cat = await makeCategory();
+    const input = productInput(cat.id, { variants: [{ sku: "HELD", stock: 2 }] });
+    const product = await createProduct(input);
+    await Product.updateOne({ _id: product.id }, { $set: { reservedStock: 1, "variants.0.reservedStock": 1 } });
+    await expect(updateProduct(product.id, { ...input, variants: [] })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(deleteProduct(product.id)).rejects.toMatchObject({ code: "CONFLICT" });
+    await updateProduct(product.id, { ...input, price: 599 });
+    expect((await Product.findById(product.id).lean())?.variants[0]?.reservedStock).toBe(1);
+  });
+
 });

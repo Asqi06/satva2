@@ -19,7 +19,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <main>
+    <div>
       <Link href="/admin/orders" className="text-sm text-ivory/50 underline underline-offset-4 hover:text-ivory">
         ← All orders
       </Link>
@@ -76,9 +76,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         </div>
 
         {!order.legacy && (
-          <AdminOrderActions orderId={order.id} orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} />
+          <AdminOrderActions orderId={order.id} orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} refundRequestedAt={order.refundRequestedAt} />
         )}
       </div>
-    </main>
+    </div>
   );
 }

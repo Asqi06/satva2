@@ -85,6 +85,14 @@ describe("wishlist service", () => {
     expect(view.count).toBe(0);
   });
 
+  it("shows variant prices and requires explicit option selection before moving to cart", async () => {
+    await Product.updateOne({ _id: productId }, { $set: { variants: [{ sku: "WISH-S", size: "S", price: 299, stock: 2 }, { sku: "WISH-L", size: "L", price: 399, stock: 1 }] } });
+    const saved = await addToWishlist(USER, productId);
+    expect(saved.items[0]).toMatchObject({ price: 299, priceFrom: true, requiresOption: true, available: true });
+    await expect(moveToCart(USER, productId)).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    expect((await addToWishlist(USER, productId)).count).toBe(1);
+  });
+
   it("moves to bag and unwishes", async () => {
     await addToWishlist(USER, productId);
     const { cart, wishlist } = await moveToCart(USER, productId);

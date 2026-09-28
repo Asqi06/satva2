@@ -3,6 +3,22 @@
 import { useState } from "react";
 import type { ShippingSettings } from "@/services/settings-service";
 
+const DETAIL_FIELDS = {
+  legalName: "Legal / seller name",
+  businessAddress: "Business postal address",
+  supportEmail: "Customer support email",
+  supportPhone: "Customer support phone",
+  grievanceContact: "Grievance officer name, designation and contact",
+  gstin: "GSTIN (if applicable)",
+  dispatchInformation: "Dispatch information",
+  deliveryInformation: "Delivery information",
+  returnPolicy: "Return, exchange and refund policy",
+  cancellationPolicy: "Cancellation policy",
+  privacyPolicy: "Privacy policy",
+  termsPolicy: "Terms and conditions",
+  aboutInformation: "About the business",
+} as const;
+
 /** Store settings editor: announcement strip + shipping numbers. */
 export function SettingsForm({ initial }: { initial: ShippingSettings }) {
   const [threshold, setThreshold] = useState(String(initial.freeShippingThreshold));
@@ -13,6 +29,7 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
   const [homeSeoDescription, setHomeSeoDescription] = useState(initial.homeSeoDescription ?? "");
   const [shopSeoTitle, setShopSeoTitle] = useState(initial.shopSeoTitle ?? "");
   const [shopSeoDescription, setShopSeoDescription] = useState(initial.shopSeoDescription ?? "");
+  const [details, setDetails] = useState(() => Object.fromEntries(Object.keys(DETAIL_FIELDS).map((key) => [key, initial[key as keyof typeof DETAIL_FIELDS] ?? ""])));
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -25,6 +42,7 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...details,
           freeShippingThreshold: Number(threshold),
           shippingFlatFee: Number(flatFee),
           reservationTtlMinutes: Number(ttl),
@@ -57,15 +75,16 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
 
       <h2 className="font-display italic text-2xl text-ivory">Announcement strip</h2>
       <p className="mt-1 text-sm text-ivory/50">
-        Black marquee bar under the header. Separate messages with <code className="font-mono text-gold">|</code> —
-        empty hides the custom strip and shows defaults.
+        One static message above the header. If an older value contains <code className="font-mono text-gold">|</code>, only its first message appears.
+        Leave this blank to show the configured free-delivery threshold.
       </p>
       <textarea
+        aria-label="Announcement strip messages"
         value={announcement}
         onChange={(e) => setAnnouncement(e.target.value)}
         maxLength={200}
         rows={3}
-        placeholder="Free gift on order above INR 899 | Secure online payments | Easy return"
+        placeholder="Add a verified announcement"
         className={`${inputCls} mt-3`}
       />
 
@@ -104,6 +123,16 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
             className={inputCls}
           />
         </label>
+      </div>
+
+      <h2 className="mt-8 font-display italic text-2xl text-ivory">Business details and policies</h2>
+      <p className="mt-1 text-sm text-ivory/50">Publish verified facts and approved policy text. Leave unknown fields blank; these fields never invent business information. Confirm legal requirements with your adviser.</p>
+      <div className="mt-4 grid gap-4 text-ivory/70">
+        {Object.entries(DETAIL_FIELDS).map(([key, label]) => (
+          <label key={key} className="flex flex-col gap-1 text-sm">{label}
+            <textarea value={details[key]} onChange={(event) => setDetails({ ...details, [key]: event.target.value })} maxLength={5000} rows={key.endsWith("Policy") || key === "aboutInformation" ? 5 : 2} className={inputCls} />
+          </label>
+        ))}
       </div>
 
       <h2 className="mt-8 font-display italic text-2xl text-ivory">Search appearance</h2>

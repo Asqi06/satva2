@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { Coupon, type ICoupon } from "@/models/Coupon";
@@ -26,7 +26,8 @@ export type CouponRejection =
   | "SCOPE"
   | "FIRST_ORDER_ONLY"
   | "EXHAUSTED"
-  | "USER_LIMIT";
+  | "USER_LIMIT"
+  | "SIGN_IN_REQUIRED";
 
 export interface CouponCheck {
   valid: boolean;
@@ -54,10 +55,13 @@ export async function validateCoupon(
   rawUserId: string,
   lines: PricedLine[],
   subtotal: number,
+  session?: ClientSession,
+  reservedUse = false,
+  guest = false,
 ): Promise<CouponCheck> {
   await connectDb();
   const code = rawCode.trim().toUpperCase();
-  const coupon = await Coupon.findOne({ code }).lean();
+  const coupon = await Coupon.findOne({ code }).session(session ?? null).lean();
   if (!coupon) return { valid: false, discount: 0, reason: "NOT_FOUND" };
   if (!coupon.isActive) return { valid: false, discount: 0, reason: "INACTIVE", couponId: coupon._id.toString(), code };
   if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
@@ -82,24 +86,30 @@ export async function validateCoupon(
   }
   const eligibleSubtotal = scoped.reduce((n, l) => n + l.qty * l.unitPrice, 0);
 
+  if (guest && (coupon.firstOrderOnly || coupon.perUserLimit !== undefined)) {
+    return { valid: false, discount: 0, reason: "SIGN_IN_REQUIRED", couponId: coupon._id.toString(), code };
+  }
   if (coupon.firstOrderOnly && Types.ObjectId.isValid(rawUserId)) {
     const prior = await Order.exists({
       userId: new Types.ObjectId(rawUserId),
-      paymentStatus: "PAID",
-    });
+      $or: [{ paymentStatus: "PAID" }, { paymentStatus: "PENDING", orderStatus: "PENDING", couponCode: code }],
+    }).session(session ?? null);
     if (prior) {
       return { valid: false, discount: 0, reason: "FIRST_ORDER_ONLY", couponId: coupon._id.toString(), code };
     }
   }
-  if (coupon.usageLimit !== undefined && coupon.usageCount >= coupon.usageLimit) {
+  if (coupon.usageLimit !== undefined && coupon.usageCount - (reservedUse ? 1 : 0) >= coupon.usageLimit) {
     return { valid: false, discount: 0, reason: "EXHAUSTED", couponId: coupon._id.toString(), code };
   }
   if (coupon.perUserLimit !== undefined && Types.ObjectId.isValid(rawUserId)) {
-    const used = await CouponRedemption.countDocuments({
+    const [used, pending] = await Promise.all([CouponRedemption.countDocuments({
       couponId: coupon._id,
       userId: new Types.ObjectId(rawUserId),
-    });
-    if (used >= coupon.perUserLimit) {
+    }).session(session ?? null), Order.countDocuments({
+      userId: new Types.ObjectId(rawUserId), couponCode: code,
+      paymentStatus: "PENDING", orderStatus: "PENDING",
+    }).session(session ?? null)]);
+    if (used + pending >= coupon.perUserLimit) {
       return { valid: false, discount: 0, reason: "USER_LIMIT", couponId: coupon._id.toString(), code };
     }
   }
@@ -112,7 +122,7 @@ export async function validateCoupon(
 }
 
 /** Atomically consume one use. Throws 409 when exhausted/raced out. */
-export async function reserveCouponUse(couponId: string): Promise<void> {
+export async function reserveCouponUse(couponId: string, session?: ClientSession): Promise<void> {
   await connectDb();
   const now = new Date();
   const reserved = await Coupon.findOneAndUpdate(
@@ -130,32 +140,29 @@ export async function reserveCouponUse(couponId: string): Promise<void> {
       ],
     },
     { $inc: { usageCount: 1 } },
+    { session },
   );
   if (!reserved) throw new AppError("CONFLICT", "Coupon is no longer available", 409);
 }
 
 /**
  * Return one reserved use. Releases happen on single-fire transitions
- * (CAS cancel, PENDING-only sweep), so a read-then-decrement guarded at
- * zero is sufficient — no pipeline update needed.
+ * (CAS cancel, PENDING-only sweep), with a conditional decrement at zero.
  */
-export async function releaseCouponUse(couponId: string): Promise<void> {
+export async function releaseCouponUse(couponId: string, session?: ClientSession): Promise<void> {
   await connectDb();
-  const doc = await Coupon.findById(couponId).select("usageCount").lean();
-  if (doc && doc.usageCount > 0) {
-    await Coupon.updateOne({ _id: doc._id }, { $inc: { usageCount: -1 } });
-  }
+  await Coupon.updateOne({ _id: couponId, usageCount: { $gt: 0 } }, { $inc: { usageCount: -1 } }, { session });
 }
 
 /** Record per-user consumption at PAID time. Idempotent per order. */
-export async function recordRedemption(couponId: string, userId: string, orderId: string): Promise<void> {
+export async function recordRedemption(couponId: string, userId: string, orderId: string, session?: ClientSession): Promise<void> {
   await connectDb();
   try {
-    await CouponRedemption.create({
+    await CouponRedemption.create([{
       couponId: new Types.ObjectId(couponId),
       userId: new Types.ObjectId(userId),
       orderId: new Types.ObjectId(orderId),
-    });
+    }], { session });
   } catch (error) {
     if (
       error !== null &&

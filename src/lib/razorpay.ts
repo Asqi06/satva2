@@ -45,6 +45,11 @@ export async function createRazorpayOrder(opts: {
   return { id: order.id, amount: Number(order.amount), currency: String(order.currency) };
 }
 
+/** Server lookup: a valid Checkout signature alone does not prove capture. */
+export async function fetchRazorpayPayment(paymentId: string) {
+  return getRazorpay().payments.fetch(paymentId);
+}
+
 /** HMAC-SHA256("orderId|paymentId", key_secret) — constant-time compare. */
 export function verifyPaymentSignature(opts: {
   razorpayOrderId: string;
@@ -70,11 +75,11 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-/** Full refund of a captured payment. Returns the Razorpay refund id. */
-export async function refundRazorpayPayment(razorpayPaymentId: string): Promise<string> {
+/** Request a full refund; completion is confirmed by status/webhook. */
+export async function refundRazorpayPayment(razorpayPaymentId: string): Promise<{ id: string; status: string }> {
   const refund = await getRazorpay().payments.refund(razorpayPaymentId, {});
   if (typeof refund.id !== "string" || !refund.id) throw new Error("Refund failed");
-  return refund.id;
+  return { id: refund.id, status: refund.status };
 }
 
 /** Test-only: drop the cached client (env rotation between tests). */

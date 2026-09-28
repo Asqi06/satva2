@@ -18,16 +18,22 @@ const clientEnvSchema = z.object({
     .default("http://localhost:3000"),
   NEXT_PUBLIC_RAZORPAY_KEY_ID: z.string().min(1).optional(),
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
-  NEXT_PUBLIC_GA_ID: z.string().min(1).optional(),
+  NEXT_PUBLIC_GA_ID: z.string().regex(/^G-[A-Z0-9]+$/, "Use a GA4 measurement ID").optional(),
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
+/** Preview deployments run production builds but must never enter search indexes. */
+export function isIndexingEnabled(): boolean {
+  return process.env.NODE_ENV === "production" && process.env.SITE_INDEXING_ENABLED !== "false" &&
+    (!process.env.VERCEL_ENV || process.env.VERCEL_ENV === "production");
+}
+
 export function getClientEnv(): ClientEnv {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   // The apex redirects to www; never publish localhost or apex URLs in production metadata.
   const appUrl = process.env.NODE_ENV === "production" &&
-    (!configuredUrl || /^https?:\/\/(?:(?:localhost|127\.0\.0\.1)(?::\d+)?|(?:www\.)?satvastones\.in)\/?$/i.test(configuredUrl))
+    (!configuredUrl || /^https?:\/\/(?:(?:localhost|127\.0\.0\.1)(?::\d+)?|(?:www\.)?satvastones\.in)(?:\/.*)?$/i.test(configuredUrl) || /\.vercel\.app(?:\/|$)/i.test(configuredUrl))
       ? "https://www.satvastones.in"
       : configuredUrl;
   // Next.js injects unset vars as empty strings; treat those as absent

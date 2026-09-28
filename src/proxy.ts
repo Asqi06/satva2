@@ -37,11 +37,8 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
   const needsAuth =
     pathname.startsWith("/account") ||
-    pathname.startsWith("/orders") ||
     pathname.startsWith("/wishlist") ||
     pathname.startsWith("/api/account") ||
-    pathname.startsWith("/api/orders") ||
-    pathname.startsWith("/api/cart") ||
     pathname.startsWith("/api/wishlist") ||
     pathname.startsWith("/api/uploads") ||
     pathname.startsWith("/api/reviews");

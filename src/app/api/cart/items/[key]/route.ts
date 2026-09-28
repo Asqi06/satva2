@@ -1,5 +1,5 @@
 import { errorResponse, successResponse } from "@/lib/errors";
-import { requireUserId } from "@/lib/require-user";
+import { getCheckoutIdentity } from "@/lib/checkout-identity";
 import { cartQtySchema } from "@/schemas/cart";
 import { removeCartItem, setCartQty } from "@/services/cart-service";
 
@@ -15,7 +15,7 @@ function decodeKey(raw: string): string {
 
 export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
   try {
-    const userId = await requireUserId();
+    const { id: userId } = await getCheckoutIdentity();
     const { key } = await ctx.params;
     const { qty } = cartQtySchema.parse(await req.json());
     const { view, adjusted } = await setCartQty(userId, decodeKey(key), qty);
@@ -27,7 +27,7 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
 
 export async function DELETE(_req: Request, ctx: Ctx): Promise<Response> {
   try {
-    const userId = await requireUserId();
+    const { id: userId } = await getCheckoutIdentity();
     const { key } = await ctx.params;
     return successResponse(await removeCartItem(userId, decodeKey(key)));
   } catch (error) {

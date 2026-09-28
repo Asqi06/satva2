@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { objectIdSchema, slugSchema } from "./category";
+import { objectIdSchema, slugSchema, publicMediaUrlSchema } from "./category";
 
 const MAX_IMAGES = 12;
 const MAX_VARIANTS = 20;
 
 const imageSchema = z.object({
   publicId: z.string().min(1).max(512),
-  secureUrl: z.string().url().max(2048),
+  secureUrl: publicMediaUrlSchema,
   alt: z.string().min(1, "Image alt text is required").max(200),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
@@ -15,7 +15,7 @@ const imageSchema = z.object({
 
 const videoSchema = z.object({
   publicId: z.string().min(1).max(512),
-  secureUrl: z.string().url().max(2048),
+  secureUrl: publicMediaUrlSchema,
 });
 
 const variantSchema = z.object({
@@ -99,7 +99,8 @@ export const productQuerySchema = z.object({
   minPrice: z.coerce.number().int().min(0).optional(),
   maxPrice: z.coerce.number().int().min(0).optional(),
   material: z.string().trim().max(120).optional(),
-  color: z.string().trim().max(64).optional(),
+  color: z.string().trim().max(256).optional(),
+  size: z.string().trim().max(256).optional(),
   inStock: queryBoolean,
   collection: z.string().trim().max(40).optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
