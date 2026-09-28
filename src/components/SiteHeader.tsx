@@ -26,6 +26,7 @@ export function SiteHeader({ settings, categories }: { settings: ShippingSetting
     return () => { document.body.style.overflow = previous; };
   }, [menuOpen]);
   const close = () => setMenuOpen(false);
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
   return <>
     {!checkout && <div className="bg-cream px-4 py-2 text-center text-xs text-ink">{announcement}</div>}
     <header className="sticky top-0 z-40 border-b border-light-gray bg-white">

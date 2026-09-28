@@ -6,6 +6,7 @@ import type { CategoryDTO } from "@/services/category-service";
 
 export function SiteFooter({ settings, categories }: { settings: ShippingSettings; categories: CategoryDTO[] }) {
   const pathname = usePathname();
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
   if (pathname === "/checkout") return <footer className="border-t border-light-gray px-4 py-5 text-center text-xs text-muted"><Link href="/privacy">Privacy</Link><span className="mx-4">·</span><Link href="/terms">Terms</Link><span className="mx-4">·</span><Link href="/contact">Need help?</Link></footer>;
   const columns = [
     { title: "Shop", links: [["/shop", "All jewellery"], ...categories.slice(0, 5).map(c => [`/shop/${c.slug}`, c.name]), ["/shop?sort=newest", "New arrivals"]] },

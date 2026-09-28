@@ -21,6 +21,7 @@ const emptyForm = {
 export function CouponManager() {
   const [rows, setRows] = useState<AdminCouponRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -63,6 +64,9 @@ export function CouponManager() {
       expiresAt: row.expiresAt ? new Date(row.expiresAt).toLocaleString("sv-SE").replace(" ", "T").slice(0, 16) : "",
       isActive: row.isActive,
     });
+    const editor = document.getElementById("coupon-editor");
+    editor?.scrollIntoView({ block: "start", behavior: "auto" });
+    editor?.querySelector<HTMLSelectElement>("select")?.focus({ preventScroll: true });
   };
 
   const cancel = () => {
@@ -73,6 +77,7 @@ export function CouponManager() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
+    setSaving(true);
     try {
       const payload = {
         ...(editingId ? {} : { code: form.code }),
@@ -99,6 +104,8 @@ export function CouponManager() {
       await load();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Save failed");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -136,18 +143,18 @@ export function CouponManager() {
 
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Offers</p>
-      <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Coupons</h1>
+      <p className="admin-eyebrow">Offers</p>
+      <h1 className="admin-title">Coupons</h1>
 
       {notice && (
-        <p role="status" className="mt-4 border border-gold/30 bg-gold/10 p-3 text-sm text-ivory">
+        <p role="status" className="mt-4 border border-primary/30 bg-primary/10 p-3 text-sm text-ink">
           {notice}
         </p>
       )}
 
-      <form onSubmit={save} className="mt-6 border border-ivory/[0.07] bg-ivory/[0.03] p-5">
-        <h2 className="font-display italic text-2xl text-ivory">{editingId ? "Edit coupon" : "New coupon"}</h2>
-        <div className="mt-4 grid gap-4 text-ivory/70 sm:grid-cols-3">
+      <form id="coupon-editor" onSubmit={save} className="admin-card mt-6 p-5">
+        <h2 className="text-base font-semibold text-ink">{editingId ? "Edit coupon" : "New coupon"}</h2>
+        <fieldset disabled={saving} className="mt-4 grid gap-4 text-ink sm:grid-cols-3"><legend className="sr-only">Coupon details</legend>
           <label className="flex flex-col gap-1 text-sm">
             Code{editingId ? " (locked)" : ""}
             <input
@@ -193,21 +200,21 @@ export function CouponManager() {
           </label>
           <span className="flex items-end gap-6 pb-2 text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm({ ...form, firstOrderOnly: e.target.checked })} className="h-4 w-4 accent-gold" />
+              <input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm({ ...form, firstOrderOnly: e.target.checked })} className="h-4 w-4 accent-primary" />
               First order only
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 accent-gold" />
+              <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 accent-primary" />
               Active
             </label>
           </span>
-        </div>
+        </fieldset>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="submit" className="border border-gold bg-gold/10 px-6 py-2 text-sm font-medium text-gold hover:bg-gold hover:text-ink">
-            {editingId ? "Save changes" : "Create coupon"}
+          <button type="submit" disabled={saving} className="btn-primary">
+            {saving ? "Saving…" : editingId ? "Save changes" : "Create coupon"}
           </button>
           {editingId && (
-            <button type="button" onClick={cancel} className="border border-ivory/20 px-6 py-2 text-sm text-ivory/60 hover:border-ivory/40 hover:text-ivory">
+            <button type="button" disabled={saving} onClick={cancel} className="border border-light-gray px-6 py-2 text-sm text-muted hover:border-light-gray hover:text-ink">
               Cancel
             </button>
           )}
@@ -217,84 +224,84 @@ export function CouponManager() {
       {/* Mobile cards — no horizontal scroll */}
       <ul className="mt-4 space-y-3 md:hidden">
         {rows.map((r) => (
-          <li key={r.id} className="border border-ivory/[0.07] bg-ivory/[0.03] p-4">
+          <li key={r.id} className="admin-card p-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono font-semibold text-ivory">{r.code}</span>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${r.isActive ? "bg-emerald-400/15 text-emerald-400" : "bg-ivory/[0.07] text-ivory/40"}`}>
+              <span className="font-mono font-semibold text-ink">{r.code}</span>
+              <span className={`rounded-md px-2.5 py-0.5 text-[11px] font-semibold ${r.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-muted"}`}>
                 {r.isActive ? "Active" : "Disabled"}
               </span>
             </div>
-            <p className="mt-1 text-sm text-ivory/70">
+            <p className="mt-1 text-sm text-ink">
               {r.type === "PERCENTAGE" ? `${r.value}%` : formatINR(r.value)}
               {r.maximumDiscount !== undefined && r.type === "PERCENTAGE" && (
                 <span> up to {formatINR(r.maximumDiscount)}</span>
               )}
-              <span className="text-ivory/45"> · {r.usageCount}{r.usageLimit !== undefined && ` / ${r.usageLimit}`} used</span>
+              <span className="text-muted"> · {r.usageCount}{r.usageLimit !== undefined && ` / ${r.usageLimit}`} used</span>
             </p>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ivory/60">
-              <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4 hover:text-ivory">
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+              <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4 hover:text-ink">
                 Edit
               </button>
-              <button type="button" onClick={() => void toggleActive(r)} className="underline underline-offset-4 hover:text-ivory">
+              <button type="button" onClick={() => void toggleActive(r)} className="underline underline-offset-4 hover:text-ink">
                 {r.isActive ? "Disable" : "Enable"}
               </button>
-              <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-red-400">
+              <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-red-700">
                 Delete
               </button>
             </div>
           </li>
         ))}
         {rows.length === 0 && !loading && (
-          <li className="border border-ivory/[0.07] p-8 text-center text-sm text-ivory/35">
+          <li className="border border-light-gray p-8 text-center text-sm text-muted">
             No coupons yet.
           </li>
         )}
         {loading && (
-          <li className="border border-ivory/[0.07] p-8 text-center text-sm text-ivory/35">
+          <li className="border border-light-gray p-8 text-center text-sm text-muted">
             Loading…
           </li>
         )}
       </ul>
 
-      <div className="mt-4 hidden overflow-x-auto border border-ivory/[0.07] md:block">
+      <div className="mt-4 hidden overflow-x-auto rounded-lg border border-light-gray md:block">
         <table className="w-full min-w-[680px] text-left text-sm">
           <thead>
-            <tr className="border-b border-ivory/[0.07] bg-ivory/[0.04]">
-              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Code</th>
-              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Offer</th>
-              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Uses</th>
-              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Status</th>
-              <th className="p-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/30">Actions</th>
+            <tr className="border-b border-light-gray bg-slate-50">
+              <th className="p-3 text-xs font-medium text-muted">Code</th>
+              <th className="p-3 text-xs font-medium text-muted">Offer</th>
+              <th className="p-3 text-xs font-medium text-muted">Uses</th>
+              <th className="p-3 text-xs font-medium text-muted">Status</th>
+              <th className="p-3 text-xs font-medium text-muted">Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-ivory/[0.04] last:border-0 hover:bg-ivory/[0.02]">
-                <td className="p-3 font-mono font-semibold text-ivory">{r.code}</td>
-                <td className="p-3 text-ivory/70">
+              <tr key={r.id} className="border-b border-light-gray last:border-0 hover:bg-slate-50">
+                <td className="p-3 font-mono font-semibold text-ink">{r.code}</td>
+                <td className="p-3 text-ink">
                   {r.type === "PERCENTAGE" ? `${r.value}%` : formatINR(r.value)}
                   {r.maximumDiscount !== undefined && r.type === "PERCENTAGE" && (
-                    <span className="text-ivory/45"> up to {formatINR(r.maximumDiscount)}</span>
+                    <span className="text-muted"> up to {formatINR(r.maximumDiscount)}</span>
                   )}
                 </td>
-                <td className="p-3 text-ivory/70">
+                <td className="p-3 text-ink">
                   {r.usageCount}
-                  {r.usageLimit !== undefined && <span className="text-ivory/45"> / {r.usageLimit}</span>}
+                  {r.usageLimit !== undefined && <span className="text-muted"> / {r.usageLimit}</span>}
                 </td>
                 <td className="p-3">
-                  <span className={`px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${r.isActive ? "bg-emerald-400/15 text-emerald-400" : "bg-ivory/[0.07] text-ivory/40"}`}>
+                  <span className={`px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${r.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-muted"}`}>
                     {r.isActive ? "Active" : "Disabled"}
                   </span>
                 </td>
                 <td className="p-3">
-                  <span className="flex gap-3 text-ivory/55">
-                    <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4 hover:text-ivory">
+                  <span className="flex gap-3 text-muted">
+                    <button type="button" onClick={() => startEdit(r)} className="underline underline-offset-4 hover:text-ink">
                       Edit
                     </button>
-                    <button type="button" onClick={() => void toggleActive(r)} className="underline underline-offset-4 hover:text-ivory">
+                    <button type="button" onClick={() => void toggleActive(r)} className="underline underline-offset-4 hover:text-ink">
                       {r.isActive ? "Disable" : "Enable"}
                     </button>
-                    <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-red-400">
+                    <button type="button" onClick={() => void removeOne(r)} className="underline underline-offset-4 hover:text-red-700">
                       Delete
                     </button>
                   </span>
@@ -302,10 +309,10 @@ export function CouponManager() {
               </tr>
             ))}
             {rows.length === 0 && !loading && (
-              <tr><td colSpan={5} className="p-8 text-center text-ivory/30">No coupons yet.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-muted">No coupons yet.</td></tr>
             )}
             {loading && (
-              <tr><td colSpan={5} className="p-8 text-center text-ivory/30">Loading…</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-muted">Loading…</td></tr>
             )}
           </tbody>
         </table>

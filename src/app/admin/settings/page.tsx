@@ -13,9 +13,9 @@ export default async function AdminSettingsPage() {
   const settings = await getSettings();
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">Storefront</p>
-      <h1 className="mt-1 font-display italic text-4xl tracking-tight text-ivory">Store settings</h1>
-      <p className="mt-2 max-w-xl text-sm text-ivory/45">
+      <p className="admin-eyebrow">Storefront</p>
+      <h1 className="admin-title">Store settings</h1>
+      <p className="mt-2 max-w-xl text-sm text-muted">
         Controls the announcement strip, shipping at checkout, and the homepage and shop search snippets.
       </p>
       <SettingsForm initial={settings} />

@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useFieldArray, useForm, type FieldErrors } from "react-hook-form";
@@ -31,8 +32,8 @@ export interface ProductFormInitial extends ProductFormValues {
 
 const inputCls =
   "admin-input w-full px-3 py-2.5 text-sm";
-const labelCls = "flex flex-col gap-1 text-sm text-ivory/70";
-const hintCls = "text-xs text-ivory/35";
+const labelCls = "flex flex-col gap-1 text-sm text-ink";
+const hintCls = "text-xs text-muted";
 
 function FieldError({ errors, name }: { errors: FieldErrors<FormInput>; name: string }) {
   const parts = name.split(".");
@@ -207,26 +208,26 @@ export function ProductForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display italic text-4xl text-ivory">
+      <div className="sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-3 border-b border-light-gray bg-[#f5f6f7] py-3">
+        <div><Link href="/admin/products" className="mb-2 inline-block text-xs text-muted underline underline-offset-4">All products</Link><h1 className="admin-title">
           {mode === "create" ? "New product" : "Edit product"}
-        </h1>
+        </h1></div>
         <button
           type="submit"
           disabled={saving || uploading}
-          className="border border-gold bg-gold/10 px-6 py-2.5 text-sm font-medium text-gold hover:bg-gold hover:text-ink disabled:opacity-60"
+          className="btn-primary"
         >
           {saving ? "Saving…" : mode === "create" ? "Create product" : "Save changes"}
         </button>
       </div>
       {serverError && (
-        <p role="alert" className="border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-400">
+        <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {serverError}
         </p>
       )}
 
-      <section aria-label="Basics" className="border border-ivory/[0.08] bg-ivory/[0.03] p-5">
-        <h2 className="font-display italic text-2xl text-ivory">Basics</h2>
+      <fieldset disabled={saving} aria-label="Basics" className="admin-card p-5">
+        <h2 className="text-base font-semibold text-ink">Basics</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className={labelCls}>
             Name
@@ -269,10 +270,10 @@ export function ProductForm({
             <span className={hintCls}>Add accurate search synonyms such as jhumka, bali, anguthi, haar or kangan for relevant products.</span>
           </label>
         </div>
-      </section>
+      </fieldset>
 
-      <section aria-label="Price and inventory" className="border border-ivory/[0.08] bg-ivory/[0.03] p-5">
-        <h2 className="font-display italic text-2xl text-ivory">Price &amp; inventory (₹, whole rupees)</h2>
+      <fieldset disabled={saving} aria-label="Price and inventory" className="admin-card p-5">
+        <h2 className="text-base font-semibold text-ink">Price &amp; inventory (₹, whole rupees)</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <label className={labelCls}>
             Price
@@ -304,23 +305,23 @@ export function ProductForm({
             Low-stock threshold
             <input type="number" min={0} step={1} {...register("lowStockThreshold", { valueAsNumber: true })} className={inputCls} />
           </label>
-          <div className="flex items-end gap-6 pb-2 text-sm text-ivory/60">
+          <div className="flex items-end gap-6 pb-2 text-sm text-muted">
             <label className="flex items-center gap-2">
-              <input type="checkbox" {...register("isPublished")} className="h-4 w-4 accent-gold" />
+              <input type="checkbox" {...register("isPublished")} className="h-4 w-4 accent-primary" />
               Published
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" {...register("isFeatured")} className="h-4 w-4 accent-gold" />
+              <input type="checkbox" {...register("isFeatured")} className="h-4 w-4 accent-primary" />
               Featured
             </label>
           </div>
         </div>
-      </section>
+      </fieldset>
 
-      <section aria-label="Images" className="border border-ivory/[0.08] bg-ivory/[0.03] p-5">
-        <h2 className="font-display italic text-2xl text-ivory">Images</h2>
-        <p className={hintCls}>First upload (or ★) becomes the thumbnail. Empty alt text falls back to the product name.</p>
-        <label className="mt-3 block border border-dashed border-ivory/20 p-6 text-center text-sm text-ivory/40 hover:border-gold/50 hover:text-ivory/60">
+      <fieldset disabled={saving} aria-label="Images" className="admin-card p-5">
+        <h2 className="text-base font-semibold text-ink">Images</h2>
+        <p className={hintCls}>The first upload becomes the thumbnail; you can change it below. Empty alt text falls back to the product name.</p>
+        <label className="mt-3 block border border-dashed border-light-gray p-6 text-center text-sm text-muted hover:border-primary/50 hover:text-muted">
           {uploading ? "Uploading…" : "Choose product images (JPG/PNG/WebP/AVIF ≤ 4MB)"}
           <input
             type="file"
@@ -332,15 +333,15 @@ export function ProductForm({
           />
         </label>
         {uploadError && (
-          <p role="alert" className="mt-2 text-sm text-red-400">
+          <p role="alert" className="mt-2 text-sm text-red-700">
             {uploadError}
           </p>
         )}
         <FieldError errors={errors} name="images" />
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {images.map((img, i) => (
-            <li key={img.publicId} className="flex gap-3 border border-ivory/[0.07] p-3">
-              <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-ink">
+            <li key={img.publicId} className="flex gap-3 border border-light-gray p-3">
+              <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-white">
                 <Image src={img.secureUrl} alt="" fill sizes="64px" className="object-cover" />
               </span>
               <div className="flex w-full flex-col gap-2">
@@ -355,11 +356,11 @@ export function ProductForm({
                     type="button"
                     onClick={() => setThumbnail(i)}
                     aria-pressed={img.isThumbnail}
-                    className={img.isThumbnail ? "font-semibold text-gold" : "text-ivory/40 underline underline-offset-2 hover:text-ivory"}
+                    className={img.isThumbnail ? "font-semibold text-primary" : "text-muted underline underline-offset-2 hover:text-ink"}
                   >
-                    {img.isThumbnail ? "★ Thumbnail" : "Make thumbnail"}
+                    {img.isThumbnail ? "Thumbnail" : "Make thumbnail"}
                   </button>
-                  <button type="button" onClick={() => removeImage(i)} className="text-ivory/40 underline underline-offset-2 hover:text-red-400">
+                  <button type="button" onClick={() => removeImage(i)} className="text-muted underline underline-offset-2 hover:text-red-700">
                     Remove
                   </button>
                 </span>
@@ -367,22 +368,22 @@ export function ProductForm({
             </li>
           ))}
         </ul>
-      </section>
+      </fieldset>
 
-      <section aria-label="Variants" className="border border-ivory/[0.08] bg-ivory/[0.03] p-5">
+      <fieldset disabled={saving} aria-label="Variants" className="admin-card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-display italic text-2xl text-ivory">Variants</h2>
+          <h2 className="text-base font-semibold text-ink">Variants</h2>
           <button
             type="button"
             onClick={() => appendVariant({ sku: "", stock: 0 })}
-            className="border border-ivory/20 px-4 py-1.5 text-sm text-ivory/60 hover:border-gold hover:text-gold"
+            className="border border-light-gray px-4 py-1.5 text-sm text-muted hover:border-primary hover:text-primary"
           >
             + Add variant
           </button>
         </div>
         <FieldError errors={errors} name="variants" />
         {variantFields.map((field, i) => (
-          <fieldset key={field.id} className="mt-3 grid gap-3 border border-ivory/[0.06] p-3 sm:grid-cols-6">
+          <fieldset key={field.id} className="mt-3 grid gap-3 border border-light-gray p-3 sm:grid-cols-2 xl:grid-cols-6">
             <legend className="sr-only">Variant {i + 1}</legend>
             <label className={`${labelCls} sm:col-span-2`}>
               SKU
@@ -409,17 +410,17 @@ export function ProductForm({
               Stock
               <input type="number" min={0} {...register(`variants.${i}.stock`, { valueAsNumber: true })} className={inputCls} />
             </label>
-            <span className="sm:col-span-6">
-              <button type="button" onClick={() => removeVariant(i)} className="text-sm text-ivory/40 underline underline-offset-4 hover:text-red-400">
+            <span className="sm:col-span-2 xl:col-span-6">
+              <button type="button" onClick={() => removeVariant(i)} className="text-sm text-muted underline underline-offset-4 hover:text-red-700">
                 Remove variant
               </button>
             </span>
           </fieldset>
         ))}
-      </section>
+      </fieldset>
 
-      <section aria-label="Attributes" className="border border-ivory/[0.08] bg-ivory/[0.03] p-5">
-        <h2 className="font-display italic text-2xl text-ivory">Attributes &amp; SEO</h2>
+      <fieldset disabled={saving} aria-label="Attributes" className="admin-card p-5">
+        <h2 className="text-base font-semibold text-ink">Attributes &amp; SEO</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           {(
             [
@@ -438,15 +439,8 @@ export function ProductForm({
             </label>
           ))}
         </div>
-      </section>
+      </fieldset>
 
-      <button
-        type="submit"
-        disabled={saving || uploading}
-        className="border border-gold bg-gold/10 px-8 py-3 text-sm font-medium text-gold hover:bg-gold hover:text-ink disabled:opacity-60"
-      >
-        {saving ? "Saving…" : mode === "create" ? "Create product" : "Save changes"}
-      </button>
     </form>
   );
 }

@@ -281,51 +281,37 @@ dialog::backdrop { background: rgba(22,22,22,.4); }
 
 }
 
-/* ──── Admin (unchanged dark) ──── */
-.admin-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 1.25rem;
-  border-radius: 14px;
-  transition: border-color 0.25s;
-}
-
-.admin-card:hover {
-  border-color: rgba(214, 31, 44, 0.45);
-}
-
-.admin-kpi {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 1rem;
-  border-radius: 14px;
-}
-
-.admin-kpi-accent {
-  border: 1px solid rgba(214, 31, 44, 0.45);
-  background: rgba(214, 31, 44, 0.1);
-  padding: 1rem;
-  border-radius: 14px;
-}
-
-.admin-input {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(214, 31, 44, 0.25);
-  background: #111;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  color: #fff;
-  transition: border-color 0.2s;
-}
-
-.admin-input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.admin-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+/* Admin workspace: the same controls, with readable operational layouts. */
+@layer components {
+.admin-app { min-height: 100vh; background: #f5f6f7; color: var(--ink); --muted: #59616b; }
+.admin-app fieldset { min-width: 0; }
+.admin-title { font-family: var(--font-sans); font-size: 1.75rem; line-height: 1.25; font-weight: 600; letter-spacing: -.035em; }
+.admin-eyebrow { margin-bottom: .5rem; font-size: .6875rem; line-height: 1.5; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.admin-card, .admin-kpi, .admin-kpi-accent { min-width: 0; border: 1px solid #e2e5e9; border-radius: 8px; background: white; padding: 1.25rem; }
+.admin-kpi-accent { border-top: 3px solid var(--primary); }
+.admin-nav-item { display: flex; align-items: center; gap: .75rem; min-height: 44px; border-radius: 6px; padding: .65rem .75rem; font-size: .875rem; font-weight: 500; color: var(--muted); transition: background-color .2s, color .2s; }
+.admin-nav-item:hover { color: var(--ink); background: #f5f6f7; }
+.admin-nav-item[aria-current="page"] { color: var(--primary-dark); background: #fbedef; font-weight: 600; }
+.admin-input { width: 100%; min-width: 0; min-height: 44px; padding: .65rem .75rem; border: 1px solid #89919a; border-radius: 5px; background: white; color: var(--ink); font-size: .875rem; line-height: 1.5; }
+.admin-input::placeholder { color: #69727d; }
+.admin-app :is(input, select, textarea):disabled { background: #f2f3f5; color: var(--muted); }
+.admin-app button, .admin-app label.flex.items-center { min-height: 44px; }
+.admin-app input[type="checkbox"] { accent-color: var(--primary); }
+.admin-app header button { min-height: 40px; border-radius: 6px; padding: .5rem .75rem; }
+.admin-app table { background: white; }
+.admin-app th { background: #f8f9fa; white-space: nowrap; font-size: .75rem; font-weight: 500; color: var(--muted); }
+.admin-app td { vertical-align: middle; }
+.admin-app td :is(button, a.underline) { display: inline-flex; align-items: center; }
+.admin-app [role="status"], .admin-app [role="alert"] { border-radius: 6px; }
+.admin-app form { scroll-margin-top: 90px; }
+.admin-app label:focus-within:has(input[type="file"]) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.admin-disclosure { min-width: 0; border-top: 1px solid #e2e5e9; padding-top: 1rem; }
+.admin-disclosure > summary { cursor: pointer; min-height: 44px; font-size: .875rem; font-weight: 600; }
+.admin-meter { min-width: 0; width: 100%; height: 8px; border: none; border-radius: 4px; background: #f1f2f4; }
+.admin-meter::-webkit-meter-bar { background: #f1f2f4; border: none; border-radius: 4px; }
+.admin-meter::-webkit-meter-optimum-value { background: var(--primary); border-radius: 4px; }
+.admin-meter::-moz-meter-bar { background: var(--primary); border-radius: 4px; }
+@media (max-width: 639px) { .admin-input { font-size: 1rem; } }
 }
 
 /* ─────────────────────────────────────────────
