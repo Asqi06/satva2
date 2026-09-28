@@ -24,6 +24,7 @@ Videos: same pattern (`resource_type: video`).
 
 - Uploads happen server-side — admin product form → API → Cloudinary. Never expose `CLOUDINARY_API_SECRET` to the browser.
 - Two modes (`src/lib/cloudinary.ts`): signed (API keypair) or unsigned via `CLOUDINARY_UPLOAD_PRESET` (Signing Mode: Unsigned). Either the keypair or the preset must be set, or uploads return 503. Auth, type and size validation always run server-side first.
+- For unsigned uploads, set allowed formats (`jpg,png,webp,avif` for images; `mp4,webm,mov` for admin videos), the 4 MB size limit, and folder restrictions in the Cloudinary preset. These restrictions cannot be passed directly in an unsigned request. Signed uploads retain per-request format restrictions.
 - Preset/folder convention: `satvastones/products/<slug>/...`. Predictable naming.
 - On product delete: remove Cloudinary assets (or scheduled orphan cleanup).
 - Responsive delivery: `f_auto,q_auto,w_<breakpoint>` transformations via Next.js `<Image>` + Cloudinary loader.

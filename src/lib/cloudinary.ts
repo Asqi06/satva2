@@ -101,7 +101,17 @@ export async function uploadBuffer(
   return new Promise<UploadResult>((resolve, reject) => {
     const done = (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
       if (error || !result) {
-        reject(error instanceof Error ? error : new Error("Upload failed"));
+        // ponytail: preset errors use provider text; new wording falls back. Prefer stable provider codes if offered.
+        const presetFailure = preset !== null && /upload preset|unsigned upload/i.test(error?.message ?? "");
+        const invalidFile = error?.http_code === 400 && !presetFailure;
+        const message = presetFailure
+          ? "Cloudinary rejected the upload preset. Check CLOUDINARY_UPLOAD_PRESET belongs to CLOUDINARY_CLOUD_NAME and its signing mode is Unsigned, then redeploy."
+          : invalidFile
+            ? "Cloudinary rejected this file. Use a valid JPG, PNG, WebP or AVIF image (MP4, WebM or MOV for video) and check the preset's allowed formats."
+            : "Cloudinary could not complete the upload. Check its account status and upload configuration, then retry.";
+        // SDK errors can be plain objects; never log raw messages containing keys or signatures.
+        logger.error("cloudinary upload failed", { mode: preset ? "unsigned" : "signed", providerStatus: error?.http_code, message });
+        reject(new AppError(invalidFile ? "VALIDATION_ERROR" : "INTERNAL_ERROR", message, invalidFile ? 400 : 502));
         return;
       }
       resolve({
@@ -112,12 +122,12 @@ export async function uploadBuffer(
         resourceType: result.resource_type,
       });
     };
-    // Unsigned mode: the preset carries the permission; folder stays per-call.
+    // Unsigned format restrictions belong in the preset; Cloudinary rejects them per-call.
     const stream =
       preset !== null
         ? cloud.uploader.unsigned_upload_stream(
             preset,
-            { folder: opts.folder, resource_type: opts.resourceType, allowed_formats: opts.resourceType === "image" ? ["jpg", "png", "webp", "avif"] : ["mp4", "webm", "mov"] },
+            { folder: opts.folder, resource_type: opts.resourceType },
             done,
           )
         : cloud.uploader.upload_stream(

@@ -18,19 +18,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     const kind = assertUploadFileOk({ type: file.type, size: file.size, name: file.name });
     const buffer = Buffer.from(await file.arrayBuffer());
-    let result;
-    try {
-      result = await uploadBuffer(buffer, {
-        folder: "satvastones/products",
-        resourceType: kind,
-      });
-    } catch {
-      throw new AppError(
-        "INTERNAL_ERROR",
-        "Cloudinary rejected the upload — verify CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET values on the server, then redeploy.",
-        502,
-      );
-    }
+    const result = await uploadBuffer(buffer, {
+      folder: "satvastones/products",
+      resourceType: kind,
+    });
     return successResponse(result, 201);
   } catch (error) {
     return errorResponse(error);
