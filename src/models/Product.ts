@@ -27,11 +27,13 @@ export interface IProductVariant {
   style?: string;
   price?: number;
   stock: number;
+  reservedStock?: number;
 }
 
 export interface IProduct extends Document {
   name: string;
   slug: string;
+  previousSlugs: string[];
   description: string;
   shortDescription?: string;
   categoryId: Types.ObjectId;
@@ -89,6 +91,7 @@ const variantSchema = new Schema<IProductVariant>(
     style: { type: String, trim: true, maxlength: 64 },
     price: { type: Number, min: 0 },
     stock: { type: Number, required: true, min: 0, default: 0 },
+    reservedStock: { type: Number, min: 0, default: 0 },
   },
   { _id: false },
 );
@@ -104,6 +107,7 @@ const productSchema = new Schema<IProduct>(
       trim: true,
       maxlength: 140,
     },
+    previousSlugs: { type: [String], default: [] },
     description: { type: String, required: true, maxlength: 20000 },
     shortDescription: { type: String, trim: true, maxlength: 280 },
     categoryId: { type: Schema.Types.ObjectId, ref: "Category", required: true },

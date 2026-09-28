@@ -1,5 +1,6 @@
 "use client";
 
+import { AddressFields } from "./AddressFields";
 import { useState } from "react";
 import type { AddressDTO } from "@/services/address-service";
 
@@ -52,50 +53,16 @@ export function AddressForm({ onCreated }: { onCreated: (id: string) => void }) 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-full border border-ink/20 px-5 py-2 text-sm hover:border-ink"
+        className="btn-ghost"
       >
         + Add a new address
       </button>
     );
   }
 
-  const inputCls = "w-full rounded-xl border border-ink/15 bg-ivory px-3 py-2 text-sm";
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-3 rounded-2xl border border-ink/10 bg-white/60 p-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          Full name
-          <input name="fullName" required maxLength={120} autoComplete="name" className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Phone (10-digit mobile)
-          <input name="phone" required inputMode="numeric" autoComplete="tel" maxLength={10} className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          Address
-          <input name="addressLine1" required maxLength={256} autoComplete="street-address" className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          Apartment / flat (optional)
-          <input name="addressLine2" maxLength={256} className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          City
-          <input name="city" required maxLength={120} autoComplete="address-level2" className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          State
-          <input name="state" required maxLength={120} autoComplete="address-level1" className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Pincode
-          <input name="pincode" required inputMode="numeric" maxLength={6} autoComplete="postal-code" className={inputCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Landmark (optional)
-          <input name="landmark" maxLength={256} className={inputCls} />
-        </label>
-      </div>
+    <form onSubmit={submit} className="mt-4 grid gap-5 border border-light-gray p-4">
+      <AddressFields />
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="isDefault" className="h-4 w-4 accent-clay" />
         Make default
@@ -106,10 +73,10 @@ export function AddressForm({ onCreated }: { onCreated: (id: string) => void }) 
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" disabled={saving} className="rounded-full bg-ink px-6 py-2 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-60">
+        <button type="submit" disabled={saving} className="btn-primary">
           {saving ? "Saving…" : "Save address"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded-full border border-ink/20 px-6 py-2 text-sm">
+        <button type="button" onClick={() => setOpen(false)} className="btn-ghost">
           Cancel
         </button>
       </div>

@@ -23,11 +23,11 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
 
   const address = order.address;
   return (
-    <main>
+    <div>
       <Link href="/account/orders" className="text-sm underline underline-offset-4">
         ← All orders
       </Link>
-      <p className="eyebrow">Tracked · 5–7 day delivery</p>
+      <p className="eyebrow">Order status</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="section-title text-4xl tracking-tight">Order {order.id.slice(-8).toUpperCase()}</h1>
         <span className="flex gap-2">
@@ -38,7 +38,7 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
-          <section aria-label="Items" className="rounded-3xl border border-ink/10 bg-white/60 p-5">
+          <section aria-label="Items" className="rounded-[3px] border border-ink/10 bg-white/60 p-5">
             <h2 className="font-display text-2xl">Items</h2>
             <ul className="mt-4 space-y-3">
               {order.items.map((item, i) => (
@@ -48,7 +48,7 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
                   </span>
                   <span className="flex-1">
                     <strong>{item.name}</strong>
-                    {item.variantSku && <span className="text-warm-gray"> · {item.variantSku}</span>}
+                    {item.variantSku && <span className="text-warm-gray"> · {item.variantLabel || item.variantSku}</span>}
                     <br />
                     <span className="text-warm-gray">Qty {item.qty} × {formatINR(item.unitPrice)}</span>
                   </span>
@@ -66,7 +66,7 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
             </dl>
           </section>
 
-          <section aria-label="Tracking" className="rounded-3xl border border-ink/10 bg-white/60 p-5">
+          <section aria-label="Tracking" className="rounded-[3px] border border-ink/10 bg-white/60 p-5">
             <h2 className="font-display text-2xl">Tracking</h2>
             <div className="mt-4">
               <OrderTimeline timeline={order.timeline} />
@@ -75,7 +75,7 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="space-y-6">
-          <section aria-label="Delivery address" className="h-fit rounded-3xl border border-ink/10 bg-white/60 p-5 text-sm">
+          <section aria-label="Delivery address" className="h-fit rounded-[3px] border border-ink/10 bg-white/60 p-5 text-sm">
             <h2 className="font-display text-xl">Delivering to</h2>
             <p className="mt-2 leading-6">
               <strong>{address.fullName}</strong> · {address.phone}
@@ -86,12 +86,12 @@ export default async function AccountOrderPage({ params }: { params: Promise<{ i
             </p>
           </section>
           {order.orderStatus === "PENDING" && order.paymentStatus === "PENDING" && (
-            <div className="rounded-3xl border border-ink/10 bg-white/60 p-5">
+            <div className="rounded-[3px] border border-ink/10 bg-white/60 p-5">
               <CancelOrderButton orderId={order.id} />
             </div>
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,92 +1,20 @@
 import Link from "next/link";
 import type { ProductListItem } from "@/services/product-service";
 import { CloudinaryImage as Image } from "@/components/CloudinaryImage";
+import { Icon } from "@/components/Icon";
 import { formatINR } from "@/utils/format";
 
-/** Shared product card for the home, shop, and related-product grids. */
-export function ProductCard({
-  product,
-  badge,
-}: {
-  product: ProductListItem;
-  badge?: "bestseller" | "new";
-}) {
+export function ProductCard({ product, badge, priority = false, sizes = "(min-width: 1280px) 286px, (min-width: 1024px) calc((100vw - 136px) / 4), (min-width: 640px) calc((100vw - 112px) / 3), calc((100vw - 48px) / 2)" }: { product: ProductListItem; badge?: "bestseller" | "new"; priority?: boolean; sizes?: string }) {
   const cover = product.images[0];
-  const showHotTag = badge === "bestseller";
-  return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-light-gray bg-white transition-shadow hover:shadow-[0_12px_30px_rgba(0,0,0,0.1)]">
-      {/* Image */}
-      <div className="relative">
-        <Link href={`/products/${product.slug}`} aria-label={product.name} tabIndex={-1}>
-          <span className="relative block aspect-[4/5] overflow-hidden bg-cream">
-            {cover ? (
-              <Image
-                src={cover.secureUrl}
-                alt={cover.alt}
-                fill
-                sizes="(min-width: 1280px) 296px, (min-width: 1024px) calc((100vw - 80px) / 4), (min-width: 640px) calc((100vw - 80px) / 3), calc((100vw - 44px) / 2)"
-                loading="lazy"
-                decoding="async"
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-              />
-            ) : (
-              <span className="flex h-full items-center justify-center bg-blush font-display text-5xl font-black text-primary">
-                S
-              </span>
-            )}
-            {!product.inStock && (
-              <span className="absolute inset-0 flex items-center justify-center bg-white/70">
-                <span className="rounded-full bg-ink px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
-                  Out of stock
-                </span>
-              </span>
-            )}
-          </span>
-        </Link>
-
-        {/* Top-left tag */}
-        <span className="absolute left-2 top-2 flex flex-col items-start gap-1">
-          {showHotTag ? (
-            <span className="badge-bestseller">Hot Selling</span>
-          ) : badge === "new" ? (
-            <span className="badge-new">New Arrival</span>
-          ) : product.discountPercent > 0 ? (
-            <span className="badge-off">{product.discountPercent}% off</span>
-          ) : null}
-        </span>
-      </div>
-
-      {/* Info */}
-      <div className="flex flex-1 flex-col p-3 sm:p-4">
-        <h3 className="clamp-2 min-h-[2.6em] text-[13px] font-semibold leading-[1.3] text-ink sm:text-sm">
-          <Link href={`/products/${product.slug}`} className="transition-colors hover:text-primary">
-            {product.name}
-          </Link>
-        </h3>
-
-        {product.ratingCount > 0 ? (
-          <p className="mt-1 text-[11px] font-bold text-amber-500" aria-label={`Rated ${product.ratingAverage.toFixed(1)} out of 5`}>
-            {"★".repeat(Math.min(5, Math.round(product.ratingAverage)))}
-            <span className="ml-1 font-medium text-muted">({product.ratingCount})</span>
-          </p>
-        ) : (
-          <p className="mt-1 text-[11px] text-muted">No reviews yet</p>
-        )}
-
-        <p className="mt-2 flex flex-wrap items-baseline gap-1.5">
-          <span className="text-base font-extrabold">{formatINR(product.price)}</span>
-          {product.compareAtPrice !== undefined && product.compareAtPrice > product.price && (
-            <s className="text-[11px] text-muted">{formatINR(product.compareAtPrice)}</s>
-          )}
-        </p>
-
-        <Link
-          href={`/products/${product.slug}`}
-          className="mt-auto flex min-h-11 items-center justify-center rounded-full bg-blush px-3 py-2 text-center text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary transition-colors hover:bg-primary hover:text-white"
-        >
-          {product.inStock ? "View details" : "View item"}
-        </Link>
-      </div>
-    </article>
-  );
+  return <article className="group flex h-full min-w-0 flex-col">
+    <Link href={`/products/${product.slug}`} aria-label={product.name} tabIndex={-1} className="relative block aspect-[4/5] overflow-hidden rounded-[3px] bg-cream">
+      {cover ? <Image src={cover.secureUrl} alt={cover.alt || product.name} fill sizes={sizes} priority={priority} loading={priority ? undefined : "lazy"} className="object-cover transition-opacity duration-200 group-hover:opacity-95" /> : <span className="flex h-full items-center justify-center px-3 text-center text-xs text-muted">Photo unavailable</span>}
+      {(!product.inStock || badge || product.discountPercent > 0) && <span className="badge-new absolute left-2 top-2">{!product.inStock ? "Sold out" : badge === "bestseller" && (product.soldQuantity ?? 0) > 0 ? "Bestseller" : badge === "new" ? "New" : `${product.discountPercent}% off`}</span>}
+    </Link>
+    <div className="pt-3">
+      <h3 className="clamp-2 min-h-[2.8em] text-[13px] font-medium leading-[1.4] sm:text-sm"><Link href={`/products/${product.slug}`} className="hover:underline">{product.name}</Link></h3>
+      <p className="mt-2 flex flex-wrap items-baseline gap-2"><span className="text-sm font-semibold sm:text-base">{product.priceFrom ? "From " : ""}{formatINR(product.price)}</span>{product.compareAtPrice !== undefined && product.compareAtPrice > product.price && <s className="text-xs text-muted">{formatINR(product.compareAtPrice)}</s>}</p>
+      {product.ratingCount > 0 && <p className="mt-2 flex items-center gap-1 text-xs text-muted" aria-label={`Rated ${product.ratingAverage.toFixed(1)} out of 5, ${product.ratingCount} reviews`}><Icon name="star" width="12" height="12" />{product.ratingAverage.toFixed(1)} <span>({product.ratingCount})</span></p>}
+    </div>
+  </article>;
 }

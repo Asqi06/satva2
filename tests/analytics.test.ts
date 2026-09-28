@@ -39,12 +39,16 @@ describe("analytics", () => {
   });
 
   it("covers bag and checkout steps", () => {
+    analytics.filterApplied(["color", "minPrice"], 2);
     analytics.addToCart({ id: "p1", name: "Ring", price: 500, qty: 2 });
     analytics.removeFromCart({ id: "p1", name: "Ring", price: 500, qty: 1 });
     analytics.addToWishlist({ id: "p1", name: "Ring", price: 500 });
     analytics.beginCheckout({ value: 1000, count: 2, items: [{ id: "p1", name: "Ring", price: 500, qty: 2 }] });
+    analytics.checkoutStepCompleted("information");
     analytics.addPaymentInfo(1000);
     const calls = (window.gtag as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1]);
-    expect(calls).toEqual(["add_to_cart", "remove_from_cart", "add_to_wishlist", "begin_checkout", "add_payment_info"]);
+    expect(calls).toEqual(["filter_applied", "add_to_cart", "remove_from_cart", "add_to_wishlist", "begin_checkout", "checkout_step_completed", "add_payment_info"]);
+    expect(window.gtag).toHaveBeenCalledWith("event", "filter_applied", { filter_names: ["color", "minPrice"], filter_count: 2 });
+    expect(window.gtag).toHaveBeenCalledWith("event", "checkout_step_completed", { step: "information" });
   });
 });

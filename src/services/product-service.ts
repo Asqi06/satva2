@@ -1,16 +1,16 @@
-import { Types } from "mongoose";
+import { cache } from "react";
+import { Review } from "@/models/Review";
+import { connection, Types, type PipelineStage } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { AppError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
 import { Category } from "@/models/Category";
 import { Product, type IProduct } from "@/models/Product";
 import type { BulkAction, ProductInput, ProductQuery } from "@/schemas/product";
-import { deleteAssets } from "@/lib/cloudinary";
 import { ensureUnique, slugify } from "@/utils/slug";
 
 /** Escape user text for safe case-insensitive regex matching (no ReDoS). */
 export function escapeRegExp(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 120);
+  return input.slice(0, 120).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export interface ProductListItem {
@@ -27,6 +27,9 @@ export interface ProductListItem {
   ratingCount: number;
   stock: number;
   inStock: boolean;
+  availableStock?: number;
+  priceFrom?: boolean;
+  soldQuantity?: number;
   category: { id: string; name: string; slug: string };
   tags: string[];
   isFeatured: boolean;
@@ -76,6 +79,19 @@ export interface Pagination {
 }
 
 type PopulatedCategory = { _id: Types.ObjectId; name: string; slug: string };
+
+async function withPublishedRatings(docs: LeanProduct[]): Promise<void> {
+  const ratings = await Review.aggregate<{ _id: Types.ObjectId; average: number; count: number }>([
+    { $match: { productId: { $in: docs.map((doc) => doc._id) }, isPublished: true } },
+    { $group: { _id: "$productId", average: { $avg: "$rating" }, count: { $sum: 1 } } },
+  ]);
+  const byId = new Map(ratings.map((rating) => [rating._id.toString(), rating]));
+  for (const doc of docs) {
+    const rating = byId.get(doc._id.toString());
+    doc.ratingAverage = rating ? Math.round(rating.average * 10) / 10 : 0;
+    doc.ratingCount = rating?.count ?? 0;
+  }
+}
 
 type LeanProduct = Omit<IProduct, "_id" | "categoryId" | "createdAt" | "updatedAt"> & {
   _id: Types.ObjectId;
@@ -135,7 +151,9 @@ function toListItem(doc: LeanProduct): ProductListItem {
     return { publicId: "", secureUrl: "", alt: name, isThumbnail: false };
   }).sort((a, b) => Number(b.isThumbnail) - Number(a.isThumbnail));
 
-  const price = typeof doc.price === "number" ? doc.price : 0;
+  const basePrice = typeof doc.price === "number" ? doc.price : 0;
+  const variants = Array.isArray(doc.variants) ? doc.variants : [];
+  const price = variants.length ? Math.min(...variants.map((variant) => variant.price ?? basePrice)) : basePrice;
   const compareAtPrice =
     typeof doc.compareAtPrice === "number"
       ? doc.compareAtPrice
@@ -164,7 +182,10 @@ function toListItem(doc: LeanProduct): ProductListItem {
     ratingAverage: typeof doc.ratingAverage === "number" ? doc.ratingAverage : 0,
     ratingCount: typeof doc.ratingCount === "number" ? doc.ratingCount : 0,
     stock,
-    inStock: stock - reservedStock > 0,
+    inStock: stock - reservedStock > 0 && (!variants.length || variants.some((variant) => variant.stock - (variant.reservedStock ?? 0) > 0)),
+    availableStock: Math.max(stock - reservedStock, 0),
+    soldQuantity: doc.soldQuantity ?? 0,
+    priceFrom: variants.some((variant) => (variant.price ?? basePrice) !== price),
     category: categoryOf(doc),
     tags: Array.isArray(doc.tags) ? doc.tags : [],
     isFeatured: Boolean(doc.isFeatured),
@@ -187,7 +208,7 @@ function toDetail(doc: LeanProduct, related: ProductListItem[]): ProductDetail {
     description: doc.description ?? "",
     subcategory: doc.subcategory,
     videos: normalizedVideos,
-    variants: rawVariants.map((v) => ({ ...v })),
+    variants: rawVariants.map((v) => ({ ...v, price: v.price ?? doc.price, stock: Math.max(0, Math.min(v.stock - (v.reservedStock ?? 0), doc.stock - (doc.reservedStock ?? 0))) })),
     material: doc.material,
     color: doc.color,
     size: doc.size,
@@ -201,6 +222,8 @@ function toDetail(doc: LeanProduct, related: ProductListItem[]): ProductDetail {
 function toAdminDetail(doc: LeanProduct): AdminProductDetail {
   return {
     ...toDetail(doc, []),
+    price: doc.price,
+    variants: (doc.variants ?? []).map((variant) => ({ ...variant })),
     isPublished: Boolean(doc.isPublished),
     reservedStock: typeof doc.reservedStock === "number" ? doc.reservedStock : 0,
     soldQuantity: typeof doc.soldQuantity === "number" ? doc.soldQuantity : 0,
@@ -219,12 +242,31 @@ const SORT_MAP: Record<ProductQuery["sort"], Record<string, 1 | -1>> = {
 };
 
 const COMMON_CATEGORY_TERMS: Record<string, string[]> = {
-  earrings: ["jhumka", "jhumkas", "jhumke", "bali", "baali", "jhumka earrings"],
+  earrings: ["jhumka", "jhumkas", "jhumke", "bali", "baali", "jhumka earrings", "earing", "earings", "earring"],
   rings: ["anguthi", "angoothi", "finger ring"],
   necklaces: ["haar", "mala", "gale ka haar"],
-  bracelets: ["kangan", "kada", "chudi", "chura"],
+  bracelets: ["kangan", "kada", "chudi", "chura", "braclet", "braclets", "bracelet"],
   anklets: ["payal", "paayal"],
 };
+
+export type CatalogueFilters = Record<"color" | "size" | "material", { value: string; count: number }[]>;
+
+export async function getCatalogueFilters(categorySlug?: string): Promise<CatalogueFilters> {
+  await connectDb();
+  const category = categorySlug ? await Category.findOne({ slug: categorySlug, isPublished: true }).select("_id").lean() : null;
+  const fields = ["color", "size", "material"] as const;
+  const facet = Object.fromEntries(fields.map(field => [field, [
+    { $project: { values: { $setUnion: [field === "material" ? [`$${field}`] : { $map: { input: { $cond: [{ $gt: [{ $size: { $ifNull: ["$variants", []] } }, 0] }, "$variants", [{}]] }, as: "v", in: { $ifNull: [`$$v.${field}`, `$${field}`] } } }, []] } } },
+    { $unwind: "$values" }, { $match: { values: { $type: "string", $ne: "" } } },
+    { $group: { _id: "$values", count: { $sum: 1 } } }, { $sort: { _id: 1 as const } }, { $limit: 30 },
+    { $project: { _id: 0, value: "$_id", count: 1 } },
+  ]]));
+  const [result] = await Product.aggregate<CatalogueFilters>([
+    { $match: { isPublished: true, ...(category ? { categoryId: category._id } : {}) } },
+    { $facet: facet },
+  ]);
+  return result ?? { color: [], size: [], material: [] };
+}
 
 export async function listPublicProducts(
   query: ProductQuery,
@@ -234,7 +276,7 @@ export async function listPublicProducts(
 
   if (query.category) {
     const category = await Category.findOne({
-      slug: query.category.toLowerCase(),
+      $or: [{ slug: query.category.toLowerCase() }, { previousSlugs: query.category.toLowerCase() }],
       isPublished: true,
     })
       .select("_id")
@@ -250,35 +292,42 @@ export async function listPublicProducts(
   if (query.q) {
     const term = query.q.trim().toLocaleLowerCase("en-IN");
     // ponytail: category count is small; if it grows into thousands, index a normalized alias field.
-    const categories = query.category ? [] : await Category.find({ isPublished: true })
+    const categories = await Category.find({ isPublished: true })
       .select("_id name slug searchTerms")
       .lean<{ _id: Types.ObjectId; name: string; slug: string; searchTerms?: string[] }[]>();
     const alias = categories.find((category) =>
       [category.name, category.slug, ...(category.searchTerms ?? []), ...(COMMON_CATEGORY_TERMS[category.slug] ?? [])]
-        .some((value) => value.toLocaleLowerCase("en-IN") === term),
+        .some((value) => value.toLocaleLowerCase("en-IN") === term || (term.length >= 3 && value.toLocaleLowerCase("en-IN").startsWith(term))),
     );
-    if (alias) filter.categoryId = alias._id;
-    else filter.$text = { $search: query.q };
+    // ponytail: bounded literal searches suit this catalogue; use a search index when catalogue size makes scans expensive.
+    const words = term.split(/\s+/).slice(0, 8).map(word => ({ $or: ["name", "sku", "variants.sku", "tags", "description"].map(field => ({ [field]: new RegExp(escapeRegExp(word), "i") })) }));
+    filter.$and = [alias ? { $or: [{ categoryId: alias._id }, { $and: words }] } : { $and: words }];
   }
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-    filter.price = {
+    filter.listPrice = {
       ...(query.minPrice !== undefined ? { $gte: query.minPrice } : {}),
       ...(query.maxPrice !== undefined ? { $lte: query.maxPrice } : {}),
     };
   }
-  if (query.material) filter.material = new RegExp(`^${escapeRegExp(query.material)}$`, "i");
-  if (query.color) filter.color = new RegExp(`^${escapeRegExp(query.color)}$`, "i");
-  if (query.inStock) filter.$expr = { $gt: ["$stock", "$reservedStock"] };
+  if (query.material) filter.material = { $in: query.material.split("|").filter(Boolean).slice(0, 8).map(value => new RegExp(`^${escapeRegExp(value)}$`, "i")) };
+  const optionConditions = (["color", "size"] as const).filter(field => query[field]).map(field => ({ $regexMatch: {
+    input: { $ifNull: [`$$v.${field}`, { $ifNull: [`$${field}`, ""] }] },
+    regex: `^(?:${query[field]!.split("|").filter(Boolean).slice(0, 8).map(escapeRegExp).join("|")})$`, options: "i",
+  } }));
+  if (optionConditions.length) filter.$and = [...(filter.$and as Record<string, unknown>[] ?? []), { $expr: { $anyElementTrue: [{ $map: {
+    input: { $cond: [{ $gt: [{ $size: { $ifNull: ["$variants", []] } }, 0] }, "$variants", [{}]] }, as: "v", in: { $and: optionConditions },
+  } }] } }];
+  if (query.inStock) filter.listInStock = true;
   if (query.minRating !== undefined) filter.ratingAverage = { $gte: query.minRating };
   if (query.minDiscount !== undefined && query.minDiscount > 0) {
-    filter.$and = [
+    filter.$and = [...(filter.$and as Record<string, unknown>[] ?? []),
       { compareAtPrice: { $gt: 0 } },
       {
         $expr: {
           $gte: [
             {
               $multiply: [
-                { $divide: [{ $subtract: ["$compareAtPrice", "$price"] }, "$compareAtPrice"] },
+                { $divide: [{ $subtract: ["$compareAtPrice", "$listPrice"] }, "$compareAtPrice"] },
                 100,
               ],
             },
@@ -291,18 +340,47 @@ export async function listPublicProducts(
   // Collections are curated tag sets until a dedicated model exists.
   if (query.collection) filter.tags = query.collection;
 
-  const [total, docs] = await Promise.all([
-    Product.countDocuments(filter),
-    Product.find(filter)
-      .select(
-        "name slug shortDescription price compareAtPrice sku images ratingAverage ratingCount stock reservedStock categoryId tags isFeatured createdAt",
-      )
-      .sort(SORT_MAP[query.sort])
-      .skip((query.page - 1) * query.limit)
-      .limit(query.limit)
-      .populate("categoryId", "name slug")
-      .lean<LeanProduct[]>(),
-  ]);
+  const textSearch = filter.$text;
+  delete filter.$text;
+  const pipeline: PipelineStage[] = [
+    { $match: { isPublished: true, ...(textSearch ? { $text: textSearch } : {}) } },
+    { $set: {
+      listPrice: { $cond: [
+        { $gt: [{ $size: { $ifNull: ["$variants", []] } }, 0] },
+        { $min: { $map: { input: "$variants", as: "variant", in: { $ifNull: ["$$variant.price", "$price"] } } } },
+        "$price",
+      ] },
+      listInStock: { $and: [
+        { $gt: ["$stock", { $ifNull: ["$reservedStock", 0] }] },
+        { $or: [
+          { $eq: [{ $size: { $ifNull: ["$variants", []] } }, 0] },
+          { $anyElementTrue: [{ $map: { input: { $ifNull: ["$variants", []] }, as: "variant", in: { $gt: ["$$variant.stock", { $ifNull: ["$$variant.reservedStock", 0] }] } } }] },
+        ] },
+      ] },
+    } },
+  ];
+  if (query.sort === "rating" || query.minRating !== undefined) {
+    pipeline.push(
+      { $lookup: {
+        from: Review.collection.name, localField: "_id", foreignField: "productId", as: "publishedRatings",
+        pipeline: [{ $match: { isPublished: true } }, { $group: { _id: null, average: { $avg: "$rating" }, count: { $sum: 1 } } }],
+      } },
+      { $set: { ratingAverage: { $ifNull: [{ $arrayElemAt: ["$publishedRatings.average", 0] }, 0] }, ratingCount: { $ifNull: [{ $arrayElemAt: ["$publishedRatings.count", 0] }, 0] } } },
+    );
+  }
+  const sort = query.sort === "price-asc" ? { listPrice: 1 as const } : query.sort === "price-desc" ? { listPrice: -1 as const } : SORT_MAP[query.sort];
+  pipeline.push({ $match: filter }, { $facet: {
+    counts: [{ $count: "total" }],
+    products: [
+      { $sort: { ...sort, _id: 1 } },
+      { $skip: (query.page - 1) * query.limit }, { $limit: query.limit },
+      { $project: { name: 1, slug: 1, shortDescription: 1, price: 1, compareAtPrice: 1, sku: 1, images: 1, ratingAverage: 1, ratingCount: 1, stock: 1, reservedStock: 1, variants: 1, categoryId: 1, tags: 1, isFeatured: 1, soldQuantity: 1, createdAt: 1 } },
+    ],
+  } });
+  const [result] = await Product.aggregate<{ products: LeanProduct[]; counts: { total: number }[] }>(pipeline);
+  const docs = await Product.populate(result?.products ?? [], { path: "categoryId", select: "name slug" });
+  const total = result?.counts[0]?.total ?? 0;
+  await withPublishedRatings(docs);
   return {
     products: docs.map(toListItem),
     pagination: {
@@ -314,9 +392,9 @@ export async function listPublicProducts(
   };
 }
 
-export async function getPublicProductBySlug(slug: string): Promise<ProductDetail | null> {
+export const getPublicProductBySlug = cache(async (slug: string): Promise<ProductDetail | null> => {
   await connectDb();
-  const doc = await Product.findOne({ slug: slug.toLowerCase(), isPublished: true })
+  const doc = await Product.findOne({ $or: [{ slug: slug.toLowerCase() }, { previousSlugs: slug.toLowerCase() }], isPublished: true })
     .populate("categoryId", "name slug")
     .lean<LeanProduct | null>();
   if (!doc) return null;
@@ -336,15 +414,16 @@ export async function getPublicProductBySlug(slug: string): Promise<ProductDetai
         .populate("categoryId", "name slug")
         .lean<LeanProduct[]>()
     : [];
+  await withPublishedRatings([doc, ...related]);
   return toDetail(doc, related.map(toListItem));
-}
+});
 
 /** Resolve legacy /product URLs without exposing unpublished products. */
 export async function getPublicProductSlug(identifier: string): Promise<string | null> {
   await connectDb();
   const filter = /^[0-9a-f]{24}$/i.test(identifier)
     ? { _id: new Types.ObjectId(identifier) }
-    : { slug: identifier.toLowerCase() };
+    : { $or: [{ slug: identifier.toLowerCase() }, { previousSlugs: identifier.toLowerCase() }] };
   const product = await Product.findOne({ ...filter, isPublished: true })
     .select("slug")
     .lean<{ slug: string } | null>();
@@ -408,7 +487,7 @@ export async function createProduct(input: ProductInput): Promise<AdminProductDe
     await assertSkuFree(variant.sku);
   }
   const slug = await ensureUnique(input.slug ?? slugify(input.name), (c) =>
-    Product.exists({ slug: c }).then(Boolean),
+    Product.exists({ $or: [{ slug: c }, { previousSlugs: c }] }).then(Boolean),
   );
   const created = await Product.create(toDoc(input, slug));
   const detail = await getAdminProductById(created._id.toString());
@@ -429,27 +508,36 @@ export async function getAdminProductById(id: string): Promise<AdminProductDetai
 export async function updateProduct(id: string, input: ProductInput): Promise<AdminProductDetail> {
   await connectDb();
   const objectId = assertObjectId(id);
-  const doc = await Product.findById(objectId);
-  if (!doc) throw notFound();
+  await connection.transaction(async (session) => {
+    const doc = await Product.findById(objectId).session(session);
+    if (!doc) throw notFound();
 
-  const category = await Category.findById(input.categoryId).select("_id").lean();
-  if (!category) throw new AppError("NOT_FOUND", "Category not found", 404);
+    const category = await Category.findById(input.categoryId).select("_id").lean();
+    if (!category) throw new AppError("NOT_FOUND", "Category not found", 404);
 
-  const newSku = input.sku.trim().toUpperCase();
-  if (newSku !== doc.sku.toUpperCase()) await assertSkuFree(input.sku, objectId);
-  const oldVariants = new Set(doc.variants.map((v) => v.sku.toUpperCase()));
-  for (const variant of input.variants) {
-    if (!oldVariants.has(variant.sku.trim().toUpperCase())) {
-      await assertSkuFree(variant.sku, objectId);
+    if (input.stock < doc.reservedStock) throw new AppError("CONFLICT", "Stock cannot be lower than active order reservations", 409);
+    if (doc.variants.some((variant) => (variant.reservedStock ?? 0) > 0 && !input.variants.some((next) => next.sku.trim().toUpperCase() === variant.sku.toUpperCase() && next.stock >= (variant.reservedStock ?? 0)))) {
+      throw new AppError("CONFLICT", "An option with active reservations cannot be removed or reduced below its reserved quantity", 409);
     }
-  }
-  const newSlug = input.slug ?? doc.slug;
-  if (newSlug !== doc.slug) {
-    const taken = await Product.exists({ slug: newSlug, _id: { $ne: objectId } });
-    if (taken) throw new AppError("CONFLICT", "Product slug already in use", 409);
-  }
-  doc.set({ ...toDoc(input, newSlug), reservedStock: doc.reservedStock, soldQuantity: doc.soldQuantity, ratingAverage: doc.ratingAverage, ratingCount: doc.ratingCount });
-  await doc.save();
+    const newSku = input.sku.trim().toUpperCase();
+    if (newSku !== doc.sku.toUpperCase()) await assertSkuFree(input.sku, objectId);
+    const oldVariants = new Set(doc.variants.map((v) => v.sku.toUpperCase()));
+    for (const variant of input.variants) {
+      if (!oldVariants.has(variant.sku.trim().toUpperCase())) {
+        await assertSkuFree(variant.sku, objectId);
+      }
+    }
+    const newSlug = input.slug ?? doc.slug;
+    if (newSlug !== doc.slug) {
+      const taken = await Product.exists({ $or: [{ slug: newSlug }, { previousSlugs: newSlug }], _id: { $ne: objectId } });
+      if (taken) throw new AppError("CONFLICT", "Product slug already in use", 409);
+      doc.previousSlugs = [...new Set([...(doc.previousSlugs ?? []), doc.slug])].filter((slug) => slug !== newSlug);
+    }
+    const updated = toDoc(input, newSlug);
+    updated.variants = updated.variants.map((variant) => ({ ...variant, reservedStock: doc.variants.find((old) => old.sku.toUpperCase() === variant.sku)?.reservedStock ?? 0 }));
+    doc.set({ ...updated, reservedStock: doc.reservedStock, soldQuantity: doc.soldQuantity, ratingAverage: doc.ratingAverage, ratingCount: doc.ratingCount });
+    await doc.save({ session });
+  });
   const detail = await getAdminProductById(id);
   if (!detail) throw notFound();
   return detail;
@@ -458,18 +546,13 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Ad
 export async function deleteProduct(id: string): Promise<void> {
   await connectDb();
   const objectId = assertObjectId(id);
-  const doc = await Product.findById(objectId).select("images").lean();
+  const doc = await Product.findById(objectId).select("images reservedStock").lean();
   if (!doc) throw notFound();
-  await Product.deleteOne({ _id: objectId });
-  const publicIds = (doc.images ?? []).map((i: { publicId: string }) => i.publicId).filter(Boolean);
-  if (publicIds.length > 0) {
-    await deleteAssets(publicIds).catch((error: unknown) => {
-      logger.warn("product image cleanup failed", {
-        productId: id,
-        message: error instanceof Error ? error.message : "unknown",
-      });
-    });
-  }
+  if (doc.reservedStock > 0) throw new AppError("CONFLICT", "Product has active order reservations; unpublish it instead", 409);
+  const deleted = await Product.deleteOne({ _id: objectId, $or: [{ reservedStock: { $lte: 0 } }, { reservedStock: { $exists: false } }] });
+  if (!deleted.deletedCount) throw new AppError("CONFLICT", "Product changed during deletion; refresh and try again", 409);
+  // ponytail: retain shared Cloudinary assets on deletion; clean up only after checking all catalogue references.
+
 }
 
 export async function duplicateProduct(id: string): Promise<AdminProductDetail> {
@@ -477,8 +560,9 @@ export async function duplicateProduct(id: string): Promise<AdminProductDetail> 
   const objectId = assertObjectId(id);
   const source = await Product.findById(objectId).lean<LeanProduct | null>();
   if (!source) throw notFound();
-  const baseSku = `${source.sku}-COPY`;
-  const sku = await ensureUnique(baseSku, async (c) => {
+  const copySkus = new Set<string>();
+  const skuTaken = async (c: string) => {
+    if (copySkus.has(c.toUpperCase())) return true;
     const clash = await Product.exists({
       $or: [
         { sku: new RegExp(`^${escapeRegExp(c)}$`, "i") },
@@ -486,9 +570,17 @@ export async function duplicateProduct(id: string): Promise<AdminProductDetail> 
       ],
     });
     return Boolean(clash);
-  });
+  };
+  const sku = await ensureUnique(`${source.sku.slice(0, 54)}-COPY`, skuTaken);
+  copySkus.add(sku.toUpperCase());
+  const variants = [];
+  for (const variant of source.variants ?? []) {
+    const variantSku = await ensureUnique(`${variant.sku.slice(0, 54)}-COPY`, skuTaken);
+    copySkus.add(variantSku.toUpperCase());
+    variants.push({ ...variant, sku: variantSku, reservedStock: 0 });
+  }
   const slug = await ensureUnique(`${source.slug}-copy`, (c) =>
-    Product.exists({ slug: c }).then(Boolean),
+    Product.exists({ $or: [{ slug: c }, { previousSlugs: c }] }).then(Boolean),
   );
   const categoryObjectId =
     source.categoryId instanceof Types.ObjectId ? source.categoryId : source.categoryId._id;
@@ -499,8 +591,10 @@ export async function duplicateProduct(id: string): Promise<AdminProductDetail> 
     ...rest,
     categoryId: categoryObjectId,
     name: `${source.name} (Copy)`,
+    previousSlugs: [],
     slug,
     sku,
+    variants,
     isPublished: false,
     isFeatured: false,
     reservedStock: 0,
@@ -517,7 +611,8 @@ export async function bulkProductAction(action: BulkAction): Promise<{ matched: 
   await connectDb();
   const ids = action.ids.map((id) => new Types.ObjectId(id));
   if (action.action === "delete") {
-    const result = await Product.deleteMany({ _id: { $in: ids } });
+    if (await Product.exists({ _id: { $in: ids }, reservedStock: { $gt: 0 } })) throw new AppError("CONFLICT", "Some products have active order reservations; unpublish them instead", 409);
+    const result = await Product.deleteMany({ _id: { $in: ids }, $or: [{ reservedStock: { $lte: 0 } }, { reservedStock: { $exists: false } }] });
     return { matched: result.deletedCount, modified: result.deletedCount };
   }
   const update =

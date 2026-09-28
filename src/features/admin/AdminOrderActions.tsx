@@ -11,10 +11,12 @@ export function AdminOrderActions({
   orderId,
   orderStatus,
   paymentStatus,
+  refundRequestedAt,
 }: {
   orderId: string;
   orderStatus: string;
   paymentStatus: string;
+  refundRequestedAt?: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -56,9 +58,9 @@ export function AdminOrderActions({
     OUT_FOR_DELIVERY: ["DELIVERED"],
     DELIVERED: ["RETURNED"],
   };
-  const options = paymentStatus === "PAID" ? NEXT[orderStatus] ?? [] : [];
+  const options = paymentStatus === "PAID" && !refundRequestedAt ? NEXT[orderStatus] ?? [] : [];
   const cancellable = ["PENDING", "CONFIRMED", "PROCESSING", "PACKED"].includes(orderStatus);
-  const refundable = paymentStatus === "PAID";
+  const refundable = paymentStatus === "PAID" && !refundRequestedAt;
 
   return (
     <div className="h-fit border border-ivory/[0.07] bg-ivory/[0.03] p-5">
@@ -107,7 +109,7 @@ export function AdminOrderActions({
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ reason: "Refunded by admin" }),
                   }),
-                "Refund this order in full via Razorpay? Stock returns to the shelf.",
+                "Request a full refund via Razorpay? Shipped items are restocked only after a recorded return.",
               )
             }
             className="border border-red-400/40 px-4 py-2 text-red-400 hover:bg-red-400/10 disabled:opacity-50"
@@ -116,6 +118,7 @@ export function AdminOrderActions({
           </button>
         )}
       </div>
+      {refundRequestedAt && paymentStatus === "PAID" && <p className="mt-3 text-sm text-ivory/60">Refund requested. Check Razorpay and await confirmation before retrying.</p>}
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-400">
           {error}

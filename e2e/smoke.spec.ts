@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("home renders the SatvaStones shell", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /pretty things/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /browse the collection/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /small pieces/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /explore the collection/i })).toBeVisible();
 });
 
 test("health endpoint reports ok without secrets", async ({ request }) => {

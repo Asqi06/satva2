@@ -23,6 +23,7 @@ export default defineConfig({
       GOOGLE_CLIENT_SECRET: "e2e-dummy-secret",
       NEXT_PUBLIC_APP_URL: "http://localhost:3100",
       E2E_SEED_SECRET: "e2e-seed-secret",
+      RESEND_API_KEY: "",
       RAZORPAY_KEY_ID: "rzp_test_e2e",
       RAZORPAY_KEY_SECRET: "e2e-rzp-secret",
       RAZORPAY_WEBHOOK_SECRET: "e2e-webhook-secret",

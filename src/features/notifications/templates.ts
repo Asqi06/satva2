@@ -24,6 +24,10 @@ export interface EmailContent {
   text: string;
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+}
+
 function money(rupees: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -37,14 +41,14 @@ function shell(title: string, body: string): string {
     `<p style="font-size:22px;margin:0 0 4px">SatvaStones</p>` +
     `<h1 style="font-size:26px;margin:0 0 16px">${title}</h1>` +
     body +
-    `<p style="font-size:13px;color:#6b6259;margin-top:24px">Questions? Reply to this email — a human reads every one.<br/>SatvaStones · Vapi, Gujarat</p></div>`;
+    `<p style="font-size:13px;color:#6b6259;margin-top:24px">For order help, <a href="https://www.satvastones.in/contact">contact support</a> with your order number.<br/>SatvaStones</p></div>`;
 }
 
 function itemsTable(items: OrderEmailData["items"]): string {
   const rows = items
     .map(
       (i) =>
-        `<tr><td style="padding:6px 0">${i.name}${i.variantSku ? ` · ${i.variantSku}` : ""} × ${i.qty}</td>` +
+        `<tr><td style="padding:6px 0">${escapeHtml(i.name)}${i.variantSku ? ` · ${escapeHtml(i.variantSku)}` : ""} × ${i.qty}</td>` +
         `<td style="padding:6px 0;text-align:right">${money(i.totalPrice)}</td></tr>`,
     )
     .join("");
@@ -55,7 +59,7 @@ function totals(data: OrderEmailData): string {
   const lines = [
     `<tr><td>Subtotal</td><td style="text-align:right">${money(data.subtotal)}</td></tr>`,
     data.discount > 0
-      ? `<tr><td>Discount${data.couponCode ? ` (${data.couponCode})` : ""}</td><td style="text-align:right">−${money(data.discount)}</td></tr>`
+      ? `<tr><td>Discount${data.couponCode ? ` (${escapeHtml(data.couponCode)})` : ""}</td><td style="text-align:right">−${money(data.discount)}</td></tr>`
       : "",
     `<tr><td>Shipping</td><td style="text-align:right">${data.shipping === 0 ? "Free" : money(data.shipping)}</td></tr>`,
     `<tr><td><strong>Total paid</strong></td><td style="text-align:right"><strong>${money(data.total)}</strong></td></tr>`,
@@ -64,7 +68,7 @@ function totals(data: OrderEmailData): string {
 }
 
 export function welcomeEmail(name: string): EmailContent {
-  const subject = "Welcome to SatvaStones ✳";
+  const subject = "Welcome to SatvaStones";
   const text =
     `Hi ${name},\n\nWelcome to SatvaStones — everyday jewellery, made to gift. ` +
     `Your wishlist, bag and orders now sync across devices.\n\nPretty things await,\nTeam SatvaStones`;
@@ -72,9 +76,9 @@ export function welcomeEmail(name: string): EmailContent {
     subject,
     text,
     html: shell(
-      `Welcome, ${name}.`,
+      `Welcome, ${escapeHtml(name)}.`,
       `<p>Everyday jewellery, made to gift. Your wishlist, bag and orders now sync across devices.</p>` +
-        `<p><a href="https://satvastones.in/shop">Start browsing →</a></p>`,
+        `<p><a href="https://www.satvastones.in/shop">Start browsing →</a></p>`,
     ),
   };
 }
@@ -84,16 +88,16 @@ export function orderConfirmationEmail(data: OrderEmailData): EmailContent {
   const text =
     `Hi ${data.customerName},\n\nWe have your order ${data.shortId}:\n` +
     data.items.map((i) => `• ${i.name} × ${i.qty} — ${money(i.totalPrice)}`).join("\n") +
-    `\nTotal: ${money(data.total)}\nDelivering to ${data.city} ${data.pincode} in ${data.eta}.\n\nTeam SatvaStones`;
+    `\nTotal: ${money(data.total)}\nDelivering to ${data.city} ${data.pincode}. Delivery information: ${data.eta}.\n\nTeam SatvaStones`;
   return {
     subject,
     text,
     html: shell(
       `We have your order.`,
-      `<p>Hi ${data.customerName} — order <strong>${data.shortId}</strong> is in.</p>` +
+      `<p>Hi ${escapeHtml(data.customerName)} — order <strong>${escapeHtml(data.shortId)}</strong> is in.</p>` +
         itemsTable(data.items) +
         totals(data) +
-        `<p>Delivering to ${data.city} ${data.pincode} in ${data.eta}.</p>`,
+        `<p>Delivering to ${escapeHtml(data.city)} ${escapeHtml(data.pincode)}. Delivery information: ${escapeHtml(data.eta)}.</p>`,
     ),
   };
 }
@@ -108,7 +112,7 @@ export function paymentReceiptEmail(data: OrderEmailData): EmailContent {
     text,
     html: shell(
       `Payment confirmed.`,
-      `<p>Hi ${data.customerName} — <strong>${money(data.total)}</strong> received for order <strong>${data.shortId}</strong>. Your pieces move to packing next.</p>` +
+      `<p>Hi ${escapeHtml(data.customerName)} — <strong>${money(data.total)}</strong> received for order <strong>${escapeHtml(data.shortId)}</strong>. Your pieces move to packing next.</p>` +
         totals(data),
     ),
   };
@@ -116,13 +120,13 @@ export function paymentReceiptEmail(data: OrderEmailData): EmailContent {
 
 export function shippedEmail(data: OrderEmailData): EmailContent {
   const subject = `Order ${data.shortId} has shipped`;
-  const text = `Hi ${data.customerName},\n\nGood news — order ${data.shortId} left our studio and reaches ${data.city} ${data.pincode} in ${data.eta}.\n\nTeam SatvaStones`;
+  const text = `Hi ${data.customerName},\n\nGood news — order ${data.shortId} has shipped and is headed to ${data.city} ${data.pincode}. Delivery information: ${data.eta}.\n\nTeam SatvaStones`;
   return {
     subject,
     text,
     html: shell(
       `On its way.`,
-      `<p>Hi ${data.customerName} — order <strong>${data.shortId}</strong> left our studio, headed to ${data.city} ${data.pincode}.</p>`,
+      `<p>Hi ${escapeHtml(data.customerName)} — order <strong>${escapeHtml(data.shortId)}</strong> has shipped, headed to ${escapeHtml(data.city)} ${escapeHtml(data.pincode)}.</p>`,
     ),
   };
 }
@@ -135,13 +139,13 @@ export function outForDeliveryEmail(data: OrderEmailData): EmailContent {
     text,
     html: shell(
       `Arriving today.`,
-      `<p>Hi ${data.customerName} — order <strong>${data.shortId}</strong> is out for delivery. Keep your phone handy.</p>`,
+      `<p>Hi ${escapeHtml(data.customerName)} — order <strong>${escapeHtml(data.shortId)}</strong> is out for delivery. Keep your phone handy.</p>`,
     ),
   };
 }
 
 export function deliveredEmail(data: OrderEmailData): EmailContent {
-  const subject = `Delivered ✳ order ${data.shortId}`;
+  const subject = `Delivered: order ${data.shortId}`;
   const text =
     `Hi ${data.customerName},\n\nOrder ${data.shortId} was delivered. Wear them well — and if you love them, ` +
     `a review makes our week.\n\nTeam SatvaStones`;
@@ -150,7 +154,7 @@ export function deliveredEmail(data: OrderEmailData): EmailContent {
     text,
     html: shell(
       `Delivered. Wear them well.`,
-      `<p>Hi ${data.customerName} — order <strong>${data.shortId}</strong> was delivered. If you love your pieces, a review makes our week.</p>`,
+      `<p>Hi ${escapeHtml(data.customerName)} — order <strong>${escapeHtml(data.shortId)}</strong> was delivered. If you love your pieces, a review makes our week.</p>`,
     ),
   };
 }
@@ -159,13 +163,13 @@ export function cancellationEmail(data: OrderEmailData): EmailContent {
   const subject = `Order ${data.shortId} cancelled`;
   const text =
     `Hi ${data.customerName},\n\nOrder ${data.shortId} is cancelled${data.reason ? `: ${data.reason}` : ""}. ` +
-    `No money was taken${data.total > 0 ? " — paid orders are refunded automatically" : ""}.\n\nTeam SatvaStones`;
+    `If a payment appears on your bank statement, contact support with this order reference.\n\nTeam SatvaStones`;
   return {
     subject,
     text,
     html: shell(
       `Cancelled, no hard feelings.`,
-      `<p>Hi ${data.customerName} — order <strong>${data.shortId}</strong> is cancelled${data.reason ? `: ${data.reason}` : ""}.</p>`,
+      `<p>Hi ${escapeHtml(data.customerName)} — order <strong>${escapeHtml(data.shortId)}</strong> is cancelled${data.reason ? `: ${escapeHtml(data.reason)}` : ""}.</p>`,
     ),
   };
 }
@@ -174,13 +178,13 @@ export function refundEmail(data: OrderEmailData): EmailContent {
   const subject = `Refund issued for ${data.shortId}`;
   const text =
     `Hi ${data.customerName},\n\n${money(data.total)} for order ${data.shortId} is on its way back ` +
-    `to your original payment method (5–7 working days).\n\nTeam SatvaStones`;
+    `to your original payment method; bank processing times vary.\n\nTeam SatvaStones`;
   return {
     subject,
     text,
     html: shell(
       `Refund on its way.`,
-      `<p>Hi ${data.customerName} — <strong>${money(data.total)}</strong> for order <strong>${data.shortId}</strong> is returning to your original payment method (5–7 working days).</p>`,
+      `<p>Hi ${escapeHtml(data.customerName)} — <strong>${money(data.total)}</strong> for order <strong>${escapeHtml(data.shortId)}</strong> is returning to your original payment method; bank processing times vary.</p>`,
     ),
   };
 }

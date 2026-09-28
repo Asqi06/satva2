@@ -4,7 +4,7 @@ test("newsletter signup succeeds from the homepage", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Email address").fill("reader@example.in");
   await page.getByRole("button", { name: /^join$/i }).click();
-  await expect(page.getByText(/on the list/i)).toBeVisible();
+  await expect(page.getByText(/subscribed/i)).toBeVisible();
 });
 
 test("newsletter rejects bad emails", async ({ request }) => {
@@ -36,8 +36,8 @@ test("banner admin API requires admin", async ({ request }) => {
 
 test("policy pages render with metadata", async ({ page }) => {
   for (const [path, heading] of [
-    ["/about", /jewellery for the other days/i],
-    ["/faq", /good questions/i],
+    ["/about", /about satvastones/i],
+    ["/faq", /frequently asked questions/i],
     ["/shipping", /shipping & packaging/i],
     ["/returns", /returns & exchanges/i],
     ["/privacy", /privacy policy/i],

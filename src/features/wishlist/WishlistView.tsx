@@ -68,18 +68,18 @@ export function WishlistView() {
         <h1 className="section-title mt-2 text-3xl sm:text-4xl">Wishlist</h1>
         <p className="lede mt-2 max-w-lg text-sm">
           {view.items.length === 0
-            ? "Your treasure box is empty — save a piece from its product page."
+            ? "Your wishlist is empty. Save a piece from its product page."
             : `${view.items.length} saved piece${view.items.length === 1 ? "" : "s"} · synced across your devices.`}
         </p>
         {notice && (
-          <p role="status" className="mt-4 rounded-2xl border border-ink/10 bg-white/60 p-3 text-sm">
+          <p role="status" className="mt-4 rounded-[3px] border border-ink/10 bg-white/60 p-3 text-sm">
             {notice}
           </p>
         )}
         {view.items.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-ink/10 bg-white/60 p-12 text-center">
+          <div className="mt-6 rounded-[3px] border border-ink/10 bg-white/60 p-12 text-center">
             <p className="font-display italic text-3xl">Nothing saved yet.</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-ink/55">Festive picks, daily wear and gifts under ₹499 are waiting.</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-ink/55">Explore the collection to find a piece you like.</p>
             <Link href="/shop" className="btn-primary mt-6">
               Find something to love
             </Link>
@@ -98,23 +98,23 @@ export function WishlistView() {
                   </span>
                 </Link>
                 <div className="p-4">
-                  <h2 className="font-display italic text-lg leading-snug">
+                  <h2 className="clamp-2 text-sm font-medium leading-snug">
                     <Link href={`/products/${item.slug}`} className="hover:text-gold">
                       {item.name}
                     </Link>
                   </h2>
-                  <p className="mt-1 font-mono font-semibold">{formatINR(item.price)}</p>
+                  <p className="mt-1 font-mono font-semibold">{item.priceFrom ? "From " : ""}{formatINR(item.price)}</p>
                   <p className="price-note">Incl. taxes</p>
                   {!item.available && <p className="text-xs text-clay">Currently unavailable</p>}
                   <span className="mt-2 flex flex-wrap gap-2 text-sm">
-                    <button
+                    {item.requiresOption ? <Link href={`/products/${item.slug}`} className="btn-ghost !px-3 !text-xs">Choose option</Link> : <button
                       type="button"
                       disabled={!item.available}
                       onClick={() => void moveToBag(item.productId)}
-                      className="rounded-full bg-ink px-4 py-1.5 text-ivory hover:bg-clay disabled:opacity-40"
+                      className="btn-ghost !px-3 !text-xs"
                     >
-                      Move to bag
-                    </button>
+                      Move to cart
+                    </button>}
                     <button
                       type="button"
                       onClick={() => void remove(item.productId)}

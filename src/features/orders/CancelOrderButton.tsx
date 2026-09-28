@@ -10,7 +10,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const cancel = async () => {
-    if (!window.confirm("Cancel this order? Reserved stock returns to the shelf.")) return;
+    if (!window.confirm("Cancel this unpaid order?")) return;
     setBusy(true);
     setError(null);
     try {
@@ -35,7 +35,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
         type="button"
         disabled={busy}
         onClick={() => void cancel()}
-        className="rounded-full border border-clay/50 px-5 py-2 text-sm text-clay hover:bg-clay hover:text-ivory disabled:opacity-50"
+        className="btn-ghost"
       >
         {busy ? "Cancelling…" : "Cancel order"}
       </button>

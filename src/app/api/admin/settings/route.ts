@@ -7,10 +7,24 @@ import { getSettings, updateSettings } from "@/services/settings-service";
 export const dynamic = "force-dynamic";
 
 const settingsInputSchema = z.object({
-  freeShippingThreshold: z.number().min(0).max(100000),
-  shippingFlatFee: z.number().min(0).max(10000),
-  reservationTtlMinutes: z.number().min(5).max(1440),
+  freeShippingThreshold: z.number().int().min(0).max(100000),
+  shippingFlatFee: z.number().int().min(0).max(10000),
+  reservationTtlMinutes: z.number().int().min(5).max(1440),
   announcement: z.string().trim().max(200).optional(),
+  legalName: z.string().trim().max(5000).optional(),
+  businessAddress: z.string().trim().max(5000).optional(),
+  supportEmail: z.string().trim().max(5000).refine((value) => !value || z.email().safeParse(value).success, "Enter a valid email").optional(),
+  supportPhone: z.string().trim().max(5000).optional(),
+  grievanceContact: z.string().trim().max(5000).optional(),
+  gstin: z.string().trim().max(5000).optional(),
+  dispatchInformation: z.string().trim().max(5000).optional(),
+  deliveryInformation: z.string().trim().max(5000).optional(),
+  returnPolicy: z.string().trim().max(5000).optional(),
+  cancellationPolicy: z.string().trim().max(5000).optional(),
+  privacyPolicy: z.string().trim().max(5000).optional(),
+  termsPolicy: z.string().trim().max(5000).optional(),
+  aboutInformation: z.string().trim().max(5000).optional(),
+
   homeSeoTitle: z.string().trim().max(160).optional(),
   homeSeoDescription: z.string().trim().max(320).optional(),
   shopSeoTitle: z.string().trim().max(160).optional(),

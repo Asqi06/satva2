@@ -1,24 +1,30 @@
+import { getSettings } from "@/services/settings-service";
+import { formatINR } from "@/utils/format";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Shipping & packaging — SatvaStones",
-  description: "SatvaStones shipping timelines, fees and gift packaging. Dispatch 2–4 days, free shipping over ₹399.",
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  return {
+  title: { absolute: "Shipping & packaging — SatvaStones" },
+  description: `Shipping fees and delivery information. Free shipping from ${formatINR(settings.freeShippingThreshold)}; otherwise ${formatINR(settings.shippingFlatFee)}.`,
   alternates: { canonical: "/shipping" },
-  openGraph: { title: "Shipping & packaging — SatvaStones", description: "Dispatch 2–4 days, delivery 5–7 days across India. Free shipping over ₹899.", url: "/shipping", type: "website", siteName: "SatvaStones" },
+  openGraph: { title: "Shipping & packaging — SatvaStones", description: "Shipping fees and delivery information for SatvaStones orders.", url: "/shipping", type: "website", siteName: "SatvaStones" },
 };
+}
 
-export default function ShippingPage() {
+export default async function ShippingPage() {
+  const settings = await getSettings();
   return (
     <div className="min-h-full flex-1 bg-ivory text-ink">
       <div className="mx-auto w-full max-w-2xl px-6 py-16 sm:px-10">
         <p className="eyebrow">Reader services · Pan-India</p>
-        <h1 className="section-title mt-2 text-5xl tracking-tight">Shipping & packaging.</h1>
+        <h1 className="section-title mt-2 text-3xl sm:text-4xl">Shipping & packaging.</h1>
         <div className="mt-6 space-y-5 leading-8 text-warm-gray">
-          <p><strong>Dispatch:</strong> 2–4 working days from our Vapi studio.</p>
-          <p><strong>Delivery:</strong> 5–7 days across India via tracked courier.</p>
-          <p><strong>Fees:</strong> ₹49 flat, free on orders over ₹899.</p>
-          <p><strong>Packaging:</strong> every piece arrives gift-ready — pouch, box, and a note. No extra charge, no plastic fuss.</p>
+          <p><strong>Dispatch:</strong> {settings.dispatchInformation || "Contact us for the current dispatch estimate."}</p>
+          <p><strong>Delivery:</strong> {settings.deliveryInformation || "Delivery estimates depend on the destination; contact us for details."}</p>
+          <p><strong>Fees:</strong> {formatINR(settings.shippingFlatFee)} below {formatINR(settings.freeShippingThreshold)}; free at or above that amount after discounts.</p>
+
           <p>
             Something wrong with your delivery? <Link href="/contact" className="underline underline-offset-4">Write to us</Link> with
             your order number.

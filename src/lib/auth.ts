@@ -26,14 +26,9 @@ let cached: AuthInstance | null = null;
 
 function createAuth(): AuthInstance {
   const client = new MongoClient(requireServerVar("MONGODB_URI"));
-  const clientPromise = client.connect();
-  // Attach a no-op rejection handler so a down/unreachable Mongo during
-  // idle periods can't crash the process via unhandled rejection.
-  // Auth.js still surfaces connection errors when an auth op needs the DB.
-  clientPromise.catch(() => undefined);
 
   return NextAuth({
-    adapter: MongoDBAdapter(clientPromise),
+    adapter: MongoDBAdapter(() => client.connect()),
     // AUTH_SECRET is read automatically; needed for JWT + OAuth state.
     trustHost: true,
     session: { strategy: "jwt" },
@@ -45,11 +40,9 @@ function createAuth(): AuthInstance {
         return true;
       },
       async jwt({ token, user }) {
-        // On sign-in or while role is not ADMIN, check DB so promoted
-        // admins take effect immediately. Once ADMIN, no repeated DB hit.
+        // Re-check roles on every session read so promotions and revocations take effect.
         const email = user?.email ?? token.email;
         if (email) {
-          if (!token.role || token.role !== "ADMIN") {
             const role = await getUserRoleByEmail(email);
             if (role) {
               token.role = role;
@@ -57,7 +50,6 @@ function createAuth(): AuthInstance {
               await ensureCustomerRoleByEmail(email);
               token.role = "CUSTOMER";
             }
-          }
         }
         return token;
       },

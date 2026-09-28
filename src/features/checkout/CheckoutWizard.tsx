@@ -1,484 +1,188 @@
 "use client";
-
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useBag } from "@/features/cart/CartProvider";
 import { analytics } from "@/lib/analytics";
+import { guestOrderSchema, type GuestOrderInput } from "@/schemas/checkout";
 import type { AddressDTO } from "@/services/address-service";
+import type { OrderDTO } from "@/services/order-service";
+import type { CartView } from "@/services/cart-service";
+import type { ShippingSettings } from "@/services/settings-service";
 import { formatINR } from "@/utils/format";
 import { AddressForm } from "./AddressForm";
+import { AddressFields } from "./AddressFields";
+import { OrderConfirmation, OrderSummary } from "./OrderSummary";
 import { loadRazorpay } from "./razorpay-checkout";
 
-type Step = "address" | "delivery" | "payment" | "done";
-
-interface SettingsView {
-  freeShippingThreshold: number;
-  shippingFlatFee: number;
-  announcement?: string;
+const PENDING_KEY = "satva:pending-order";
+async function request<T>(url: string, data?: unknown): Promise<T> {
+  const response = await fetch(url, data === undefined ? { cache: "no-store" } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const body = await response.json();
+  if (!response.ok || !body.success) throw new Error(body.error?.details?.map((item: { message: string }) => item.message).join(". ") || body.error?.message || "Could not complete this request. Try again.");
+  return body.data;
 }
 
-interface PlacedOrder {
-  id: string;
-  total: number;
-  subtotal: number;
-  discount: number;
-  shipping: number;
-  couponCode?: string;
-}
-
-const STEPS: { id: Step; label: string; hint: string }[] = [
-  { id: "address", label: "Address", hint: "Where should it go?" },
-  { id: "delivery", label: "Delivery", hint: "Speed, coupon & gift note" },
-  { id: "payment", label: "Payment", hint: "UPI, cards & netbanking" },
-];
-
-/**
- * Checkout wizard. Guests see a login prompt (bag merges on login);
- * members walk address → delivery → Razorpay → confirmation.
- * All money is server-calculated; the client only displays responses.
- */
-export function CheckoutWizard() {
-  const { lines, count, subtotal } = useBag();
-  const [step, setStep] = useState<Step>("address");
-  const [authState, setAuthState] = useState<"checking" | "guest" | "member">("checking");
+export function CheckoutWizard({ settings, resumeOrderId }: { settings: ShippingSettings; resumeOrderId?: string }) {
+  const { lines, count, subtotal, authed, loading, refresh, clearPurchased } = useBag();
+  const [step, setStep] = useState<"information" | "payment" | "done">("information");
   const [addresses, setAddresses] = useState<AddressDTO[]>([]);
-  const [addressId, setAddressId] = useState<string>("");
-  const [settings, setSettings] = useState<SettingsView | null>(null);
+  const [addressId, setAddressId] = useState("");
+  const [guest, setGuest] = useState<GuestOrderInput | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string,string>>({});
   const [coupon, setCoupon] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
-  const [couponMsg, setCouponMsg] = useState<string | null>(null);
-  const [order, setOrder] = useState<PlacedOrder | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [order, setOrder] = useState<OrderDTO | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const [busy, setBusy] = useState(false);
-  const begunRef = useRef(false);
-
-  const shippingPreview = settings
-    ? subtotal - discount >= settings.freeShippingThreshold || subtotal - discount <= 0
-      ? 0
-      : settings.shippingFlatFee
-    : 0;
-
-  // GA4 begin_checkout once per arrival at the payment step.
-  useEffect(() => {
-    if (step !== "payment" || begunRef.current) return;
-    begunRef.current = true;
-    analytics.beginCheckout({
-      value: subtotal - discount + shippingPreview,
-      count,
-      items: lines.map((l) => ({ id: l.productId, name: l.name, price: l.price, qty: l.qty })),
-    });
-  }, [step, subtotal, discount, shippingPreview, count, lines]);
+  const [error, setError] = useState("");
+  const begun = useRef(false);
+  const lock = useRef(false);
+  const discounted = Math.max(0, subtotal - discount);
+  const shipping = discounted <= 0 || discounted >= settings.freeShippingThreshold ? 0 : settings.shippingFlatFee;
+  const total = discounted + shipping;
 
   useEffect(() => {
+    let cancelled = false;
+    const id = resumeOrderId || sessionStorage.getItem(PENDING_KEY);
     (async () => {
-      try {
-        const res = await fetch("/api/addresses");
-        if (res.status === 401) {
-          setAuthState("guest");
-          return;
-        }
-        const body = (await res.json()) as { success: boolean; data?: { addresses: AddressDTO[] } };
-        if (body.success && body.data) {
-          setAddresses(body.data.addresses);
-          const def = body.data.addresses.find((a) => a.isDefault) ?? body.data.addresses[0];
-          if (def) setAddressId(def.id);
-        }
-        setAuthState("member");
-      } catch {
-        setAuthState("guest");
+      if (id) {
+        try {
+          const data = await request<{ order: OrderDTO }>(`/api/orders/${id}`);
+          if (!cancelled) { setOrder(data.order); setStep(data.order.paymentStatus === "PAID" ? "done" : "payment"); if (data.order.paymentStatus === "PENDING") sessionStorage.setItem(PENDING_KEY, data.order.id); }
+          if (data.order.paymentStatus === "PAID") { sessionStorage.removeItem(PENDING_KEY); await clearPurchased(); }
+        } catch { if (!cancelled) setError("Could not load the unfinished order. Check your order status before starting a new payment."); }
       }
-      try {
-        const res = await fetch("/api/settings");
-        const body = (await res.json()) as { success: boolean; data?: SettingsView };
-        if (body.success && body.data) setSettings(body.data);
-      } catch {
-        // Shipping falls back to defaults below.
-      }
+      if (!cancelled) setRestoring(false);
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [clearPurchased, resumeOrderId]);
+  useEffect(() => {
+    if (!authed) return;
+    let cancelled = false;
+    request<{ addresses: AddressDTO[] }>("/api/addresses").then(data => {
+      if (cancelled) return;
+      setAddresses(data.addresses);
+      setAddressId((data.addresses.find(a => a.isDefault) ?? data.addresses[0])?.id ?? "");
+    }).catch(() => { if (!cancelled) setError("Could not load saved addresses. Try refreshing this page."); });
+    return () => { cancelled = true; };
+  }, [authed]);
+  useEffect(() => {
+    if (loading || restoring || !count || begun.current) return;
+    begun.current = true;
+    analytics.beginCheckout({ value: total, count, items: lines.map(l => ({ id: l.productId, name: l.name, price: l.price, qty: l.qty })) });
+  }, [loading, restoring, total, count, lines]);
 
-  const refreshAddresses = async (selectId?: string) => {
-    const res = await fetch("/api/addresses");
-    const body = (await res.json()) as { success: boolean; data?: { addresses: AddressDTO[] } };
-    if (body.success && body.data) {
-      setAddresses(body.data.addresses);
-      if (selectId) setAddressId(selectId);
-    }
+  const prepareGuest = async () => {
+    if (authed) return;
+    const view = await request<CartView>("/api/checkout/guest", { items: lines.map(l => ({ productId: l.productId, variantSku: l.variantSku, qty: l.qty })) });
+    await refresh();
+    if (view.unavailableCount || view.items.some(i => i.adjusted)) throw new Error("Your cart changed because some quantities are unavailable. Review your cart before continuing.");
+    if (view.subtotal !== subtotal) { setDiscount(0); setAppliedCoupon(""); setCouponMessage("Cart prices updated. Review the order summary before paying."); }
   };
-
-  const applyCoupon = async () => {
-    setCouponMsg(null);
-    // Don't burn a request on an empty box — the API 400s on it.
-    if (!coupon.trim()) {
-      setDiscount(0);
-      setCouponMsg("Type a coupon code first, then press Apply.");
-      return;
-    }
-    try {
-      const res = await fetch("/api/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: coupon }),
-      });
-      const body = (await res.json()) as {
-        success: boolean;
-        data?: { valid: boolean; discount: number; reason?: string };
-        error?: { message: string };
-      };
-      if (!body.success || !body.data) throw new Error(body.error?.message ?? "Validation failed");
-      if (!body.data.valid) {
-        setDiscount(0);
-        setCouponMsg(`Code not applied (${body.data.reason ?? "invalid"}).`);
-        return;
-      }
-      setDiscount(body.data.discount);
-      setCouponMsg(`Applied — you save ${formatINR(body.data.discount)}.`);
-    } catch (err) {
-      setDiscount(0);
-      setCouponMsg(err instanceof Error ? err.message : "Validation failed");
-    }
-  };
-
-  const pay = async () => {
-    if (busy) return;
+  const continueToPayment = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setError(""); setFieldErrors({});
+    const values = new FormData(event.currentTarget);
+    if (!authed) {
+      const parsed = guestOrderSchema.safeParse({ email: values.get("email"), address: Object.fromEntries(values) });
+      if (!parsed.success) { setFieldErrors(Object.fromEntries(parsed.error.issues.map(issue => [String(issue.path.at(-1)), issue.message]))); return; }
+      setGuest(parsed.data);
+    } else if (!addressId) { setError("Choose or add a delivery address."); return; }
     setBusy(true);
-    setError(null);
+    try { await prepareGuest(); analytics.checkoutStepCompleted("information"); setStep("payment"); } catch (e) { setError(e instanceof Error ? e.message : "Could not check your cart. Try again."); } finally { setBusy(false); }
+  };
+  const applyCoupon = async () => {
+    setBusy(true); setCouponMessage(""); setError("");
     try {
-      const orderRes = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addressId, couponCode: coupon.trim() || undefined }),
-      });
-      const orderBody = (await orderRes.json()) as {
-        success: boolean;
-        data?: { order: PlacedOrder & { couponCode?: string }; excluded: number };
-        error?: { message: string };
-      };
-      if (!orderBody.success || !orderBody.data) {
-        throw new Error(orderBody.error?.message ?? "Could not place order");
-      }
-      const placed = orderBody.data.order;
-      setOrder(placed);
-
-      const payRes = await fetch("/api/payments/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: placed.id }),
-      });
-      const payBody = (await payRes.json()) as {
-        success: boolean;
-        data?: { razorpayOrderId: string; amount: number; currency: string; keyId: string };
-        error?: { message: string };
-      };
-      if (!payBody.success || !payBody.data) {
-        throw new Error(payBody.error?.message ?? "Could not start payment");
-      }
+      await prepareGuest();
+      const check = await request<{ valid: boolean; discount: number; reason?: string }>("/api/coupons/validate", { code: coupon.trim() });
+      setDiscount(check.valid ? check.discount : 0); setAppliedCoupon(check.valid ? coupon.trim().toUpperCase() : "");
+      setCouponMessage(check.valid ? `Applied. You save ${formatINR(check.discount)}.` : check.reason === "SIGN_IN_REQUIRED" ? "This coupon requires a signed-in account. You can continue without it." : `Coupon not applied (${check.reason?.toLowerCase().replaceAll("_", " ") || "invalid code"}).`);
+    } catch (e) { setDiscount(0); setAppliedCoupon(""); setCouponMessage(e instanceof Error ? e.message : "Could not check this coupon."); } finally { setBusy(false); }
+  };
+  const pay = async () => {
+    if (lock.current) return;
+    lock.current = true; setBusy(true); setError("");
+    const finish = () => { lock.current = false; setBusy(false); };
+    try {
       await loadRazorpay();
-      if (!window.Razorpay) throw new Error("Payment widget failed to load");
-      analytics.addPaymentInfo(placed.total);
-      const rzp = new window.Razorpay({
-        key: payBody.data.keyId,
-        amount: payBody.data.amount,
-        currency: payBody.data.currency,
-        name: "SatvaStones",
-        description: "Jewellery order",
-        order_id: payBody.data.razorpayOrderId,
-        theme: { color: "ink" },
-        handler: (response) => {
-          void (async () => {
-            try {
-              const verifyRes = await fetch("/api/payments/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpayOrderId: response.razorpay_order_id,
-                  razorpayPaymentId: response.razorpay_payment_id,
-                  razorpaySignature: response.razorpay_signature,
-                }),
-              });
-              const verifyBody = (await verifyRes.json()) as {
-                success: boolean;
-                data?: { order: PlacedOrder };
-                error?: { message: string };
-              };
-              if (!verifyBody.success || !verifyBody.data) {
-                throw new Error(verifyBody.error?.message ?? "Verification failed");
-              }
-              const confirmed = verifyBody.data.order;
-              analytics.purchase({
-                orderId: confirmed.id,
-                value: confirmed.total,
-                coupon: confirmed.couponCode,
-                items: lines.map((l) => ({ id: l.productId, name: l.name, price: l.price, qty: l.qty })),
-              });
-              setOrder({ ...confirmed });
-              setStep("done");
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Verification failed");
-            } finally {
-              setBusy(false);
-            }
-          })();
-        },
-        modal: {
-          ondismiss: () => {
-            setError("Payment window closed — your order is reserved for 30 minutes. You can retry from your orders.");
-            setBusy(false);
-          },
-        },
+      if (!window.Razorpay) throw new Error("Payment could not load. Check your connection and try again.");
+      let placed = order;
+      if (!placed) {
+        if (sessionStorage.getItem(PENDING_KEY)) throw new Error("An unfinished order is saved. Reload this page to check it before paying again.");
+        const data = await request<{ order: OrderDTO }>("/api/orders", authed ? { addressId, couponCode: appliedCoupon || undefined } : { ...guest, couponCode: appliedCoupon || undefined });
+        placed = data.order; setOrder(placed); sessionStorage.setItem(PENDING_KEY, placed.id);
+        if (placed.total !== total || placed.items.length !== lines.length || placed.items.some((item,index) => item.qty !== lines[index]?.qty || item.unitPrice !== lines[index]?.price)) {
+          setError("Your order amount or items changed. Review the updated summary, then confirm payment."); finish(); return;
+        }
+      }
+      const payment = await request<{ keyId: string; amount: number; currency: string; razorpayOrderId: string }>("/api/payments/create", { orderId: placed.id });
+      const snapshot = placed;
+      analytics.addPaymentInfo(snapshot.total);
+      const widget = new window.Razorpay({
+        key: payment.keyId, amount: payment.amount, currency: payment.currency, name: "SatvaStones", description: `Order ${snapshot.id.slice(-8).toUpperCase()}`, order_id: payment.razorpayOrderId,
+        prefill: { name: snapshot.address.fullName, contact: snapshot.address.phone, email: snapshot.customerEmail || guest?.email }, theme: { color: "#d61f2c" },
+        handler: response => { void (async () => {
+          try {
+            const verified = await request<{ order: OrderDTO }>("/api/payments/verify", { razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature });
+            if (verified.order.paymentStatus !== "PAID") throw new Error("Payment is still being confirmed. Check order status before paying again.");
+            setOrder(verified.order); setStep("done"); sessionStorage.removeItem(PENDING_KEY);
+            analytics.purchase({ orderId: verified.order.id, value: verified.order.total, coupon: verified.order.couponCode, items: verified.order.items.map(i => ({ id: i.productId, name: i.name, price: i.unitPrice, qty: i.qty })) });
+            await clearPurchased();
+          } catch (e) { setError(e instanceof Error ? e.message : "Could not confirm payment. Check order status before trying again."); } finally { finish(); }
+        })(); },
+        modal: { ondismiss: () => { setError("Payment window closed. Your order is saved; retry payment or check its status below."); finish(); } },
       });
-      rzp.open();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Checkout failed");
-      setBusy(false);
-    }
+      widget.open();
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not start payment. Try again."); finish(); }
+  };
+  const startAgain = async () => {
+    if (!order) return;
+    setBusy(true); setError("");
+    try {
+      const fresh = await request<{ order: OrderDTO }>(`/api/orders/${order.id}`);
+      if (fresh.order.paymentStatus === "PAID") { setOrder(fresh.order); setStep("done"); await clearPurchased(); sessionStorage.removeItem(PENDING_KEY); return; }
+      if (fresh.order.orderStatus === "PENDING") await request(`/api/orders/${order.id}/cancel`, { reason: "Customer is editing checkout" });
+      if (!["PENDING","CANCELLED"].includes(fresh.order.orderStatus)) throw new Error("This order is already being processed. Open its order status for help.");
+      if (fresh.order.isGuest && !authed) {
+        const items = fresh.order.items.map(i => ({ productId: i.productId, variantSku: i.variantSku, qty: i.qty }));
+        await request("/api/checkout/guest", { items });
+      } else {
+        await request("/api/cart/merge", { items: fresh.order.items.map(i => ({ productId: i.productId, variantSku: i.variantSku, qty: i.qty })) });
+      }
+      sessionStorage.removeItem(PENDING_KEY); setOrder(null); setStep("information"); await refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not reopen checkout."); } finally { setBusy(false); }
   };
 
-  if (authState === "checking") {
-    return <p className="px-6 py-12 text-sm text-warm-gray">Loading checkout…</p>;
-  }
-
-  if (authState === "guest") {
-    return (
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-light-gray bg-white/60 p-8 text-center">
-        <p className="eyebrow">Almost there</p>
-        <h1 className="section-title mt-1 text-3xl">One quick sign-in.</h1>
-        <p className="mt-2 text-sm leading-6 text-warm-gray">
-          Login connects your bag, addresses and orders. Your guest bag merges automatically —
-          nothing you picked gets lost.
-        </p>
-        <Link
-          href="/login"
-          className="btn-primary mt-6 w-full"
-        >
-          Continue with Google
-        </Link>
-        <p className="mt-3 text-xs text-muted">Takes 10 seconds · No password needed</p>
-      </div>
-    );
-  }
-
-  if (lines.length === 0 && step !== "done") {
-    return (
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-light-gray bg-white/60 p-8 text-center">
-        <h1 className="font-display italic text-3xl">Your bag is empty.</h1>
-        <p className="mt-2 text-sm text-muted">Add something pretty first — under ₹499 to start.</p>
-        <Link href="/shop" className="btn-primary mt-6 w-full">
-          Back to the shop
-        </Link>
-      </div>
-    );
-  }
-
-  const selectedAddress = addresses.find((a) => a.id === addressId);
-
-  return (
-    <div>
-      {step !== "done" && (
-        <ol aria-label="Checkout steps" className="flex flex-wrap gap-2">
-          {STEPS.map((s, i) => (
-            <li
-              key={s.id}
-              aria-current={step === s.id ? "step" : undefined}
-              title={s.hint}
-              className={`rounded-full px-4 py-1.5 text-sm ${
-                step === s.id ? "bg-ink text-ivory" : "border border-light-gray text-warm-gray"
-              }`}
-            >
-              {i + 1}. {s.label}
-            </li>
-          ))}
-        </ol>
-      )}
-
-      {error && (
-        <p role="alert" className="mt-4 rounded-2xl border border-clay/40 bg-clay/10 p-3 text-sm">
-          {error}
-        </p>
-      )}
-
-      {step === "address" && (
-        <section aria-label="Delivery address" className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-6">
-          <h2 className="font-display text-2xl">Where is it going?</h2>
-          {addresses.length === 0 ? (
-            <p className="mt-2 text-sm text-warm-gray">No addresses yet — add your first one.</p>
-          ) : (
-            <div role="radiogroup" aria-label="Saved addresses" className="mt-4 space-y-3">
-              {addresses.map((a) => (
-                <label
-                  key={a.id}
-                  className={`block cursor-pointer rounded-2xl border p-4 text-sm ${
-                    a.id === addressId ? "border-ink" : "border-light-gray"
-                  }`}
-                >
-                  <span className="flex items-start gap-3">
-                    <input
-                      type="radio"
-                      name="address"
-                      checked={a.id === addressId}
-                      onChange={() => setAddressId(a.id)}
-                      className="mt-1 accent-clay"
-                    />
-                    <span>
-                      <strong>{a.fullName}</strong> · {a.phone}
-                      <br />
-                      {a.addressLine1}
-                      {a.addressLine2 ? `, ${a.addressLine2}` : ""}, {a.city}, {a.state} — {a.pincode}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-          <div className="mt-4">
-            <AddressForm onCreated={(id) => void refreshAddresses(id)} />
-          </div>
-          <button
-            type="button"
-            disabled={!addressId}
-            onClick={() => setStep("delivery")}
-              className="mt-6 rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay disabled:opacity-40"
-          >
-            Continue to delivery
-          </button>
-        </section>
-      )}
-
-      {step === "delivery" && (
-        <section aria-label="Delivery method" className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-6">
-          <h2 className="font-display text-2xl">How should it travel?</h2>
-          <div className="mt-4 rounded-2xl border border-ink bg-ivory p-4 text-sm">
-            <p className="font-semibold">Standard delivery · 5–7 days</p>
-            <p className="mt-1 text-warm-gray">
-              {settings
-                ? subtotal - discount >= settings.freeShippingThreshold
-                  ? `Free (orders over ${formatINR(settings.freeShippingThreshold)})`
-                  : `${formatINR(settings.shippingFlatFee)} · free over ${formatINR(settings.freeShippingThreshold)}`
-                : "Calculated at payment."}
-            </p>
-            {selectedAddress && (
-              <p className="mt-2 text-warm-gray">
-                To {selectedAddress.fullName}, {selectedAddress.city} {selectedAddress.pincode}
-              </p>
-            )}
-          </div>
-          <div className="mt-4">
-            <label htmlFor="coupon" className="text-sm text-warm-gray">
-              Coupon code (optional)
-            </label>
-            <div className="mt-1 flex gap-2">
-              <input
-                id="coupon"
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-                placeholder="WELCOME10"
-                maxLength={32}
-                className="w-full max-w-xs rounded-full border border-light-gray bg-ivory px-4 py-2 text-sm uppercase"
-              />
-              <button
-                type="button"
-                onClick={() => void applyCoupon()}
-                className="rounded-full border border-light-gray px-5 py-2 text-sm hover:border-ink"
-              >
-                Apply
-              </button>
-            </div>
-            {couponMsg && (
-              <p role="status" className="mt-2 text-sm">
-                {couponMsg}
-              </p>
-            )}
-          </div>
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <button type="button" onClick={() => setStep("address")} className="rounded-full border border-light-gray px-6 py-3 text-sm">
-              ← Back
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("payment")}
-              className="rounded-full bg-ink px-8 py-3 text-sm font-medium text-ivory hover:bg-clay"
-            >
-              Continue to payment
-            </button>
-          </div>
-        </section>
-      )}
-
-      {step === "payment" && (
-        <section aria-label="Payment" className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-6">
-          <p className="eyebrow">UPI-first checkout</p>
-          <h2 className="section-title mt-1 text-2xl">Almost yours.</h2>
-          <dl className="mt-4 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-warm-gray">Subtotal ({count} item{count === 1 ? "" : "s"}, incl. taxes)</dt>
-              <dd className="font-mono">{formatINR(subtotal)}</dd>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between text-mehendi">
-                <dt>Coupon {coupon && `(${coupon})`}</dt>
-                <dd className="font-mono">−{formatINR(discount)}</dd>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <dt className="text-warm-gray">Shipping</dt>
-              <dd className="font-mono">{shippingPreview === 0 ? "Free" : formatINR(shippingPreview)}</dd>
-            </div>
-            <div className="flex justify-between border-t border-light-gray pt-2 font-semibold">
-              <dt>To pay</dt>
-              <dd className="font-mono text-lg">{formatINR(subtotal - discount + shippingPreview)}</dd>
-            </div>
-          </dl>
-          <ul className="mt-3 space-y-1 text-xs leading-5 text-warm-gray">
-                <li>Pay with <strong>GPay, PhonePe, Paytm UPI</strong>, cards, netbanking or wallets via Razorpay.</li>
-                <li>Your final total is confirmed before payment.</li>
-                <li>Gift box and note included. Online payments only; no COD at checkout.</li>
-          </ul>
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={() => setStep("delivery")} className="btn-ghost">
-              ← Back
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void pay()}
-              className="btn-primary flex-1 disabled:opacity-60"
-            >
-              {busy ? "Processing…" : `Pay ${formatINR(subtotal - discount + shippingPreview)}`}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {step === "done" && order && (
-        <section aria-label="Order confirmation" className="mt-6 rounded-3xl border border-gold/30 bg-gold/10 p-8 text-center">
-          <p className="eyebrow">Payment confirmed</p>
-          <h2 className="section-title mt-1 text-4xl">Order confirmed.</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-warm-gray">We&apos;re packing it gift-ready in Vapi as you read this.</p>
-          <dl className="mx-auto mt-6 max-w-sm space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-warm-gray">Order</dt>
-              <dd className="font-mono">{order.id}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-warm-gray">Amount paid</dt>
-              <dd className="font-mono font-semibold">{formatINR(order.total)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-warm-gray">Arriving in</dt>
-              <dd>5–7 days, tracked</dd>
-            </div>
-          </dl>
-          <p className="mt-4 text-sm text-warm-gray">A confirmation email is on its way. Track it anytime under My orders.</p>
-          <span className="mt-6 flex flex-wrap justify-center gap-2">
-            <Link href={`/account/orders/${order.id}`} className="btn-primary">
-              Track my order
-            </Link>
-            <Link href="/shop" className="btn-ghost">
-              Keep browsing
-            </Link>
-          </span>
-        </section>
-      )}
-    </div>
-  );
+  if (restoring || (loading && !lines.length && !order)) return <div aria-label="Loading checkout" className="h-60 animate-pulse bg-cream" />;
+  if (step === "done" && order) return <OrderConfirmation order={order} delivery={settings.deliveryInformation} />;
+  if (!lines.length && !order) return <div className="py-10"><h2 className="section-title text-2xl">Your cart is empty.</h2><p className="mt-3 text-sm text-muted">Add a piece to continue.</p><Link href="/shop" className="btn-primary mt-6">Continue shopping</Link>{error && <p role="alert" className="mt-5 text-sm text-primary">{error}</p>}</div>;
+  const address = order?.address || (authed ? addresses.find(a => a.id === addressId) : guest?.address);
+  return <div>
+    <ol aria-label="Checkout progress" className="mb-8 flex gap-8 border-b border-light-gray pb-5 text-sm"><li aria-current={step === "information" ? "step" : undefined} className={step === "information" ? "font-semibold" : "text-muted"}>1. Information</li><li aria-current={step === "payment" ? "step" : undefined} className={step === "payment" ? "font-semibold" : "text-muted"}>2. Payment</li></ol>
+    <a href="#checkout-summary" className="mb-6 flex min-h-12 items-center justify-between gap-3 border-b border-light-gray pb-4 text-sm lg:hidden"><span>Order total · View summary</span><strong>{formatINR(order?.total ?? total)}</strong></a>
+    <div className="grid items-start gap-8 lg:grid-cols-[1fr_380px] lg:gap-14"><div>
+      {error && <p role="alert" className="mb-5 border-l-2 border-primary bg-cream p-4 text-sm">{error}</p>}
+      {step === "information" ? <>
+        {!authed && <p className="mb-6 text-sm text-muted">Checkout as a guest. <Link className="ml-1 underline underline-offset-4" href="/login?callbackUrl=%2Fcheckout">Already have an account?</Link></p>}
+        {authed && <div className="mb-6"><h2 className="mb-4 text-lg font-medium">Delivery address</h2><fieldset className="space-y-3"><legend className="sr-only">Saved addresses</legend>{addresses.map(a => <label key={a.id} className={`flex gap-3 border p-4 text-sm ${a.id === addressId ? "border-ink" : "border-light-gray"}`}><input type="radio" name="address" value={a.id} checked={a.id === addressId} onChange={() => setAddressId(a.id)} className="mt-1 h-4 w-4 accent-primary" /><span><strong>{a.fullName}</strong><span className="mt-1 block leading-6 text-muted">{a.addressLine1}, {a.city}, {a.state} {a.pincode}</span></span></label>)}</fieldset><div className="mt-5"><AddressForm onCreated={async id => { try { const data = await request<{ addresses: AddressDTO[] }>("/api/addresses"); setAddresses(data.addresses); setAddressId(id); setError(""); } catch { setError("Address saved, but could not refresh addresses. Reload to select it."); } }} /></div></div>}
+        <form onSubmit={continueToPayment}>
+          {!authed && <><h2 className="mb-5 text-lg font-medium">Contact & delivery</h2><div className="mb-5"><label htmlFor="checkout-email" className="field-label">Email address</label><input id="checkout-email" className="field" name="email" type="email" required maxLength={254} autoComplete="email" defaultValue={guest?.email} aria-invalid={!!fieldErrors.email} aria-describedby="email-help" /><span id="email-help" className={`mt-2 block text-xs ${fieldErrors.email ? "text-primary" : "text-muted"}`}>{fieldErrors.email || "For your order confirmation and payment receipt."}</span></div><AddressFields initial={guest?.address} errors={fieldErrors} /></>}
+          <p className="mt-6 text-xs leading-6 text-muted">{settings.dispatchInformation || "See shipping information for dispatch details."} {settings.deliveryInformation}</p><button disabled={busy || (authed && !addressId)} type="submit" className="btn-primary mt-6 w-full sm:w-auto">{busy ? "Checking your cart…" : "Continue to Payment"}</button>
+        </form>
+      </> : <>
+        <h2 className="text-lg font-medium">Review & pay</h2>{address && <div className="mt-5 border-b border-light-gray pb-5 text-sm leading-7"><p className="font-medium">{address.fullName}</p><p className="text-muted">{address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ""}<br />{address.city}, {address.state} {address.pincode}<br />{address.phone}</p>{!order && <button onClick={() => setStep("information")} className="mt-2 min-h-11 text-xs underline">Edit information</button>}</div>}
+        <p className="mt-6 text-sm leading-7 text-muted">Pay securely through Razorpay. Available payment methods are shown in the payment window.</p>
+        {order?.reservationExpiresAt && order.paymentStatus === "PENDING" && <p className="mt-3 text-xs leading-6 text-muted">Unpaid stock reservation expires at {new Date(order.reservationExpiresAt).toLocaleString("en-IN")}. No payment has been confirmed yet.</p>}
+        <button disabled={busy || (!!order && (order.orderStatus !== "PENDING" || order.paymentStatus !== "PENDING"))} className="btn-primary mt-6 w-full" onClick={() => void pay()}>{busy ? "Opening secure payment…" : `${order ? "Retry payment" : "Pay"} ${formatINR(order?.total ?? total)}`}</button>
+        <p className="mt-3 text-xs leading-6 text-muted">By placing your order you agree to our <Link className="underline" href="/terms">terms</Link> and <Link className="underline" href="/privacy">privacy policy</Link>.</p>
+        {order && <div className="mt-5 flex flex-wrap gap-4 text-sm"><Link href={`/orders/${order.id}`} className="min-h-11 py-3 underline">Check order status</Link><button disabled={busy} className="min-h-11 underline" onClick={() => void startAgain()}>Edit or restart checkout</button></div>}
+      </>}
+    </div><aside id="checkout-summary" className="bg-cream p-5 sm:p-7"><h2 className="section-title text-2xl">Order summary</h2>{order ? <OrderSummary order={order} /> : <>
+      <ul className="mt-4 divide-y divide-light-gray">{lines.map(l => <li key={l.key} className="flex justify-between gap-4 py-3 text-sm"><div className="min-w-0"><p className="clamp-2">{l.name}</p>{l.variantSku && <p className="mt-1 text-xs text-muted">{l.variantLabel || l.variantSku}</p>}<p className="mt-1 text-xs text-muted">Quantity {l.qty}</p></div><p className="shrink-0">{formatINR(l.price * l.qty)}</p></li>)}</ul>
+      <dl className="space-y-3 border-t border-light-gray pt-4 text-sm"><div className="flex justify-between"><dt>Subtotal</dt><dd>{formatINR(subtotal)}</dd></div>{discount > 0 && <div className="flex justify-between"><dt>Discount</dt><dd>−{formatINR(discount)}</dd></div>}<div className="flex justify-between"><dt>Delivery</dt><dd>{shipping ? formatINR(shipping) : "Free"}</dd></div><div className="flex justify-between border-t border-light-gray pt-4 text-base font-semibold"><dt>Total payable</dt><dd>{formatINR(total)}</dd></div></dl><p className="mt-2 text-xs text-muted">Taxes included in product prices.</p>
+      <details className="mt-6 border-t border-light-gray pt-4"><summary className="min-h-11 cursor-pointer text-sm">Have a coupon?</summary><div className="mt-2 flex gap-2"><label className="min-w-0 flex-1"><span className="sr-only">Coupon code</span><input maxLength={32} className="field" value={coupon} onChange={e => { setCoupon(e.target.value); setDiscount(0); setAppliedCoupon(""); setCouponMessage(""); }} /></label><button type="button" className="btn-ghost !px-3" disabled={busy || !coupon.trim()} onClick={() => void applyCoupon()}>Apply</button></div>{couponMessage && <p className="mt-3 text-xs leading-6" role="status">{couponMessage}</p>}</details>
+    </>}<Link href="/shipping" className="mt-5 inline-block min-h-11 text-xs underline underline-offset-4">Shipping information</Link><Link href="/returns" className="ml-4 inline-block min-h-11 text-xs underline underline-offset-4">Returns & refunds</Link></aside></div>
+  </div>;
 }

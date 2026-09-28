@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { getSettings } from "@/services/settings-service";
 import { connectDb } from "./db";
 import { requireServerVar } from "./env";
 import { logger } from "./logger";
@@ -63,13 +64,14 @@ async function deliver(
 ): Promise<void> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      await getResend().emails.send({
+      const result = await getResend().emails.send({
         from: fromAddress(),
         to,
         subject: content.subject,
         html: content.html,
         text: content.text,
       });
+      if (result.error) throw new Error(result.error.message);
       await record(userId, type, to, content.subject, "SENT");
       return;
     } catch (error) {
@@ -94,7 +96,7 @@ function orderData(order: OrderDTO, customerName: string): OrderEmailData {
     couponCode: order.couponCode,
     city: order.address.city,
     pincode: order.address.pincode,
-    eta: "5–7 days",
+    eta: "See the shipping policy or contact support for your destination",
   };
 }
 
@@ -116,14 +118,20 @@ async function notifyOrderKind(
   build: (data: OrderEmailData) => EmailContent,
   reason?: string,
 ): Promise<void> {
-  const to = await recipient(userId);
-  if (!to) {
-    logger.warn("email skipped: no recipient", { type, userId });
-    return;
+  try {
+    const to = order.isGuest && order.customerEmail ? { email: order.customerEmail, name: order.address.fullName } : await recipient(userId);
+    if (!to) {
+      logger.warn("email skipped: no recipient", { type, userId });
+      return;
+    }
+    const data = orderData(order, to.name);
+    const settings = await getSettings();
+    if (settings.deliveryInformation) data.eta = settings.deliveryInformation;
+    if (reason !== undefined) data.reason = reason;
+    await deliver(userId, type, to.email, build(data));
+  } catch (error) {
+    logger.error("email preparation failed", { type, userId, message: error instanceof Error ? error.message : "unknown" });
   }
-  const data = orderData(order, to.name);
-  if (reason !== undefined) data.reason = reason;
-  await deliver(userId, type, to.email, build(data));
 }
 
 export async function notifyOrderConfirmation(userId: string, order: OrderDTO): Promise<void> {

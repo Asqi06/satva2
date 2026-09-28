@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { publicMediaUrlSchema } from "./category";
 
 const reviewImageSchema = z.object({
   publicId: z.string().min(1).max(512),
-  secureUrl: z.string().url().max(2048),
+  secureUrl: publicMediaUrlSchema,
 });
 
 export const reviewInputSchema = z.object({

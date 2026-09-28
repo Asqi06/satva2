@@ -7,6 +7,7 @@
 export interface GuestCartItem {
   productId: string;
   variantSku?: string;
+  variantLabel?: string;
   qty: number;
   name: string;
   slug: string;
@@ -22,7 +23,6 @@ export interface StorageLike {
 }
 
 export const GUEST_CART_KEY = "satvastones:guest-cart:v1";
-export const CART_MERGED_KEY = "satvastones:cart-merged:v1";
 
 export function guestKey(productId: string, variantSku?: string): string {
   return `${productId}:${(variantSku ?? "").trim().toUpperCase()}`;
@@ -93,23 +93,4 @@ export function guestSubtotal(items: GuestCartItem[]): number {
 
 export function guestCount(items: GuestCartItem[]): number {
   return items.reduce((n, i) => n + i.qty, 0);
-}
-
-/** Merge-once bookkeeping: merged guest carts per logged-in email. */
-export function mergedEmails(storage: StorageLike): string[] {
-  try {
-    const raw = storage.getItem(CART_MERGED_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((e): e is string => typeof e === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-export function markMerged(storage: StorageLike, email: string): void {
-  const emails = mergedEmails(storage);
-  if (!emails.includes(email)) {
-    emails.push(email);
-    storage.setItem(CART_MERGED_KEY, JSON.stringify(emails));
-  }
 }

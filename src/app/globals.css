@@ -1,11 +1,6 @@
 @import "tailwindcss";
 
-/* ─────────────────────────────────────────────
-   SatvaStones — Sticker-Pop D2C System
-   (inspired by reference: bold condensed hero type,
-   blush category band, maroon sale tags, black
-   utility strip, rounded product cards)
-───────────────────────────────────────────── */
+/* SatvaStones: restrained editorial commerce. */
 :root {
   --background: #ffffff;
   --foreground: #191919;
@@ -13,8 +8,8 @@
   --primary-dark: #a81522;
   --ink: #161616;
   --ivory: #ffffff;
-  --cream: #fdf4ec;
-  --blush: #fbdfe2;
+  --cream: #f7f4ef;
+  --blush: #f8ecec;
   --peach: #eec0b4;
   --sticker-yellow: #ffd814;
   --sticker-teal: #1f9bab;
@@ -33,8 +28,8 @@
   --color-primary-dark: #a81522;
   --color-ink: #161616;
   --color-ivory: #ffffff;
-  --color-cream: #fdf4ec;
-  --color-blush: #fbdfe2;
+  --color-cream: #f7f4ef;
+  --color-blush: #f8ecec;
   --color-peach: #eec0b4;
   --color-gold: #d61f2c;
   --color-clay: #a81522;
@@ -65,23 +60,6 @@
 ───────────────────────────────────────────── */
 html {
   scroll-behavior: auto;
-}
-
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
 }
 
 body {
@@ -166,15 +144,15 @@ video {
    Animation Utilities
 ───────────────────────────────────────────── */
 .animate-fade-up {
-  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fadeUp 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.35s ease both;
+  animation: fadeIn 0.2s ease both;
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slideInRight 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-scale-in {
@@ -231,9 +209,9 @@ video {
 ───────────────────────────────────────────── */
 .eyebrow {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   color: var(--primary);
 }
 
@@ -254,7 +232,7 @@ video {
 
 .section-title {
   font-family: var(--font-display);
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: -0.035em;
   line-height: 1.12;
 }
@@ -264,188 +242,43 @@ video {
   color: var(--warm-gray);
 }
 
-/* ──── Buttons ──── */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: var(--primary);
-  color: #fff;
-  padding: 0.9rem 2rem;
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 18px rgba(214, 31, 44, 0.18);
+/* Shared shopping controls */
+@layer components {
+.btn-primary, .btn-gold, .btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+  min-height: 48px; padding: .8rem 1.4rem; border: 1px solid transparent;
+  border-radius: 3px; font-size: .875rem; font-weight: 600;
+  transition: background-color .2s, border-color .2s, color .2s;
 }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-gold { background: var(--ink); color: white; }
+.btn-gold:hover { background: #383838; }
+.btn-ghost { background: transparent; border-color: #ccc7c1; color: var(--ink); }
+.btn-ghost:hover { border-color: var(--ink); }
+button:disabled { cursor: not-allowed; opacity: .5; }
+.icon-button { display: inline-flex; flex: 0 0 auto; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; border-radius: 3px; }
+.icon-button:hover { background: var(--cream); }
+.field { width: 100%; min-height: 48px; border: 1px solid #c9c5c0; border-radius: 3px; background: white; padding: .75rem; font-size: 1rem; }
+.field-label { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 500; }
+.filter-chip { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .5rem .8rem; border: 1px solid #d6d0ca; border-radius: 3px; font-size: .8rem; }
+.filter-chip[aria-pressed="true"] { background: var(--ink); color: white; border-color: var(--ink); }
+.card-lift { background: white; border: 1px solid var(--light-gray); border-radius: 4px; }
+.badge-off, .badge-bestseller, .badge-new { background: white; color: var(--ink); padding: .4rem .6rem; font-size: 10px; font-weight: 600; letter-spacing: .04em; border-radius: 2px; }
+.price-note { font-size: 11px; color: var(--muted); }
+.pill-active, .pill-gold { background: var(--ink); color: white; border-radius: 3px; }
+.ship-progress { height: 3px; background: #e7e1da; overflow: hidden; }
+.ship-progress > span { display: block; height: 100%; background: var(--primary); transition: width .2s; }
+dialog { border: 0; padding: 0; color: var(--foreground); }
+dialog::backdrop { background: rgba(22,22,22,.4); }
+.search-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 48px); margin: 24px auto auto; overflow-y: auto; border-radius: 4px; }
+.menu-dialog { width: min(360px, 90vw); height: 100dvh; max-height: 100dvh; margin: 0 auto 0 0; overflow-y: auto; }
+.detail-section { border-bottom: 1px solid var(--light-gray); padding: 1.25rem 0; }
+.detail-section > summary { cursor: pointer; font-size: 1rem; font-weight: 500; min-height: 24px; }
+.detail-section > div { margin-top: 1rem; font-size: .875rem; line-height: 1.8; color: var(--muted); }
+.shopping-section { width: 100%; max-width: 1280px; margin: 0 auto; padding: 3.5rem 1rem 0; }
+@media (min-width: 640px) { .shopping-section { padding: 4.5rem 2rem 0; } }
 
-.btn-primary:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-}
-
-.btn-gold {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: var(--ink);
-  color: #fff;
-  padding: 0.9rem 2rem;
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.btn-gold:hover {
-  background: var(--primary);
-  transform: translateY(-1px);
-}
-
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1.5px solid var(--light-gray);
-  background: #fff;
-  padding: 0.8rem 1.6rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  border-radius: 999px;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.btn-ghost:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-/* ──── Cards ──── */
-.card-lift {
-  border: 1px solid #efefef;
-  background: #fff;
-  border-radius: 18px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.card-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 34px rgba(22, 22, 22, 0.1);
-}
-
-.pill-active {
-  border: 1.5px solid var(--ink);
-  background: var(--ink);
-  color: #fff;
-  border-radius: 999px;
-}
-
-.pill-gold {
-  border: 1.5px solid var(--primary);
-  background: var(--primary);
-  color: #fff;
-  border-radius: 999px;
-}
-
-/* ──── Tags (maroon sale tags like reference) ──── */
-.badge-off {
-  background: var(--maroon);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.28rem 0.6rem;
-  border-radius: 6px;
-}
-
-.badge-bestseller {
-  background: var(--maroon);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.28rem 0.6rem;
-  border-radius: 6px;
-}
-
-.badge-new {
-  background: var(--ink);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.28rem 0.6rem;
-  border-radius: 6px;
-}
-
-.divider-gold {
-  height: 2px;
-  background: linear-gradient(to right, transparent, var(--primary), transparent);
-}
-
-.price-note {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* ──── Trust strip ──── */
-.trust-strip {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  background: var(--light-gray);
-  border: 1px solid var(--light-gray);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .trust-strip {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.trust-cell {
-  background: #fff;
-  padding: 1.1rem 1.25rem;
-  text-align: center;
-}
-
-.trust-cell strong {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--foreground);
-}
-
-.trust-cell span {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
-/* ──── Shipping progress ──── */
-.ship-progress {
-  height: 8px;
-  background: var(--blush);
-  overflow: hidden;
-  border-radius: 999px;
-}
-
-.ship-progress > span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(to right, var(--primary), var(--primary-dark));
-  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  border-radius: 999px;
 }
 
 /* ──── Admin (unchanged dark) ──── */

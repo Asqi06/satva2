@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 /**
  * Sitemap: static pages + published categories/products.
- * Fail-soft: without DB access it still serves the static entries.
+ * Database errors return a server failure instead of silently publishing an incomplete catalogue.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if ((process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") || process.env.SITE_INDEXING_ENABLED === "false") return [];
   const base = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const staticPages: MetadataRoute.Sitemap = [
     { path: "", priority: 1, changeFrequency: "daily" as const },
@@ -54,9 +55,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
     ];
   } catch (error) {
-    logger.warn("sitemap fell back to static entries", {
+    logger.warn("sitemap catalogue query failed", {
       message: error instanceof Error ? error.message : "unknown",
     });
-    return staticPages;
+    throw error;
   }
 }

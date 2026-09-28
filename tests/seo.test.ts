@@ -111,8 +111,10 @@ describe("seo routes", () => {
   });
 
   it("robots keeps private areas out with a sitemap pointer", async () => {
+    vi.stubEnv("NODE_ENV", "production");
     const rules = await robots();
-    expect(rules.sitemap).toBe("http://localhost:3000/sitemap.xml");
+    vi.unstubAllEnvs();
+    expect(rules.sitemap).toBe("https://www.satvastones.in/sitemap.xml");
     const rule = Array.isArray(rules.rules) ? rules.rules[0] : rules.rules;
     const disallow = (rule as { disallow: string | string[] }).disallow;
     for (const path of ["/api/", "/admin/", "/account/", "/checkout/"]) {
@@ -130,4 +132,24 @@ describe("seo routes", () => {
       vi.unstubAllEnvs();
     }
   });
+  it("self-canonicalizes pagination and noindexes arbitrary search/facet combinations", async () => {
+    const cat = await Category.create({ name: "Rings", slug: "rings" });
+    await Product.insertMany(Array.from({ length: 13 }, (_, i) => ({ name: `Ring ${i}`, slug: `page-ring-${i}`, description: "A ring", categoryId: cat._id, images: [IMG], price: 500, sku: `PAGE-${i}`, stock: 1, isPublished: true })));
+    const second = await shopMetadata({ searchParams: Promise.resolve({ page: "2" }) });
+    expect(second.alternates?.canonical).toBe("http://localhost:3000/shop?page=2");
+    expect(second.title).toEqual({ absolute: "Buy Jewellery Online in India | SatvaStones — Page 2" });
+    for (const params of [{ q: "ring" }, { minPrice: "100" }, { sort: "newest" }]) {
+      expect((await shopMetadata({ searchParams: Promise.resolve(params) })).robots).toEqual({ index: false, follow: true });
+    }
+    expect((await shopMetadata({ searchParams: Promise.resolve({ utm_source: "instagram" }) })).robots).toBeUndefined();
+  });
+
+  it("disallows preview indexing and emits no preview sitemap entries", async () => {
+    vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("VERCEL_ENV", "preview");
+    try {
+      expect(await sitemap()).toEqual([]);
+      expect(robots().rules).toEqual({ userAgent: "*", disallow: "/" });
+    } finally { vi.unstubAllEnvs(); }
+  });
+
 });

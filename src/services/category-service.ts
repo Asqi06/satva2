@@ -10,6 +10,7 @@ export interface CategoryDTO {
   id: string;
   name: string;
   slug: string;
+  previousSlugs?: string[];
   description?: string;
   searchTerms?: string[];
   image?: { publicId: string; secureUrl: string; alt: string };
@@ -31,6 +32,7 @@ function toDTO(doc: LeanCategory, productCount?: number): CategoryDTO {
     id: doc._id.toString(),
     name: doc.name,
     slug: doc.slug,
+    previousSlugs: doc.previousSlugs ?? [],
     description: doc.description,
     searchTerms: doc.searchTerms ?? [],
     image: doc.image
@@ -55,12 +57,19 @@ export async function listPublicCategories(): Promise<CategoryDTO[]> {
   const docs = await Category.find({ isPublished: true })
     .sort({ sortOrder: 1, name: 1 })
     .lean<LeanCategory[]>();
-  const counts = await Product.aggregate<{ _id: Types.ObjectId; count: number }>([
+  const counts = await Product.aggregate<{ _id: Types.ObjectId; count: number; images?: { publicId: string; secureUrl: string; alt: string; isThumbnail?: boolean }[] }>([
     { $match: { isPublished: true } },
-    { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+    { $sort: { isFeatured: -1, soldQuantity: -1, _id: 1 } },
+    { $group: { _id: "$categoryId", count: { $sum: 1 }, images: { $first: "$images" } } },
   ]);
-  const byCategory = new Map(counts.map((c) => [c._id.toString(), c.count]));
-  return docs.map((d) => toDTO(d, byCategory.get(d._id.toString()) ?? 0));
+  const byCategory = new Map(counts.map(c => [c._id.toString(), c]));
+  return docs.map(d => {
+    const row = byCategory.get(d._id.toString());
+    const dto = toDTO(d, row?.count ?? 0);
+    const fallback = row?.images?.find(image => image.isThumbnail) ?? row?.images?.[0];
+    if (!dto.image && fallback) dto.image = { publicId: fallback.publicId, secureUrl: fallback.secureUrl, alt: fallback.alt || d.name };
+    return dto;
+  });
 }
 
 export async function listAdminCategories(): Promise<CategoryDTO[]> {
@@ -73,7 +82,7 @@ export async function listAdminCategories(): Promise<CategoryDTO[]> {
 
 export async function getCategoryBySlug(slug: string): Promise<CategoryDTO | null> {
   await connectDb();
-  const doc = await Category.findOne({ slug: slug.toLowerCase(), isPublished: true }).lean<LeanCategory | null>();
+  const doc = await Category.findOne({ $or: [{ slug: slug.toLowerCase() }, { previousSlugs: slug.toLowerCase() }], isPublished: true }).lean<LeanCategory | null>();
   return doc ? toDTO(doc) : null;
 }
 
@@ -84,7 +93,7 @@ export async function createCategory(input: CategoryInput): Promise<CategoryDTO>
     if (!parent) throw new AppError("NOT_FOUND", "Parent category not found", 404);
   }
   const slug = input.slug ?? slugify(input.name);
-  const uniqueSlug = await ensureUnique(slug, (c) => Category.exists({ slug: c }).then(Boolean));
+  const uniqueSlug = await ensureUnique(slug, (c) => Category.exists({ $or: [{ slug: c }, { previousSlugs: c }] }).then(Boolean));
   const doc = await Category.create({
     name: input.name,
     slug: uniqueSlug,
@@ -110,8 +119,9 @@ export async function updateCategory(
   if (!doc) throw notFound;
 
   if (input.slug && input.slug !== doc.slug) {
-    const taken = await Category.exists({ slug: input.slug, _id: { $ne: objectId } });
+    const taken = await Category.exists({ $or: [{ slug: input.slug }, { previousSlugs: input.slug }], _id: { $ne: objectId } });
     if (taken) throw new AppError("CONFLICT", "Category slug already in use", 409);
+    doc.previousSlugs = [...new Set([...(doc.previousSlugs ?? []), doc.slug])].filter((slug) => slug !== input.slug);
     doc.slug = input.slug;
   }
   if (input.name !== undefined) doc.name = input.name;

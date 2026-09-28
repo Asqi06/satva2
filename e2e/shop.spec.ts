@@ -3,12 +3,12 @@ import { expect, test } from "@playwright/test";
 test("shop renders catalogue shell", async ({ page }) => {
   await page.goto("/shop");
   await expect(page.getByRole("heading", { name: /all jewellery/i })).toBeVisible();
-  await expect(page.getByLabel("Filter and sort products")).toBeVisible();
+  await expect(page.locator("summary").filter({ hasText: "Filters" })).toBeVisible();
 });
 
 test("unknown product slug shows the not-found page", async ({ page }) => {
   await page.goto("/products/no-such-piece");
-  await expect(page.getByRole("heading", { name: /page not found/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /this page doesn.t exist/i })).toBeVisible();
 });
 
 test("public product API returns an envelope", async ({ request }) => {

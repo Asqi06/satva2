@@ -1,9 +1,10 @@
+import { jsonLd as serializeJsonLd } from "@/utils/jsonld";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { getSettings } from "@/services/settings-service";
 import { getClientEnv } from "@/lib/env";
 import { getPublicProductBySlug } from "@/services/product-service";
-import { formatINR } from "@/utils/format";
 import { ProductCard } from "@/features/products/ProductCard";
 import { ProductGallery } from "@/features/products/ProductGallery";
 import { PurchasePanel } from "@/features/products/PurchasePanel";
@@ -20,7 +21,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const product = await getPublicProductBySlug(slug);
-  if (!product) return { title: "Not found", robots: { index: false, follow: false } };
+  if (!product) notFound();
+  if (slug !== product.slug) permanentRedirect(`/products/${encodeURIComponent(product.slug)}`);
   const title = product.seo.title || `${product.name} | SatvaStones`;
   const description =
     product.seo.description ||
@@ -51,43 +53,59 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductPage({ params }: { params: Promise<Params> }) {
+export default async function ProductPage({ params, searchParams }: {
+  params: Promise<Params>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { slug } = await params;
   const product = await getPublicProductBySlug(slug);
   if (!product) notFound();
+  if (slug !== product.slug) permanentRedirect(`/products/${encodeURIComponent(product.slug)}`);
 
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const canonical = `${appUrl}/products/${product.slug}`;
+  const settings = await getSettings();
+  const query = await searchParams;
+  const requestedSku = typeof query.variant === "string" ? query.variant : undefined;
+  const selectedVariant = product.variants.find((variant) => variant.sku === requestedSku)
+    ?? product.variants.find((variant) => variant.stock > 0) ?? product.variants[0];
+  const offer = (price: number, inStock: boolean, url: string) => ({
+    "@type": "Offer", price, priceCurrency: "INR",
+    availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    url, itemCondition: "https://schema.org/NewCondition",
+    seller: { "@type": "Organization", name: "SatvaStones", url: appUrl },
+  });
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": product.variants.length ? "ProductGroup" : "Product",
     name: product.name,
-    description: product.shortDescription ?? product.description.slice(0, 300),
-    sku: product.sku,
-    brand: { "@type": "Brand", name: "SatvaStones" },
+    description: product.shortDescription || product.description,
+    ...(product.material ? { material: product.material } : {}),
     category: product.category.name,
-    image: product.images.map((i) => i.secureUrl),
+    image: product.images.map((image) => image.secureUrl),
     url: canonical,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "INR",
-      price: product.price,
-      availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: canonical,
-      seller: { "@type": "Organization", name: "SatvaStones", url: appUrl },
-      itemCondition: "https://schema.org/NewCondition",
-    },
-    ...(product.ratingCount > 0
-      ? {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: product.ratingAverage,
-            reviewCount: product.ratingCount,
-            bestRating: 5,
-            worstRating: 1,
-          },
-        }
-      : {}),
+    ...(product.variants.length ? {
+      productGroupID: product.sku,
+      variesBy: [
+        ...(product.variants.some((variant) => variant.size) ? ["https://schema.org/size"] : []),
+        ...(product.variants.some((variant) => variant.color) ? ["https://schema.org/color"] : []),
+      ],
+      hasVariant: product.variants.map((variant) => ({
+        "@type": "Product", sku: variant.sku,
+        name: [product.name, variant.size, variant.color, variant.style].filter(Boolean).join(" — "),
+        ...(variant.size ? { size: variant.size } : {}),
+        ...(variant.color ? { color: variant.color } : {}),
+        description: product.shortDescription || product.description,
+        image: product.images.map((image) => image.secureUrl),
+        offers: offer(variant.price ?? product.price, variant.stock > 0, `${canonical}?variant=${encodeURIComponent(variant.sku)}`),
+      })),
+    } : { sku: product.sku, offers: offer(product.price, product.inStock, canonical) }),
+    ...(product.ratingCount > 0 ? {
+      aggregateRating: {
+        "@type": "AggregateRating", ratingValue: product.ratingAverage,
+        reviewCount: product.ratingCount, bestRating: 5, worstRating: 1,
+      },
+    } : {}),
   };
 
   const breadcrumbLd = {
@@ -120,11 +138,11 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       <ViewItemTracker id={product.id} name={product.name} price={product.price} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
       />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-10">
@@ -165,7 +183,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           {/* Info panel */}
           <div>
             <p className="eyebrow">{product.category.name}</p>
-            <h1 className="section-title mt-3 text-4xl sm:text-5xl">
+            <h1 className="section-title mt-3 text-3xl sm:text-4xl">
               {product.name}
             </h1>
 
@@ -178,28 +196,6 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
               </p>
             )}
 
-            {/* Price */}
-            <p className="mt-7 flex flex-wrap items-baseline gap-x-3 gap-y-1" aria-label="Price">
-              <span className="text-3xl font-bold tracking-tight sm:text-4xl">
-                {formatINR(product.price)}
-              </span>
-              {product.compareAtPrice !== undefined &&
-                product.compareAtPrice > product.price && (
-                  <>
-                    <s className="text-lg text-muted">
-                      {formatINR(product.compareAtPrice)}
-                    </s>
-                    <span className="text-sm font-semibold text-maroon">{product.discountPercent}% off</span>
-                  </>
-                )}
-            </p>
-
-            {/* Stock + shipping note */}
-            <p className="mt-2 text-xs text-muted">Inclusive of all taxes</p>
-            <p className={`mt-5 text-sm font-semibold ${product.inStock ? "text-mehendi" : "text-primary"}`} aria-live="polite">
-              {product.inStock ? "In stock · Ships in 2–4 days" : "Out of stock"}
-            </p>
-
             {/* Short description */}
             {product.shortDescription && (
               <p className="mt-5 max-w-prose text-base leading-7 text-warm-gray">{product.shortDescription}</p>
@@ -207,6 +203,9 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
 
             {/* Purchase panel */}
             <PurchasePanel
+              key={selectedVariant?.sku ?? product.id}
+              initialVariantSku={selectedVariant?.sku}
+              settings={settings}
               product={{
                 id: product.id,
                 name: product.name,
@@ -217,98 +216,36 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
                   ? { secureUrl: product.images[0].secureUrl, alt: product.images[0].alt }
                   : undefined,
                 inStock: product.inStock,
+                stock: product.availableStock ?? product.stock,
                 variants: product.variants,
               }}
             />
 
-            <section aria-label="Delivery and shopping information" className="mt-9 border-t border-light-gray pt-7">
-              <h2 className="text-sm font-bold">Shopping with SatvaStones</h2>
-              <dl className="mt-4 space-y-3 text-sm leading-6">
-                <div className="grid grid-cols-[80px_1fr] gap-4">
-                  <dt className="font-semibold text-ink">Delivery</dt>
-                  <dd className="text-warm-gray">Tracked across India, usually in 5–7 days.</dd>
-                </div>
-                <div className="grid grid-cols-[80px_1fr] gap-4">
-                  <dt className="font-semibold text-ink">Payment</dt>
-                  <dd className="text-warm-gray">UPI, cards and netbanking through secure online checkout.</dd>
-                </div>
-                <div className="grid grid-cols-[80px_1fr] gap-4">
-                  <dt className="font-semibold text-ink">Gifting</dt>
-                  <dd className="text-warm-gray">Gift-ready packaging; a free gift on orders over ₹899.</dd>
-                </div>
-                <div className="grid grid-cols-[80px_1fr] gap-4">
-                  <dt className="font-semibold text-ink">Returns</dt>
-                  <dd className="text-warm-gray">7-day cover for defects or transit damage.</dd>
-                </div>
-              </dl>
-            </section>
 
-            {/* Details */}
-            <section aria-label="Product details" className="mt-9 border-t border-light-gray pt-7">
-              <h2 className="section-title text-2xl sm:text-3xl">Product details</h2>
-              {product.description.trim() && (
-                <p className="mt-4 max-w-prose whitespace-pre-line text-sm leading-7 text-warm-gray">
-                  {product.description}
-                </p>
-              )}
-              <dl className="mt-5 divide-y divide-light-gray border-y border-light-gray text-sm">
-                {(
-                  [
-                    ["SKU", product.sku],
-                    ["Material", product.material],
-                    ["Colour", product.color],
-                    ["Size", product.size],
-                    ["Dimensions", product.dimensions],
-                    ["Weight", product.weight],
-                  ] as [string, string | undefined][]
-                ).map(([term, value]) =>
-                  value ? (
-                    <div key={term} className="grid grid-cols-[110px_1fr] gap-4 py-3">
-                      <dt className="text-muted">
-                        {term}
-                      </dt>
-                      <dd className="font-medium text-ink">{value}</dd>
-                    </div>
-                  ) : null,
-                )}
-              </dl>
-
-              {product.tags.length > 0 && (
-                <ul aria-label="Explore similar products" className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
-                  {product.tags.map((t) => (
-                    <li key={t}>
-                      <Link
-                        href={`/shop?q=${encodeURIComponent(t)}`}
-                        className="text-xs font-medium text-muted underline underline-offset-4 hover:text-primary"
-                      >
-                        {t}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
           </div>
         </div>
 
+        <section aria-label="Product details" className="mt-12 max-w-3xl">
+          <details className="detail-section" open><summary>Description</summary><div className="space-y-4">{product.description.split(/\n\s*\n/).filter(Boolean).map((text, index) => <p className="whitespace-pre-line" key={index}>{text}</p>)}</div></details>
+          <details className="detail-section"><summary>Details & dimensions</summary><div><dl>{([["SKU",product.sku],["Material",product.material],["Colour",product.color],["Size",product.size],["Dimensions",product.dimensions],["Weight",product.weight]] as [string,string | undefined][]).filter(([,value]) => value).map(([term,value]) => <div key={term} className="grid grid-cols-[110px_1fr] gap-4 py-2"><dt>{term}</dt><dd className="text-ink">{value}</dd></div>)}</dl></div></details>
+          <details className="detail-section"><summary>Shipping & returns</summary><div><p>Delivery is free from ₹{settings.freeShippingThreshold} after discounts; otherwise ₹{settings.shippingFlatFee}.</p>{settings.dispatchInformation && <p className="mt-2">{settings.dispatchInformation}</p>}{settings.deliveryInformation && <p className="mt-2">{settings.deliveryInformation}</p>}<p className="mt-3"><Link className="underline underline-offset-4" href="/shipping">Shipping information</Link> · <Link className="underline underline-offset-4" href="/returns">Return & refund eligibility</Link></p></div></details>
+        </section>
+        <ReviewsSection slug={product.slug} />
         {/* Related */}
         {product.related.length > 0 && (
           <section aria-label="Related products" className="mt-16">
             <div className="mb-6">
-              <p className="eyebrow">
-                Complete the look
-              </p>
+
               <h2 className="section-title mt-1 text-2xl sm:text-3xl">You may also like</h2>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-              {product.related.map((p) => (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-6 lg:grid-cols-4">
+              {product.related.slice(0,4).map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </section>
         )}
 
-        <ReviewsSection slug={product.slug} />
         <RecentlyViewed
           current={{
             slug: product.slug,

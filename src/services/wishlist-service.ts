@@ -15,6 +15,8 @@ export interface WishlistItem {
   compareAtPrice?: number;
   image?: { secureUrl: string; alt: string };
   available: boolean;
+  requiresOption?: boolean;
+  priceFrom?: boolean;
 }
 
 export interface WishlistView {
@@ -39,14 +41,17 @@ export async function getWishlistView(rawUserId: string): Promise<WishlistView> 
     const doc = byId.get(id.toString());
     if (!doc) continue;
     const cover = doc.images.find((i) => i.isThumbnail) ?? doc.images[0];
+    const price = doc.variants.length ? Math.min(...doc.variants.map(v => v.price ?? doc.price)) : doc.price;
     items.push({
       productId: id.toString(),
       name: doc.name,
       slug: doc.slug,
-      price: doc.price,
+      price,
+      priceFrom: doc.variants.some(v => (v.price ?? doc.price) !== price),
+      requiresOption: doc.variants.length > 0,
       compareAtPrice: doc.compareAtPrice,
       image: cover ? { secureUrl: cover.secureUrl, alt: cover.alt } : undefined,
-      available: doc.isPublished && doc.stock - doc.reservedStock > 0,
+      available: doc.isPublished && doc.stock - doc.reservedStock > 0 && (!doc.variants.length || doc.variants.some(v => v.stock - (v.reservedStock ?? 0) > 0)),
     });
   }
   return { items, count: items.length };

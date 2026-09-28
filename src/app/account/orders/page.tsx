@@ -14,11 +14,11 @@ export default async function AccountOrdersPage() {
   const { orders, pagination } = await listUserOrders(session.user.id, 1, 10);
 
   return (
-    <main>
+    <div>
       <p className="eyebrow">History · Tracked to your pincode</p>
       <h1 className="section-title mt-2 text-4xl tracking-tight">My orders</h1>
       {orders.length === 0 ? (
-        <div className="mt-6 rounded-3xl border border-light-gray bg-white/60 p-8 text-center">
+        <div className="mt-6 rounded-[3px] border border-light-gray bg-white/60 p-8 text-center">
           <p className="font-display text-2xl">No orders yet.</p>
           <Link href="/shop" className="mt-4 inline-block rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-ivory hover:bg-gold">
             Start shopping
@@ -28,7 +28,7 @@ export default async function AccountOrdersPage() {
         <>
           <ul className="mt-6 space-y-4">
             {orders.map((o) => (
-              <li key={o.id} className="rounded-2xl border border-light-gray bg-white/60 p-5">
+              <li key={o.id} className="rounded-[3px] border border-light-gray bg-white/60 p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-mono text-sm">{o.id.slice(-8).toUpperCase()}</p>
@@ -53,6 +53,6 @@ export default async function AccountOrdersPage() {
           </p>
         </>
       )}
-    </main>
+    </div>
   );
 }

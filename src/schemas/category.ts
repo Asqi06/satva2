@@ -10,9 +10,14 @@ export const slugSchema = z
   .max(140)
   .regex(SLUG_REGEX, "Slug must be lowercase letters, numbers and hyphens");
 
+export const publicMediaUrlSchema = z.string().url().max(2048).refine((value) => {
+  const url = new URL(value);
+  return url.protocol === "https:" && url.hostname === "res.cloudinary.com" && !url.username && !url.password;
+}, "Use a public HTTPS Cloudinary URL");
+
 const categoryImageSchema = z.object({
   publicId: z.string().min(1).max(512),
-  secureUrl: z.string().url().max(2048),
+  secureUrl: publicMediaUrlSchema,
   alt: z.string().min(1).max(200),
 });
 

@@ -14,6 +14,7 @@ export interface ICategoryImage {
 export interface ICategory extends Document {
   name: string;
   slug: string;
+  previousSlugs: string[];
   description?: string;
   searchTerms?: string[];
   image?: ICategoryImage;
@@ -45,6 +46,7 @@ const categorySchema = new Schema<ICategory>(
       trim: true,
       maxlength: 140,
     },
+    previousSlugs: { type: [String], default: [] },
     description: { type: String, trim: true, maxlength: 2000 },
     searchTerms: [{ type: String, trim: true, maxlength: 60 }],
     image: { type: categoryImageSchema, required: false },
@@ -53,7 +55,8 @@ const categorySchema = new Schema<ICategory>(
     sortOrder: { type: Number, default: 0 },
     seo: {
       title: { type: String, trim: true, maxlength: 160 },
-      description: { type: String, trim: true, maxlength: 320 },
+      previousSlugs: { type: [String], default: [] },
+    description: { type: String, trim: true, maxlength: 320 },
     },
   },
   { timestamps: true, collection: "categories" },

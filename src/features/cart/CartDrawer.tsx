@@ -1,219 +1,29 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { Icon } from "@/components/Icon";
+import { CartItems } from "./CartItems";
 import { useBag } from "./CartProvider";
-import { cloudinaryResize } from "@/utils/cloudinary-url";
+import type { ShippingSettings } from "@/services/settings-service";
 import { formatINR } from "@/utils/format";
 
-/** Slide-over bag. Works for guests (local) and members (server). */
-export function CartDrawer() {
-  const { lines, count, subtotal, loading, drawerOpen, setDrawerOpen, setQty, remove, notice } =
-    useBag();
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  // Escape closes; focus lands on the close button when opened.
-  // Background scroll stays locked while open (body + Lenis).
+export function CartDrawer({ settings }: { settings: ShippingSettings }) {
+  const { lines, count, subtotal, loading, drawerOpen, setDrawerOpen, notice } = useBag();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const close = () => setDrawerOpen(false);
   useEffect(() => {
-    if (!drawerOpen) return;
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDrawerOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
+    if (!drawerOpen) { dialog.current?.close(); return; }
+    dialog.current?.showModal();
+    const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const lenis = (window as unknown as { __lenis?: { stop: () => void; start: () => void } }).__lenis;
-    lenis?.stop();
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      lenis?.start();
-    };
-  }, [drawerOpen, setDrawerOpen]);
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Shopping bag"
-      aria-hidden={!drawerOpen}
-      className={`fixed inset-0 z-50 transition-all duration-300 ${drawerOpen ? "pointer-events-auto" : "pointer-events-none"}`}
-    >
-      {/* Backdrop */}
-      <button
-        type="button"
-        aria-label="Close bag"
-        tabIndex={drawerOpen ? 0 : -1}
-        onClick={() => setDrawerOpen(false)}
-        className={`absolute inset-0 bg-ink/50 backdrop-blur-sm transition-opacity duration-300 ${drawerOpen ? "opacity-100" : "opacity-0"}`}
-      />
-
-      {/* Panel */}
-      <aside
-        className={`absolute right-0 top-0 flex h-full w-full max-w-[420px] flex-col bg-ivory text-ink shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-light-gray bg-ink px-6 py-4 text-ivory">
-          <h2 className="font-display italic text-2xl">
-            Your bag{" "}
-            {count > 0 && (
-              <span className="font-sans text-sm text-ivory/50">({count})</span>
-            )}
-          </h2>
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={() => setDrawerOpen(false)}
-            aria-label="Close bag"
-            className="flex h-9 w-9 items-center justify-center border border-ivory/20 text-ivory/60 transition-colors hover:border-ivory hover:text-ivory"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Stock / adjustment notice */}
-        {notice && (
-          <p role="status" className="border-b border-gold/30 bg-gold/10 px-6 py-3 text-sm text-ink">
-            {notice}
-          </p>
-        )}
-
-        {/* Items */}
-        <div className="flex-1 overflow-y-auto px-6 py-5" data-lenis-prevent>
-          {loading ? (
-            <p className="text-sm text-muted">Loading your bag…</p>
-          ) : lines.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <p className="font-display italic text-3xl">Empty.</p>
-              <p className="mt-2 text-sm text-muted">
-                Pretty things await in the shop.
-              </p>
-              <Link
-                href="/shop"
-                onClick={() => setDrawerOpen(false)}
-                className="mt-6 inline-flex items-center gap-2 bg-ink px-7 py-3 text-sm font-medium text-ivory transition-colors hover:bg-gold hover:text-ink"
-              >
-                Browse the shop
-                <span aria-hidden="true">→</span>
-              </Link>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {lines.map((line) => (
-                <li
-                  key={line.key}
-                  className="flex gap-4 border border-light-gray bg-white/60 p-3"
-                >
-                  {/* Thumbnail */}
-                  <Link
-                    href={`/products/${line.slug}`}
-                    onClick={() => setDrawerOpen(false)}
-                    tabIndex={-1}
-                    aria-hidden="true"
-                  >
-                    <span className="relative block h-20 w-16 shrink-0 overflow-hidden bg-cream">
-                      {line.image ? (
-                        <Image
-                          src={cloudinaryResize(line.image.secureUrl, 200)}
-                          alt=""
-                          fill
-                          sizes="64px"
-                          loading="lazy"
-                          decoding="async"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-full items-center justify-center font-display italic text-2xl text-ink/20">
-                          S
-                        </span>
-                      )}
-                    </span>
-                  </Link>
-
-                  {/* Details */}
-                  <div className="flex w-full min-w-0 flex-col">
-                    <Link
-                      href={`/products/${line.slug}`}
-                      onClick={() => setDrawerOpen(false)}
-                      className="truncate text-sm font-medium hover:text-gold"
-                    >
-                      {line.name}
-                    </Link>
-                    {line.variantSku && (
-                      <p className="text-xs text-muted">{line.variantSku}</p>
-                    )}
-                    <p className="mt-0.5 font-mono text-sm font-semibold">
-                      {formatINR(line.price)}
-                    </p>
-
-                    {line.available === false && (
-                      <p className="text-xs text-red-700">Unavailable — remove to continue</p>
-                    )}
-                    {line.adjusted && (
-                      <p className="text-xs text-gold">Adjusted to available stock</p>
-                    )}
-
-                    {/* Qty stepper + remove */}
-                    <div className="mt-2 flex items-center gap-3">
-                      <label>
-                        <span className="sr-only">Quantity for {line.name}</span>
-                        <span className="flex items-center border border-light-gray">
-                          <button
-                            type="button"
-                            aria-label="Decrease quantity"
-                            onClick={() => void setQty(line.key, line.qty - 1)}
-                            className="px-2.5 py-1 text-sm text-muted hover:text-ink"
-                          >
-                            −
-                          </button>
-                          <span aria-live="polite" className="w-6 text-center text-sm">
-                            {line.qty}
-                          </span>
-                          <button
-                            type="button"
-                            aria-label="Increase quantity"
-                            onClick={() => void setQty(line.key, line.qty + 1)}
-                            className="px-2.5 py-1 text-sm text-muted hover:text-ink"
-                          >
-                            +
-                          </button>
-                        </span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => void remove(line.key)}
-                        className="text-xs text-muted underline underline-offset-4 hover:text-ink"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Footer CTA */}
-        {lines.length > 0 && (
-          <div className="border-t border-light-gray px-6 py-5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted">Subtotal (incl. taxes)</span>
-              <span className="font-mono text-2xl font-semibold">{formatINR(subtotal)}</span>
-            </div>
-              <p className="mt-1 text-xs text-muted">Shipping at checkout · Free over ₹899 · Gift-ready packaging</p>
-            <Link
-              href="/cart"
-              onClick={() => setDrawerOpen(false)}
-              className="btn-primary mt-4 block text-center"
-            >
-              Review bag →
-            </Link>
-          </div>
-        )}
-      </aside>
+    return () => { document.body.style.overflow = previous; };
+  }, [drawerOpen]);
+  const shipping = subtotal >= settings.freeShippingThreshold ? 0 : settings.shippingFlatFee;
+  return <dialog ref={dialog} onCancel={close} onClick={e => { if (e.target === e.currentTarget) close(); }} aria-label="Shopping bag" className="m-0 ml-auto flex-none h-dvh max-h-dvh w-full max-w-[440px] bg-white">
+    <div className="flex h-full flex-col"><div className="flex items-center justify-between border-b border-light-gray px-5 py-4"><h2 className="section-title text-2xl">Your cart <span className="text-sm text-muted">({count})</span></h2><button type="button" autoFocus className="icon-button" aria-label="Close bag" onClick={close}><Icon name="close" /></button></div>
+      {notice && <p role="status" className="border-b border-light-gray bg-cream px-5 py-3 text-sm">{notice}</p>}
+      <div className="flex-1 overflow-y-auto px-5">{loading ? <p className="py-6 text-sm text-muted">Loading your cart…</p> : lines.length ? <CartItems onNavigate={close} /> : <div className="py-16 text-center"><p className="section-title text-2xl">Your cart is empty.</p><Link href="/shop" onClick={close} className="btn-primary mt-6">Continue shopping</Link></div>}</div>
+      {lines.length > 0 && <div className="border-t border-light-gray bg-white px-5 py-5"><dl className="space-y-2 text-sm"><div className="flex justify-between"><dt>Subtotal</dt><dd className="font-semibold">{formatINR(subtotal)}</dd></div><div className="flex justify-between text-xs text-muted"><dt>Delivery before discounts</dt><dd>{shipping ? formatINR(shipping) : "Free"}</dd></div></dl><Link href={lines.some(l => l.available === false) ? "/cart" : "/checkout"} onClick={close} className="btn-primary mt-5 w-full">{lines.some(l => l.available === false) ? "Review unavailable items" : "Checkout"}</Link><Link href="/cart" onClick={close} className="mt-2 flex min-h-11 items-center justify-center text-sm underline underline-offset-4">View cart</Link></div>}
     </div>
-  );
+  </dialog>;
 }

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { isIndexingEnabled } from "./src/lib/env";
 
 // Strict CSP is applied in production only: dev (Turbopack/HMR) needs
 // looser script/eval permissions. Baseline hardening headers always apply.
@@ -17,6 +18,7 @@ const PROD_CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  distDir: process.env.E2E_DIST_DIR || ".next",
   async redirects() {
     return [{ source: "/qanda", destination: "/faq", permanent: true }];
   },
@@ -26,7 +28,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ["zod", "mongoose"],
+    optimizePackageImports: ["zod"],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
@@ -39,6 +41,7 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          ...(!isIndexingEnabled() ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] : []),
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
@@ -48,19 +51,6 @@ const nextConfig: NextConfig = {
             : []),
         ],
       },
-      // ISR homepage + shop benefit from edge caching without sacrificing freshness.
-      {
-        source: "/",
-        headers: [
-          { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
-          { key: "CDN-Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=600" },
-        ],
-      },
-      {
-        source: "/shop",
-        headers: [{ key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" }],
-      },
-
     ];
   },
 };

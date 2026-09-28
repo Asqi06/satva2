@@ -6,14 +6,14 @@ import { expect, test } from "@playwright/test";
  * live Razorpay keys (manual acceptance in test mode, per Phase 4 gate).
  */
 
-test("checkout shows a login prompt to guests", async ({ page }) => {
+test("empty checkout offers shopping without requiring sign-in", async ({ page }) => {
   await page.goto("/checkout");
-  // Generous timeout: cold dev-server compile under parallel workers.
-  await expect(page.getByRole("heading", { name: /one step first/i })).toBeVisible({ timeout: 15000 });
-  await expect(page.getByRole("link", { name: /continue with google/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /your cart is empty/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("link", { name: /continue shopping/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /continue with google/i })).toHaveCount(0);
 });
 
-test("checkout APIs require login", async ({ request }) => {
+test("checkout APIs require a member or secure guest identity", async ({ request }) => {
   for (const [method, url] of [
     ["GET", "/api/addresses"],
     ["POST", "/api/orders"],

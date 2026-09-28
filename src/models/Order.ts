@@ -23,6 +23,7 @@ export type PaymentStatus = "PENDING" | "AUTHORIZED" | "PAID" | "FAILED" | "REFU
 export interface IOrderItem {
   productId: Types.ObjectId;
   variantSku?: string;
+  variantLabel?: string;
   name: string;
   image?: string;
   qty: number;
@@ -49,6 +50,8 @@ export interface ITimelineEntry {
 
 export interface IOrder extends Document {
   userId: Types.ObjectId;
+  isGuest?: boolean;
+  customerEmail?: string;
   items: IOrderItem[];
   shippingAddress: IOrderAddress;
   subtotal: number;
@@ -72,6 +75,7 @@ const orderItemSchema = new Schema<IOrderItem>(
   {
     productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
     variantSku: { type: String, trim: true, maxlength: 64 },
+    variantLabel: { type: String, maxlength: 256 },
     name: { type: String, required: true, maxlength: 160 },
     image: { type: String, maxlength: 2048 },
     qty: { type: Number, required: true, min: 1, max: 99 },
@@ -107,6 +111,8 @@ const timelineSchema = new Schema<ITimelineEntry>(
 const orderSchema = new Schema<IOrder>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    isGuest: { type: Boolean, default: false },
+    customerEmail: { type: String, trim: true, lowercase: true, maxlength: 254 },
     items: { type: [orderItemSchema], required: true },
     shippingAddress: { type: addressSnapshotSchema, required: true },
     subtotal: { type: Number, required: true, min: 0 },

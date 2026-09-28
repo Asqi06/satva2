@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { connection, Types } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import {
@@ -8,12 +8,13 @@ import {
   notifyRefund,
 } from "@/lib/email";
 import { logger } from "@/lib/logger";
-import { createRazorpayOrder, getRazorpayKeyId, verifyPaymentSignature } from "@/lib/razorpay";
+import { createRazorpayOrder, fetchRazorpayPayment, getRazorpayKeyId, verifyPaymentSignature } from "@/lib/razorpay";
 import { Coupon } from "@/models/Coupon";
+import { Cart } from "@/models/Cart";
 import { Order, type IOrder, type OrderStatus } from "@/models/Order";
 import { Payment } from "@/models/Payment";
 import { User } from "@/models/User";
-import type { CreateOrderInput, VerifyPaymentInput } from "@/schemas/checkout";
+import { guestOrderSchema, type GuestOrderInput, type CreateOrderInput, type VerifyPaymentInput } from "@/schemas/checkout";
 import { getCartView } from "./cart-service";
 import {
   recordRedemption,
@@ -29,7 +30,6 @@ import {
   restockSold,
   type ReserveLine,
 } from "./inventory-service";
-import { clearCart } from "./cart-service";
 import { getSettings, shippingFor } from "./settings-service";
 
 /**
@@ -40,9 +40,12 @@ import { getSettings, shippingFor } from "./settings-service";
 
 export interface OrderDTO {
   id: string;
+  isGuest?: boolean;
+  customerEmail?: string;
   items: {
     productId: string;
     variantSku?: string;
+    variantLabel?: string;
     name: string;
     image?: string;
     qty: number;
@@ -69,6 +72,7 @@ export interface OrderDTO {
   orderStatus: string;
   razorpayOrderId?: string;
   reservationExpiresAt?: string;
+  refundRequestedAt?: string;
   timeline: { status: string; at: string; note?: string }[];
   createdAt: string;
   /** True for pre-launch/COD-era imports lacking userId + machine statuses. Read-only everywhere. */
@@ -89,9 +93,12 @@ export function toOrderDTO(doc: LeanOrder): OrderDTO {
   const timeline = Array.isArray(doc.timeline) ? doc.timeline : [];
   return {
     id: doc._id.toString(),
+    isGuest: doc.isGuest,
+    customerEmail: doc.customerEmail,
     items: items.map((i) => ({
       productId: i.productId?.toString() ?? "",
       variantSku: i.variantSku,
+      variantLabel: i.variantLabel,
       name: i.name ?? "Item",
       image: i.image,
       qty: i.qty ?? 0,
@@ -109,6 +116,7 @@ export function toOrderDTO(doc: LeanOrder): OrderDTO {
     orderStatus: doc.orderStatus ?? "PENDING",
     razorpayOrderId: doc.razorpayOrderId,
     reservationExpiresAt: doc.reservationExpiresAt?.toISOString(),
+    refundRequestedAt: doc.refundRequestedAt?.toISOString(),
     timeline: timeline.map((t) => ({
       status: t?.status ?? "PENDING",
       at: t?.at instanceof Date ? t.at.toISOString() : new Date(0).toISOString(),
@@ -157,7 +165,8 @@ async function ensureOrderIndexes(): Promise<void> {
 
 export async function createOrder(
   rawUserId: string,
-  input: CreateOrderInput,
+  input: CreateOrderInput | GuestOrderInput,
+  guest = false,
 ): Promise<{ order: OrderDTO; excluded: number }> {
   await connectDb();
   await ensureOrderIndexes();
@@ -172,10 +181,10 @@ export async function createOrder(
   }
   const userId = await userIdOrThrow(rawUserId);
 
-  const user = await User.findById(userId);
-  if (!user) throw new AppError("UNAUTHORIZED", "Login required", 401);
-  // Legacy/guest-era users may lack the addresses array — 404, never a TypeError 500.
-  const address = (user.addresses ?? []).find((a) => a._id.toString() === input.addressId);
+  const guestInput = guest ? guestOrderSchema.parse(input) : null;
+  const user = guest ? null : await User.findById(userId);
+  if (!guest && !user) throw new AppError("UNAUTHORIZED", "Login required", 401);
+  const address = guestInput?.address ?? (user?.addresses ?? []).find(a => a._id.toString() === (input as CreateOrderInput).addressId);
   if (!address) throw new AppError("NOT_FOUND", "Address not found", 404);
 
   const cart = await getCartView(userId.toString());
@@ -188,6 +197,7 @@ export async function createOrder(
   const subtotal = lines.reduce((n, l) => n + l.qty * l.price, 0);
   const pricedLines = lines.map((l) => ({
     productId: l.productId,
+    categoryId: l.categoryId,
     qty: l.qty,
     unitPrice: l.price,
   }));
@@ -196,74 +206,77 @@ export async function createOrder(
   let couponId: string | undefined;
   let couponCode: string | undefined;
   if (input.couponCode) {
-    const check = await validateCoupon(input.couponCode, userId.toString(), pricedLines, subtotal);
+    const check = await validateCoupon(input.couponCode, userId.toString(), pricedLines, subtotal, undefined, false, guest);
     if (!check.valid) {
       throw new AppError("CONFLICT", `Coupon ${check.reason}: ${input.couponCode}`, 409);
     }
     discount = check.discount;
     couponId = check.couponId;
     couponCode = check.code;
-    await reserveCouponUse(couponId as string);
+
   }
 
   const settings = await getSettings();
   const shipping = shippingFor(subtotal - discount, settings);
   const total = subtotal - discount + shipping;
 
-  const order = await Order.create({
-    userId,
-    items: lines.map((l) => ({
-      productId: new Types.ObjectId(l.productId),
+  const order = await connection.transaction(async (session) => {
+    const fresh = (await getCartView(userId.toString(), session)).items.filter((item) => item.available);
+    if (fresh.length !== lines.length || fresh.some((item, index) => item.key !== lines[index].key || item.qty !== lines[index].qty || item.price !== lines[index].price)) {
+      throw new AppError("CONFLICT", "Your bag or prices changed. Please review your bag before checkout.", 409);
+    }
+    if (couponId) {
+      await reserveCouponUse(couponId, session);
+      // Recheck user limits after locking the coupon, before creating this pending order.
+      const check = await validateCoupon(input.couponCode!, userId.toString(), pricedLines, subtotal, session, true, guest);
+      if (!check.valid) throw new AppError("CONFLICT", `Coupon ${check.reason}`, 409);
+    }
+    const [order] = await Order.create([{
+      userId,
+      isGuest: guest,
+      customerEmail: guestInput?.email,
+      items: lines.map((l) => ({
+        productId: new Types.ObjectId(l.productId),
+        variantSku: l.variantSku,
+        variantLabel: l.variantLabel,
+        name: l.name,
+        image: l.image?.secureUrl,
+        qty: l.qty,
+        unitPrice: l.price,
+        totalPrice: l.qty * l.price,
+      })),
+      shippingAddress: {
+        fullName: address.fullName,
+        phone: address.phone,
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2,
+        city: address.city,
+        state: address.state,
+        pincode: address.pincode,
+        landmark: address.landmark,
+      },
+      subtotal,
+      discount,
+      shipping,
+      tax: 0,
+      total,
+      couponCode,
+      paymentStatus: "PENDING",
+      orderStatus: "PENDING",
+      reservationExpiresAt: new Date(Date.now() + settings.reservationTtlMinutes * 60 * 1000),
+      timeline: [{ status: "PENDING" as OrderStatus, at: new Date() }],
+    }], { session });
+
+    const reserveLines: ReserveLine[] = lines.map((l) => ({
+      productId: l.productId,
       variantSku: l.variantSku,
-      name: l.name,
-      image: l.image?.secureUrl,
       qty: l.qty,
-      unitPrice: l.price,
-      totalPrice: l.qty * l.price,
-    })),
-    shippingAddress: {
-      fullName: address.fullName,
-      phone: address.phone,
-      addressLine1: address.addressLine1,
-      addressLine2: address.addressLine2,
-      city: address.city,
-      state: address.state,
-      pincode: address.pincode,
-      landmark: address.landmark,
-    },
-    subtotal,
-    discount,
-    shipping,
-    tax: 0,
-    total,
-    couponCode,
-    paymentStatus: "PENDING",
-    orderStatus: "PENDING",
-    reservationExpiresAt: new Date(Date.now() + settings.reservationTtlMinutes * 60 * 1000),
-    timeline: [{ status: "PENDING" as OrderStatus, at: new Date() }],
+    }));
+    await reserveUnits(reserveLines, order._id, session);
+    await Cart.updateOne({ userId }, { $set: { items: [] } }, { session });
+    return order;
   });
 
-  const reserveLines: ReserveLine[] = lines.map((l) => ({
-    productId: l.productId,
-    variantSku: l.variantSku,
-    qty: l.qty,
-  }));
-  try {
-    await reserveUnits(reserveLines, order._id);
-  } catch (error) {
-    // Roll back the half-built order: release coupon, mark cancelled.
-    if (couponId) await releaseCouponUse(couponId);
-    await Order.updateOne(
-      { _id: order._id },
-      {
-        $set: { orderStatus: "CANCELLED" },
-        $push: { timeline: { status: "CANCELLED", at: new Date(), note: "Stock unavailable" } },
-      },
-    );
-    throw error;
-  }
-
-  await clearCart(userId.toString());
   const doc = await Order.findById(order._id).lean<LeanOrder | null>();
   if (!doc) throw new AppError("NOT_FOUND", "Order not found", 404);
   return { order: toOrderDTO(doc), excluded };
@@ -313,7 +326,8 @@ export async function createPaymentOrder(
     notes: { orderId: order._id.toString(), userId: userId.toString() },
   });
   try {
-    await Order.updateOne({ _id: order._id }, { $set: { razorpayOrderId: rzp.id } });
+    const attached = await Order.updateOne({ _id: order._id, razorpayOrderId: { $exists: false }, orderStatus: "PENDING", paymentStatus: "PENDING", reservationExpiresAt: { $gt: new Date() } }, { $set: { razorpayOrderId: rzp.id } });
+    if (!attached.modifiedCount) return createPaymentOrder(rawUserId, orderId);
   } catch (error) {
     if (error !== null && typeof error === "object" && "code" in error && error.code === 11000) {
       const current = await Order.findById(order._id).lean<LeanOrder | null>();
@@ -360,54 +374,46 @@ async function settleOrderPaid(
   razorpayPaymentId: string,
   eventMarker: string,
 ): Promise<LeanOrder> {
-  const won = await Order.findOneAndUpdate(
-    { _id: orderId, paymentStatus: "PENDING", orderStatus: "PENDING" },
-    {
-      $set: {
-        paymentStatus: "PAID",
-        orderStatus: "CONFIRMED",
-        razorpayPaymentId,
-      },
-      $push: {
-        timeline: { status: "CONFIRMED" as OrderStatus, at: new Date(), note: "Payment verified" },
-      },
-    },
-    { returnDocument: "after" },
-  ).lean<LeanOrder | null>();
-
-  if (won) {
-    await Payment.findOneAndUpdate(
-      { orderId },
+  const result = await connection.transaction(async (session) => {
+    const won = await Order.findOneAndUpdate(
+      { _id: orderId, paymentStatus: "PENDING", orderStatus: "PENDING" },
       {
-        $set: { status: "PAID", razorpayPaymentId },
-        $addToSet: { processedEvents: eventMarker },
+        $set: { paymentStatus: "PAID", orderStatus: "CONFIRMED", razorpayPaymentId },
+        $push: { timeline: { status: "CONFIRMED", at: new Date(), note: "Payment verified" } },
       },
-    );
-    await finalizeSale(linesOf(won), orderId);
-    if (won.couponCode) {
-      const coupon = await Coupon.findOne({ code: won.couponCode }).select("_id").lean();
-      if (coupon) await recordRedemption(coupon._id.toString(), won.userId.toString(), orderId.toString());
+      { returnDocument: "after", session },
+    ).lean<LeanOrder | null>();
+    if (won) {
+      await Payment.updateOne({ orderId }, {
+        $set: { status: "PAID", razorpayPaymentId }, $addToSet: { processedEvents: eventMarker },
+      }, { session });
+      await finalizeSale(linesOf(won), orderId, session);
+      if (won.couponCode) {
+        const coupon = await Coupon.findOne({ code: won.couponCode }).session(session).select("_id").lean();
+        if (coupon) await recordRedemption(coupon._id.toString(), won.userId.toString(), orderId.toString(), session);
+      }
+      return { order: won, notify: true };
     }
-    const fresh = await Order.findById(orderId).lean<LeanOrder | null>();
-    if (!fresh) throw new AppError("NOT_FOUND", "Order not found", 404);
-    // Lifecycle emails, in order. Awaited: sending is part of completion,
-    // and notify* never throws (failures log as FAILED notifications).
-    const dto = toOrderDTO(fresh);
-    await notifyOrderConfirmation(won.userId.toString(), dto);
-    await notifyPaymentReceipt(won.userId.toString(), dto);
-    return fresh;
+    const current = await Order.findById(orderId).session(session).lean<LeanOrder | null>();
+    if (!current) throw new AppError("NOT_FOUND", "Order not found", 404);
+    if (current.paymentStatus !== "PAID") throw new AppError("CONFLICT", "Order cannot be paid in its current state", 409);
+    if (current.razorpayPaymentId !== razorpayPaymentId) throw new AppError("CONFLICT", "Order already has a different payment", 409);
+    await Payment.updateOne({ orderId }, { $addToSet: { processedEvents: eventMarker } }, { session });
+    return { order: current, notify: false };
+  });
+  if (result.notify) {
+    const dto = toOrderDTO(result.order);
+    await notifyOrderConfirmation(result.order.userId.toString(), dto);
+    await notifyPaymentReceipt(result.order.userId.toString(), dto);
   }
+  return result.order;
+}
 
-  const current = await Order.findById(orderId).lean<LeanOrder | null>();
-  if (!current) throw new AppError("NOT_FOUND", "Order not found", 404);
-  if (current.paymentStatus === "PAID") {
-    await Payment.updateOne(
-      { orderId },
-      { $addToSet: { processedEvents: eventMarker } },
-    );
-    return current;
+async function assertCapturedPayment(paymentId: string, orderId: string, total: number): Promise<void> {
+  const captured = await fetchRazorpayPayment(paymentId);
+  if (captured.status !== "captured" || captured.order_id !== orderId || captured.currency !== "INR" || Number(captured.amount) !== total * 100) {
+    throw new AppError("PAYMENT_ERROR", "Payment is not captured for this order and amount. Please check your order status before retrying.", 402);
   }
-  throw new AppError("CONFLICT", "Order cannot be paid in its current state", 409);
 }
 
 /** Browser callback after Razorpay Checkout. Verifies signature, settles. */
@@ -420,9 +426,10 @@ export async function verifyPayment(rawUserId: string, input: VerifyPaymentInput
   await connectDb();
   const userId = await userIdOrThrow(rawUserId);
   const order = await Order.findOne({ razorpayOrderId: input.razorpayOrderId, userId })
-    .select("_id")
-    .lean<{ _id: Types.ObjectId } | null>();
+    .select("_id total")
+    .lean<{ _id: Types.ObjectId; total: number } | null>();
   if (!order) throw new AppError("NOT_FOUND", "Order not found", 404);
+  await assertCapturedPayment(input.razorpayPaymentId, input.razorpayOrderId, order.total);
   const settled = await settleOrderPaid(order._id, input.razorpayPaymentId, `verify:${input.razorpayPaymentId}`);
   return toOrderDTO(settled);
 }
@@ -433,7 +440,7 @@ interface WebhookPaymentEntity {
   payment_id?: string;
 }
 
-/** Async Razorpay webhook settlement. Always ack (200) unless the signature is bad. */
+/** Async settlement. Processing errors propagate so the gateway can retry. */
 export async function handleWebhookEvent(eventId: string, event: string, entity: WebhookPaymentEntity): Promise<{ ack: boolean; settled: boolean }> {
   await connectDb();
   let razorpayOrderId = entity.order_id;
@@ -460,68 +467,67 @@ export async function handleWebhookEvent(eventId: string, event: string, entity:
   }
 
   if (event === "payment.captured") {
-    try {
-      await settleOrderPaid(order._id, entity.id, eventId);
-      return { ack: true, settled: true };
-    } catch (error) {
-      logger.warn("webhook settle skipped", {
-        eventId,
-        message: error instanceof Error ? error.message : "unknown",
-      });
-      if (payment) {
-        await Payment.updateOne({ _id: payment._id }, { $addToSet: { processedEvents: eventId } });
-      }
-      return { ack: true, settled: false };
-    }
+    // Propagate processing failures: Razorpay must retry after a transient DB outage.
+    await assertCapturedPayment(entity.id, razorpayOrderId, order.total);
+    await settleOrderPaid(order._id, entity.id, eventId);
+    return { ack: true, settled: true };
   }
   if (event === "payment.failed") {
     await Order.updateOne(
       { _id: order._id, paymentStatus: "PENDING" },
       {
-        $set: { paymentStatus: "FAILED" },
         $push: { timeline: { status: "PENDING" as OrderStatus, at: new Date(), note: "Payment failed" } },
       },
     );
     if (payment) {
       await Payment.updateOne(
-        { _id: payment._id },
+        { _id: payment._id, status: { $nin: ["PAID", "REFUNDED"] } },
         { $set: { status: "FAILED" }, $addToSet: { processedEvents: eventId } },
       );
     }
     return { ack: true, settled: false };
   }
   if (event === "refund.processed") {
-    if (order.paymentStatus === "PAID") {
-      const refunded = await Order.findOneAndUpdate(
-        { _id: order._id, paymentStatus: "PAID" },
+    if (!order.razorpayPaymentId) throw new AppError("CONFLICT", "Refund has no recorded payment", 409);
+    const gatewayPayment = await fetchRazorpayPayment(order.razorpayPaymentId);
+    if (gatewayPayment.order_id !== razorpayOrderId || gatewayPayment.currency !== "INR" || Number(gatewayPayment.amount) !== order.total * 100) {
+      throw new AppError("PAYMENT_ERROR", "Refund payment does not match this order", 402);
+    }
+    if (Number(gatewayPayment.amount_refunded) !== order.total * 100) {
+      // ponytail: partial refunds need manual money reconciliation; full stock must not be restored.
+      await Payment.updateOne({ orderId: order._id }, { $addToSet: { processedEvents: eventId } });
+      logger.warn("partial refund requires reconciliation", { orderId: order._id.toString(), eventId });
+      return { ack: true, settled: false };
+    }
+    const refunded = await connection.transaction(async (session) => {
+      const current = await Order.findById(order._id).session(session).lean<LeanOrder | null>();
+      const updated = await Order.findOneAndUpdate(
+        { _id: order._id, paymentStatus: "PAID", orderStatus: current?.orderStatus },
         {
           $set: { paymentStatus: "REFUNDED", orderStatus: "REFUNDED" },
           $push: { timeline: { status: "REFUNDED" as OrderStatus, at: new Date(), note: "Refund processed" } },
         },
-        { returnDocument: "after" },
+        { returnDocument: "after", session },
       ).lean<LeanOrder | null>();
-      if (refunded) {
-        // ponytail: A DB failure after this claim needs inventory reconciliation; use a Mongo transaction when available.
-        await restockSold(linesOf(refunded), refunded._id, "Refund processed");
-        if (refunded.couponCode) {
-          const coupon = await Coupon.findOne({ code: refunded.couponCode }).select("_id").lean();
-          if (coupon) await releaseCouponUse(coupon._id.toString());
+      if (updated) {
+        if (current && ["PENDING", "CONFIRMED", "PROCESSING", "PACKED", "RETURNED"].includes(current.orderStatus)) {
+          await restockSold(linesOf(updated), updated._id, "Refund processed", session);
         }
-        if (payment) {
-          await Payment.updateOne(
-            { _id: payment._id },
-            { $set: { status: "REFUNDED" }, $addToSet: { processedEvents: eventId } },
-          );
+        if (updated.couponCode) {
+          const coupon = await Coupon.findOne({ code: updated.couponCode }).session(session).select("_id").lean();
+          if (coupon) await releaseCouponUse(coupon._id.toString(), session);
         }
-        await notifyRefund(refunded.userId.toString(), toOrderDTO(refunded));
-        return { ack: true, settled: true };
       }
-    }
-    if (payment) {
-      await Payment.updateOne({ _id: payment._id }, { $addToSet: { processedEvents: eventId } });
-    }
-    return { ack: true, settled: false };
+      await Payment.updateOne({ orderId: order._id }, {
+        ...(updated ? { $set: { status: "REFUNDED" } } : {}),
+        $addToSet: { processedEvents: eventId },
+      }, { session });
+      return updated;
+    });
+    if (refunded) await notifyRefund(refunded.userId.toString(), toOrderDTO(refunded));
+    return { ack: true, settled: Boolean(refunded) };
   }
+
   if (payment) {
     await Payment.updateOne({ _id: payment._id }, { $addToSet: { processedEvents: eventId } });
   }
@@ -538,21 +544,23 @@ export async function cancelOrder(rawUserId: string, orderId: string, reason?: s
   if (order.orderStatus !== "PENDING" || order.paymentStatus !== "PENDING") {
     throw new AppError("CONFLICT", "Order can no longer be cancelled — contact support", 409);
   }
-  const updated = await Order.findOneAndUpdate(
-    { _id: order._id, orderStatus: "PENDING", paymentStatus: "PENDING" },
-    {
-      $set: { orderStatus: "CANCELLED" },
-      $push: { timeline: { status: "CANCELLED" as OrderStatus, at: new Date(), note: reason ?? "Customer cancelled" } },
-    },
-    { returnDocument: "after" },
-  ).lean<LeanOrder | null>();
-  if (!updated) throw new AppError("CONFLICT", "Order changed state — please refresh", 409);
-  // ponytail: A DB failure after this claim needs inventory reconciliation; use a Mongo transaction when available.
-  await releaseHold(linesOf(updated), updated._id, reason ?? "Customer cancelled");
-  if (updated.couponCode) {
-    const coupon = await Coupon.findOne({ code: updated.couponCode }).select("_id").lean();
-    if (coupon) await releaseCouponUse(coupon._id.toString());
-  }
+  const updated = await connection.transaction(async (session) => {
+    const updated = await Order.findOneAndUpdate(
+      { _id: order._id, orderStatus: "PENDING", paymentStatus: "PENDING" },
+      {
+        $set: { orderStatus: "CANCELLED" },
+        $push: { timeline: { status: "CANCELLED" as OrderStatus, at: new Date(), note: reason ?? "Customer cancelled" } },
+      },
+      { returnDocument: "after", session },
+    ).lean<LeanOrder | null>();
+    if (!updated) throw new AppError("CONFLICT", "Order changed state — please refresh", 409);
+    await releaseHold(linesOf(updated), updated._id, reason ?? "Customer cancelled", session);
+    if (updated.couponCode) {
+      const coupon = await Coupon.findOne({ code: updated.couponCode }).session(session).select("_id").lean();
+      if (coupon) await releaseCouponUse(coupon._id.toString(), session);
+    }
+    return updated;
+  });
   await notifyCancellation(userId.toString(), toOrderDTO(updated), reason);
   return toOrderDTO(updated);
 }

@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { WishlistView } from "@/features/wishlist/WishlistView";
 
 export const metadata: Metadata = {
-  title: "Wishlist — SatvaStones",
+  title: { absolute: "Wishlist — SatvaStones" },
   description: "Your saved SatvaStones pieces.",
   robots: { index: false, follow: false },
 };

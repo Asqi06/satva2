@@ -32,7 +32,10 @@ export async function connectDb(): Promise<typeof mongoose> {
   if (cache.conn) return cache.conn;
   if (!cache.promise) {
     const uri = requireServerVar("MONGODB_URI");
-    cache.promise = mongoose.connect(uri);
+    cache.promise = mongoose.connect(uri, { serverSelectionTimeoutMS: 10_000 }).catch((error) => {
+      cache.promise = null;
+      throw error;
+    });
   }
   cache.conn = await cache.promise;
   return cache.conn;

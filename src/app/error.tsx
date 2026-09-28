@@ -9,7 +9,7 @@ export default function GlobalError({
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ivory px-6 text-center text-ink">
-        <h1 className="font-display text-4xl">Something went wrong</h1>
+        <h1 className="section-title text-3xl">Something went wrong</h1>
         <p className="max-w-md text-warm-gray">
           {error.digest
             ? `Reference ${error.digest}. Please try again.`
@@ -18,7 +18,7 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-ivory hover:bg-clay"
+          className="btn-primary"
         >
           Try again
         </button>

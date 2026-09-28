@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { Cart } from "@/models/Cart";
@@ -15,6 +15,7 @@ export interface CartViewItem {
   productId: string;
   categoryId: string;
   variantSku?: string;
+  variantLabel?: string;
   qty: number;
   name: string;
   slug: string;
@@ -79,9 +80,9 @@ function availableStock(doc: LeanProduct, variantSku?: string): number {
   if (variantSku) {
     const variant = doc.variants.find((v) => v.sku.toUpperCase() === variantSku.toUpperCase());
     if (!variant) return 0;
-    return Math.max(variant.stock, 0);
+    return Math.max(0, Math.min(variant.stock - (variant.reservedStock ?? 0), doc.stock - doc.reservedStock));
   }
-  return Math.max(doc.stock - doc.reservedStock, 0);
+  return doc.variants.length ? 0 : Math.max(doc.stock - doc.reservedStock, 0);
 }
 
 function toViewItem(
@@ -90,6 +91,7 @@ function toViewItem(
   qty: number,
   doc: LeanProduct,
 ): CartViewItem {
+  const variant = variantSku ? doc.variants.find(v => v.sku.toUpperCase() === variantSku.toUpperCase()) : undefined;
   const stock = availableStock(doc, variantSku);
   const effective = Math.min(qty, stock);
   const cover = doc.images.find((i) => i.isThumbnail) ?? doc.images[0];
@@ -99,6 +101,7 @@ function toViewItem(
     // Cart queries never populate: categoryId is always an ObjectId here.
     categoryId: doc.categoryId.toString(),
     variantSku,
+    variantLabel: variant ? [variant.size, variant.color, variant.style].filter(Boolean).join(" · ") || variantSku : undefined,
     qty: effective,
     name: doc.name,
     slug: doc.slug,
@@ -111,13 +114,13 @@ function toViewItem(
   };
 }
 
-async function buildView(userId: Types.ObjectId): Promise<CartView> {
-  const cart = await Cart.findOne({ userId }).lean();
+async function buildView(userId: Types.ObjectId, session?: ClientSession): Promise<CartView> {
+  const cart = await Cart.findOne({ userId }).session(session ?? null).lean();
   if (!cart || cart.items.length === 0) {
     return { items: [], count: 0, subtotal: 0, unavailableCount: 0 };
   }
   const ids = [...new Set(cart.items.map((i) => i.productId.toString()))];
-  const docs = await Product.find({ _id: { $in: ids } }).lean<LeanProduct[]>();
+  const docs = await Product.find({ _id: { $in: ids } }).session(session ?? null).lean<LeanProduct[]>();
   const byId = new Map(docs.map((d) => [d._id.toString(), d]));
 
   const items: CartViewItem[] = [];
@@ -137,7 +140,7 @@ async function buildView(userId: Types.ObjectId): Promise<CartView> {
     items.push(view);
   }
   if (prune.length > 0) {
-    await Cart.updateOne({ userId }, { $pull: { items: { productId: { $in: prune } } } });
+    await Cart.updateOne({ userId }, { $pull: { items: { productId: { $in: prune } } } }, { session });
   }
   const available = items.filter((i) => i.available);
   return {
@@ -158,15 +161,31 @@ async function resolveProduct(productId: string, variantSku?: string): Promise<L
   if (!doc || !doc.isPublished) {
     throw new AppError("NOT_FOUND", "Product not found", 404);
   }
+  if (!variantSku && doc.variants.length) throw new AppError("VALIDATION_ERROR", "Choose a product option", 400);
   if (variantSku && !doc.variants.some((v) => v.sku.toUpperCase() === variantSku.toUpperCase())) {
     throw new AppError("VALIDATION_ERROR", "Unknown variant", 400);
   }
   return doc;
 }
 
-export async function getCartView(rawUserId: string): Promise<CartView> {
+export async function getCartView(rawUserId: string, session?: ClientSession): Promise<CartView> {
   await connectDb();
-  return buildView(await getOrCreateUserId(rawUserId));
+  return buildView(await getOrCreateUserId(rawUserId), session);
+}
+
+/** Replace, rather than merge: repeated guest checkout preparation must not double quantities. */
+export async function replaceGuestCart(rawId: string, input: CartMergeInput): Promise<CartView> {
+  await connectDb();
+  const userId = await getOrCreateUserId(rawId);
+  const unique = new Map<string, { productId: Types.ObjectId; variantSku?: string; qty: number }>();
+  for (const item of input.items) {
+    await resolveProduct(item.productId, item.variantSku);
+    const key = cartKey(item.productId, item.variantSku);
+    const prior = unique.get(key);
+    unique.set(key, { productId: new Types.ObjectId(item.productId), variantSku: item.variantSku?.toUpperCase(), qty: Math.min(99, item.qty + (prior?.qty ?? 0)) });
+  }
+  await Cart.findOneAndUpdate({ userId }, { $set: { items: [...unique.values()] } }, { upsert: true, runValidators: true });
+  return buildView(userId);
 }
 
 export async function addCartItem(

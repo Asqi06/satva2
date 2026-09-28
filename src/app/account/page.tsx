@@ -4,7 +4,7 @@ import { SignOutButton } from "@/features/auth/SignOutButton";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "My Account — SatvaStones",
+  title: { absolute: "My Account — SatvaStones" },
   description: "Your SatvaStones profile, orders and settings.",
   robots: { index: false, follow: false },
 };
@@ -15,7 +15,7 @@ export default async function AccountPage() {
   const { user } = session;
 
   return (
-    <main className="rounded-3xl border border-light-gray bg-white/60 p-8">
+    <div className="rounded-[3px] border border-light-gray bg-white/60 p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-clay">
         Overview
       </p>
@@ -55,11 +55,11 @@ export default async function AccountPage() {
         </div>
       )}
       <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <div className="rounded-2xl border border-light-gray p-4">
+        <div className="rounded-[3px] border border-light-gray p-4">
           <dt className="text-warm-gray">Role</dt>
           <dd className="mt-1 font-semibold">{user.role}</dd>
         </div>
-        <div className="rounded-2xl border border-light-gray p-4">
+        <div className="rounded-[3px] border border-light-gray p-4">
           <dt className="text-warm-gray">Signed in with</dt>
           <dd className="mt-1 font-semibold">Google</dd>
         </div>
@@ -67,6 +67,6 @@ export default async function AccountPage() {
       <div className="mt-6">
         <SignOutButton />
       </div>
-    </main>
+    </div>
   );
 }

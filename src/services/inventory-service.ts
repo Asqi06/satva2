@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { connection, Types, type ClientSession } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { Coupon } from "@/models/Coupon";
@@ -22,9 +22,8 @@ function skuEquals(sku: string): { $regex: string; $options: string } {
  * Inventory movements. `stock` is truth, `reservedStock` is transient
  * holds from PENDING orders. available = stock − reserved.
  *
- * Variants: reservation is tracked on the product row; variant rows are
- * checked at reserve time and decremented at sale time (documented
- * residual race — see ADR-014).
+ * Product and variant reservations are checked and updated atomically.
+ * Multi-line reservations and payment settlement require a MongoDB replica set.
  */
 
 export interface ReserveLine {
@@ -40,13 +39,15 @@ async function logTx(
   quantity: number,
   orderId?: Types.ObjectId,
   reason?: string,
+  session?: ClientSession,
 ): Promise<void> {
-  await InventoryTransaction.create({ productId, variantSku, type, quantity, orderId, reason });
+  await InventoryTransaction.create([{ productId, variantSku, type, quantity, orderId, reason }], { session });
 }
 
 /** Hold units for a PENDING order. Throws 409 when stock raced away. */
-export async function reserveUnits(lines: ReserveLine[], orderId: Types.ObjectId): Promise<void> {
+export async function reserveUnits(lines: ReserveLine[], orderId: Types.ObjectId, session?: ClientSession): Promise<void> {
   await connectDb();
+  if (!session) return connection.transaction((session) => reserveUnits(lines, orderId, session));
   for (const line of lines) {
     const variantMatch = line.variantSku
       ? { variants: { $elemMatch: { sku: skuEquals(line.variantSku), stock: { $gte: line.qty } } } }
@@ -55,24 +56,35 @@ export async function reserveUnits(lines: ReserveLine[], orderId: Types.ObjectId
       {
         _id: new Types.ObjectId(line.productId),
         isPublished: true,
-        $expr: { $gte: [{ $subtract: ["$stock", "$reservedStock"] }, line.qty] },
+        $expr: { $and: [
+          { $gte: [{ $subtract: ["$stock", { $ifNull: ["$reservedStock", 0] }] }, line.qty] },
+          ...(line.variantSku ? [{ $gte: [{ $sum: { $map: {
+            input: { $filter: { input: "$variants", as: "variant", cond: { $eq: [{ $toUpper: "$$variant.sku" }, line.variantSku.trim().toUpperCase()] } } },
+            as: "variant", in: { $subtract: ["$$variant.stock", { $ifNull: ["$$variant.reservedStock", 0] }] },
+          } } }, line.qty] }] : []),
+        ] },
         ...variantMatch,
       },
-      { $inc: { reservedStock: line.qty } },
+      { $inc: { reservedStock: line.qty, ...(line.variantSku ? { "variants.$.reservedStock": line.qty } : {}) } },
+      { session },
     );
     if (!updated) {
       throw new AppError("CONFLICT", "Some items just sold out — please review your bag", 409);
     }
-    await logTx(updated._id, line.variantSku, "RESERVE", line.qty, orderId);
+    await logTx(updated._id, line.variantSku, "RESERVE", line.qty, orderId, undefined, session);
   }
 }
 
 /** Convert holds into a sale (PAID). */
-export async function finalizeSale(lines: ReserveLine[], orderId: Types.ObjectId): Promise<void> {
+export async function finalizeSale(lines: ReserveLine[], orderId: Types.ObjectId, session?: ClientSession): Promise<void> {
   await connectDb();
   for (const line of lines) {
-    const doc = await Product.findById(line.productId).select("variants").lean();
-    if (!doc) continue;
+    const doc = await Product.findById(line.productId).session(session ?? null).select("stock reservedStock variants").lean();
+    if (!doc) throw new AppError("CONFLICT", "Reserved product no longer exists; payment needs reconciliation", 409);
+    const variant = line.variantSku ? doc.variants.find((variant) => variant.sku.toUpperCase() === line.variantSku!.toUpperCase()) : undefined;
+    if (doc.stock < line.qty || (doc.reservedStock ?? 0) < line.qty || (line.variantSku && (!variant || variant.stock < line.qty))) {
+      throw new AppError("CONFLICT", "Reserved stock changed; payment needs reconciliation", 409);
+    }
     if (line.variantSku) {
       await Product.updateOne(
         { _id: doc._id, "variants.sku": skuEquals(line.variantSku) },
@@ -82,50 +94,60 @@ export async function finalizeSale(lines: ReserveLine[], orderId: Types.ObjectId
             reservedStock: -line.qty,
             soldQuantity: line.qty,
             "variants.$.stock": -line.qty,
+            "variants.$.reservedStock": -Math.min(line.qty, doc.variants.find((variant) => variant.sku.toUpperCase() === line.variantSku!.toUpperCase())?.reservedStock ?? 0),
           },
         },
+        { session },
       );
     } else {
       await Product.updateOne(
         { _id: doc._id },
         { $inc: { stock: -line.qty, reservedStock: -line.qty, soldQuantity: line.qty } },
+        { session },
       );
     }
-    await logTx(doc._id, line.variantSku, "SALE", line.qty, orderId);
+    await logTx(doc._id, line.variantSku, "SALE", line.qty, orderId, undefined, session);
   }
 }
 
 /** Return held units (cancel / expiry). Never drives reserved below zero. */
-export async function releaseHold(lines: ReserveLine[], orderId: Types.ObjectId, reason: string): Promise<void> {
+export async function releaseHold(lines: ReserveLine[], orderId: Types.ObjectId, reason: string, session?: ClientSession): Promise<void> {
   await connectDb();
   for (const line of lines) {
-    const doc = await Product.findById(line.productId).select("reservedStock").lean();
+    const doc = await Product.findById(line.productId).session(session ?? null).select("reservedStock variants").lean();
     if (!doc) continue;
     const releasable = Math.min(line.qty, doc.reservedStock);
     if (releasable <= 0) continue;
-    await Product.updateOne({ _id: doc._id }, { $inc: { reservedStock: -releasable } });
-    await logTx(doc._id, line.variantSku, "RELEASE", releasable, orderId, reason);
+    const variant = line.variantSku ? doc.variants.find((variant) => variant.sku.toUpperCase() === line.variantSku!.toUpperCase()) : undefined;
+    await Product.updateOne(
+      { _id: doc._id, ...(variant ? { "variants.sku": skuEquals(variant.sku) } : {}) },
+      { $inc: { reservedStock: -releasable, ...(variant ? { "variants.$.reservedStock": -Math.min(releasable, variant.reservedStock ?? 0) } : {}) } },
+      { session },
+    );
+    await logTx(doc._id, line.variantSku, "RELEASE", releasable, orderId, reason, session);
   }
 }
 
 /** Restock sold units (post-sale cancel/refund). */
-export async function restockSold(lines: ReserveLine[], orderId: Types.ObjectId, reason: string): Promise<void> {
+export async function restockSold(lines: ReserveLine[], orderId: Types.ObjectId, reason: string, session?: ClientSession): Promise<void> {
   await connectDb();
   for (const line of lines) {
-    const doc = await Product.findById(line.productId).select("_id").lean();
-    if (!doc) continue;
+    const doc = await Product.findById(line.productId).session(session ?? null).select("_id").lean();
+    if (!doc) throw new AppError("CONFLICT", "Reserved product no longer exists; payment needs reconciliation", 409);
     if (line.variantSku) {
       await Product.updateOne(
         { _id: doc._id, "variants.sku": skuEquals(line.variantSku) },
         { $inc: { stock: line.qty, soldQuantity: -line.qty, "variants.$.stock": line.qty } },
+        { session },
       );
     } else {
       await Product.updateOne(
         { _id: doc._id },
         { $inc: { stock: line.qty, soldQuantity: -line.qty } },
+        { session },
       );
     }
-    await logTx(doc._id, line.variantSku, "RESTOCK", line.qty, orderId, reason);
+    await logTx(doc._id, line.variantSku, "RESTOCK", line.qty, orderId, reason, session);
   }
 }
 
@@ -136,7 +158,7 @@ export async function restockSold(lines: ReserveLine[], orderId: Types.ObjectId,
 /**
  * Bounded batch: each checkout drains the oldest expired holds without
  * risking serverless timeouts on a large backlog. Projection keeps the
- * scan lean; poison docs are cancelled defensively (see below).
+ * scan lean; each order releases stock and coupon usage in one transaction.
  */
 const SWEEP_BATCH = 25;
 
@@ -144,7 +166,7 @@ export async function releaseExpiredReservations(): Promise<number> {
   await connectDb();
   const expired = await Order.find({
     orderStatus: "PENDING",
-    paymentStatus: "PENDING",
+    paymentStatus: { $in: ["PENDING", "FAILED"] },
     reservationExpiresAt: { $lt: new Date() },
   })
     .sort({ reservationExpiresAt: 1 })
@@ -153,37 +175,26 @@ export async function releaseExpiredReservations(): Promise<number> {
     .lean();
   let count = 0;
   for (const order of expired) {
-    const cancelled = await Order.findOneAndUpdate(
-      { _id: order._id, orderStatus: "PENDING", paymentStatus: "PENDING", reservationExpiresAt: { $lt: new Date() } },
-      {
-        $set: { orderStatus: "CANCELLED" },
-        $push: { timeline: { status: "CANCELLED", at: new Date(), note: "Reservation expired" } },
-      },
-      { returnDocument: "after" },
-    ).lean();
-    if (!cancelled) continue;
-    // ponytail: Claim before releasing the hold; a DB failure afterward needs inventory reconciliation.
-    // One malformed legacy document must never 500 every new checkout.
-    try {
-      const items = Array.isArray(order.items) ? order.items : [];
-      const lines: ReserveLine[] = [];
-      for (const i of items) {
-        const productId =
-          typeof i?.productId === "string"
-            ? i.productId
-            : (i?.productId?.toString() ?? "");
-        if (!productId || typeof i?.qty !== "number") continue;
-        lines.push({ productId, variantSku: i.variantSku, qty: i.qty });
+    const released = await connection.transaction(async (session) => {
+      const cancelled = await Order.findOneAndUpdate(
+        { _id: order._id, orderStatus: "PENDING", paymentStatus: { $in: ["PENDING", "FAILED"] }, reservationExpiresAt: { $lt: new Date() } },
+        {
+          $set: { orderStatus: "CANCELLED" },
+          $push: { timeline: { status: "CANCELLED", at: new Date(), note: "Reservation expired" } },
+        },
+        { returnDocument: "after", session },
+      ).lean();
+      if (!cancelled) return false;
+      const lines = (cancelled.items ?? []).filter((item) => Types.ObjectId.isValid(item.productId) && Number.isInteger(item.qty) && item.qty > 0)
+        .map((item) => ({ productId: item.productId.toString(), variantSku: item.variantSku, qty: item.qty }));
+      await releaseHold(lines, order._id, "Reservation expired", session);
+      if (cancelled.couponCode) {
+        const coupon = await Coupon.findOne({ code: cancelled.couponCode }).session(session).select("_id").lean();
+        if (coupon) await releaseCouponUse(coupon._id.toString(), session);
       }
-      await releaseHold(lines, order._id, "Reservation expired");
-      if (order.couponCode) {
-        const doc = await Coupon.findOne({ code: order.couponCode }).select("_id").lean();
-        if (doc) await releaseCouponUse(doc._id.toString());
-      }
-    } catch {
-      // The order stays cancelled so this document cannot poison the sweep again.
-    }
-    count += 1;
+      return true;
+    });
+    if (released) count += 1;
   }
   return count;
 }

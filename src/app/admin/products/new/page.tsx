@@ -9,7 +9,7 @@ export default async function NewProductPage() {
   const categories = await listAdminCategories();
   if (categories.length === 0) {
     return (
-      <main>
+      <div>
         <h1 className="font-display text-4xl tracking-tight">New product</h1>
         <p className="mt-4 rounded-2xl border border-ink/10 bg-white/60 p-4 text-sm">
           Create a category first — every product needs one.{" "}
@@ -17,7 +17,7 @@ export default async function NewProductPage() {
             Go to categories
           </a>
         </p>
-      </main>
+      </div>
     );
   }
   return (
