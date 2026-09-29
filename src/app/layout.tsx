@@ -10,6 +10,7 @@ import { AuthSessionProvider } from "@/features/auth/SessionProvider";
 import { CartDrawer } from "@/features/cart/CartDrawer";
 import { CartProvider } from "@/features/cart/CartProvider";
 import { getClientEnv, isIndexingEnabled } from "@/lib/env";
+import { headers } from "next/headers";
 
 const display = Fraunces({
   variable: "--font-display",
@@ -89,7 +90,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [settings, categories] = await Promise.all([getSettings(), listPublicCategories()]);
+  const demoMode = (await headers()).get("x-satva-offline-demo") === "true";
+  const [settings, categories] = demoMode
+    ? [{ freeShippingThreshold: 399, shippingFlatFee: 49, reservationTtlMinutes: 30, announcement: "Demo preview · no login or payment required" }, []]
+    : await Promise.all([getSettings(), listPublicCategories()]);
   return (
     <html
       lang="en"
@@ -97,14 +101,14 @@ export default async function RootLayout({
     >
       <head><link rel="preconnect" href="https://res.cloudinary.com" /></head>
       <body className="flex min-h-screen flex-col bg-background font-sans text-foreground">
-        <AnalyticsLoader />
+        {!demoMode && <AnalyticsLoader />}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-5 focus:py-2 focus:text-sm focus:text-ivory"
         >
           Skip to content
         </a>
-        <AuthSessionProvider>
+        <AuthSessionProvider demoMode={demoMode}>
           <CartProvider>
             <SiteHeader settings={settings} categories={categories} />
             <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">

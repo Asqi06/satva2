@@ -7,6 +7,8 @@ import { Coupon } from "@/models/Coupon";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { User } from "@/models/User";
+import { GarbaSpin } from "@/models/GarbaSpin";
+import { GARBA_CAMPAIGN, GARBA_OFFERS } from "@/lib/garba-offers";
 import {
   releaseCouponUse,
   reserveCouponUse,
@@ -67,6 +69,44 @@ describe("coupon service", () => {
   afterEach(async () => {
     await Coupon.deleteMany({});
     await Order.deleteMany({});
+    await GarbaSpin.deleteMany({});
+  });
+
+  it("restricts wheel rewards to their paying account and disallows guest use", async () => {
+    await Coupon.create({ code: "OWNER", type: "FIXED", value: 29, ownerUserId: userId });
+    expect(await validateCoupon("OWNER", new Types.ObjectId().toString(), LINES, 1000)).toMatchObject({ valid: false });
+    expect(await validateCoupon("OWNER", userId, LINES, 1000, undefined, false, true)).toMatchObject({ valid: false, reason: "SIGN_IN_REQUIRED" });
+    expect(await validateCoupon("OWNER", userId, LINES, 1000)).toMatchObject({ valid: true, discount: 29 });
+  });
+
+  it("unlocks Nav29 only after a paid spin and revokes eligibility on refund", async () => {
+    await Coupon.create({ code: "NAV29", type: "FIXED", value: 29, minimumOrderValue: 599, perUserLimit: 1, requiresGarbaPass: true });
+    expect(await validateCoupon("Nav29", userId, LINES, 1000)).toMatchObject({ valid: false });
+    const spin = await GarbaSpin.create({ userId, campaign: GARBA_CAMPAIGN, status: "PAID" });
+    expect(await validateCoupon("Nav29", userId, LINES, 1000)).toMatchObject({ valid: true, discount: 29 });
+    await GarbaSpin.updateOne({ _id: spin._id }, { $set: { status: "REFUNDED" } });
+    expect(await validateCoupon("Nav29", userId, LINES, 1000)).toMatchObject({ valid: false });
+  });
+
+  it("uses only approved clearance spend for the 150-off threshold", async () => {
+    const product = await Product.create({ name: "Clearance earrings", slug: "clearance-threshold", sku: "GARBA-THRESHOLD", description: "Test", categoryId: new Types.ObjectId(), price: 199, stock: 10, isPublished: true, tags: [GARBA_OFFERS[5].tag] });
+    await Coupon.create({ code: "GGSCOPE", type: "FIXED", value: 1, garbaOfferIndex: 5, ownerUserId: userId, applicableProductIds: [product._id] });
+    const selected = { productId: product._id.toString(), qty: 3, unitPrice: 199 };
+    const unrelated = { productId: new Types.ObjectId().toString(), qty: 1, unitPrice: 999 };
+    expect(await validateCoupon("GGSCOPE", userId, [selected, unrelated], 1596)).toMatchObject({ valid: false, reason: "SCOPE" });
+    expect(await validateCoupon("GGSCOPE", userId, [{ ...selected, qty: 4 }, unrelated], 1795)).toMatchObject({ valid: true, discount: 150 });
+    await Product.updateOne({ _id: product._id }, { $set: { tags: [] } });
+    expect(await validateCoupon("GGSCOPE", userId, [{ ...selected, qty: 4 }], 796)).toMatchObject({ valid: false });
+  });
+
+  it("requires the approved gift as a normal inventory-tracked cart item", async () => {
+    const paid = await Product.create({ name: "Paid piece", slug: "garba-paid", sku: "GARBA-PAID", description: "Test", categoryId: new Types.ObjectId(), price: 499, stock: 10, isPublished: true, tags: [GARBA_OFFERS[4].tag] });
+    const gift = await Product.create({ name: "Gift piece", slug: "garba-gift", sku: "GARBA-GIFT", description: "Test", categoryId: new Types.ObjectId(), price: 199, stock: 10, isPublished: true, tags: ["garba-gift"] });
+    await Coupon.create({ code: "GGGIFT", type: "FIXED", value: 1, garbaOfferIndex: 4, ownerUserId: userId, applicableProductIds: [paid._id], giftProductIds: [gift._id] });
+    const pieces = [{ productId: paid._id.toString(), qty: 1, unitPrice: 499 }];
+    expect(await validateCoupon("GGGIFT", userId, pieces, 499)).toMatchObject({ valid: false });
+    expect(await validateCoupon("GGGIFT", userId, [...pieces, { productId: gift._id.toString(), qty: 1, unitPrice: 199 }], 698)).toMatchObject({ valid: true, discount: 199 });
+    expect(await validateCoupon("GGGIFT", userId, [...pieces, { productId: gift._id.toString(), qty: 2, unitPrice: 199 }], 897)).toMatchObject({ valid: false });
   });
 
   it("computes percentage discounts with caps", async () => {

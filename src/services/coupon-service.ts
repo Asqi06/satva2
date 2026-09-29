@@ -4,6 +4,10 @@ import { AppError } from "@/lib/errors";
 import { Coupon, type ICoupon } from "@/models/Coupon";
 import { CouponRedemption } from "@/models/CouponRedemption";
 import { Order } from "@/models/Order";
+import { GarbaSpin } from "@/models/GarbaSpin";
+import { GARBA_CAMPAIGN, GARBA_OFFERS } from "@/lib/garba-offers";
+import { garbaApprovedPrice, garbaDiscount, garbaMarginSafe } from "@/lib/garba-pricing";
+import { Product } from "@/models/Product";
 
 /**
  * Coupon validation + atomic usage reservation. Reserve at order creation
@@ -63,6 +67,19 @@ export async function validateCoupon(
   const code = rawCode.trim().toUpperCase();
   const coupon = await Coupon.findOne({ code }).session(session ?? null).lean();
   if (!coupon) return { valid: false, discount: 0, reason: "NOT_FOUND" };
+  if (coupon.ownerUserId || coupon.requiresGarbaPass) {
+    if (guest || !Types.ObjectId.isValid(rawUserId)) {
+      return { valid: false, discount: 0, reason: "SIGN_IN_REQUIRED" };
+    }
+    if (coupon.ownerUserId && coupon.ownerUserId.toString() !== rawUserId) {
+      return { valid: false, discount: 0, reason: "NOT_FOUND" };
+    }
+    if (coupon.requiresGarbaPass && !await GarbaSpin.exists({
+      userId: new Types.ObjectId(rawUserId), campaign: GARBA_CAMPAIGN, status: "PAID",
+    }).session(session ?? null)) {
+      return { valid: false, discount: 0, reason: "NOT_FOUND" };
+    }
+  }
   if (!coupon.isActive) return { valid: false, discount: 0, reason: "INACTIVE", couponId: coupon._id.toString(), code };
   if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
     return { valid: false, discount: 0, reason: "EXPIRED", couponId: coupon._id.toString(), code };
@@ -85,6 +102,28 @@ export async function validateCoupon(
     return { valid: false, discount: 0, reason: "SCOPE", couponId: coupon._id.toString(), code };
   }
   const eligibleSubtotal = scoped.reduce((n, l) => n + l.qty * l.unitPrice, 0);
+  let garbaSaving: number | undefined;
+  if (coupon.garbaOfferIndex !== undefined) {
+    const offerIndex = coupon.garbaOfferIndex;
+    const offer = GARBA_OFFERS[offerIndex];
+    if (!offer || coupon.applicableProductIds.length === 0) return { valid: false, discount: 0, reason: "SCOPE" };
+    const approved = await Product.find({ _id: { $in: coupon.applicableProductIds }, isPublished: true, tags: offer.tag }).select("_id").session(session ?? null).lean();
+    const eligibleIds = new Set(approved.map(p => p._id.toString()));
+    const approvedGifts = await Product.find({ _id: { $in: coupon.giftProductIds ?? [] }, isPublished: true, tags: "garba-gift" }).select("_id").session(session ?? null).lean();
+    const giftIds = new Set(approvedGifts.map(p => p._id.toString()));
+    const eligibleLines = lines.filter(l => eligibleIds.has(l.productId) && !giftIds.has(l.productId));
+    const giftLines = lines.filter(l => giftIds.has(l.productId));
+    if (eligibleLines.some(l => l.unitPrice < garbaApprovedPrice(offerIndex))) return { valid: false, discount: 0, reason: "SCOPE" };
+    const saving = garbaDiscount(offerIndex, eligibleLines, giftLines);
+    if (saving === null || saving <= 0) return { valid: false, discount: 0, reason: "SCOPE" };
+    const receipts = [...eligibleLines, ...giftLines].reduce((n, l) => n + l.qty * l.unitPrice, 0) - saving;
+    const pieces = [...eligibleLines, ...giftLines].reduce((n, l) => n + l.qty, 0);
+    if (!garbaMarginSafe(receipts, pieces)) return { valid: false, discount: 0, reason: "SCOPE" };
+    garbaSaving = saving;
+  }
+  if (coupon.requiresGarbaPass && !garbaMarginSafe(eligibleSubtotal - discountFor(coupon, eligibleSubtotal), scoped.reduce((n, l) => n + l.qty, 0))) {
+    return { valid: false, discount: 0, reason: "SCOPE" };
+  }
 
   if (guest && (coupon.firstOrderOnly || coupon.perUserLimit !== undefined)) {
     return { valid: false, discount: 0, reason: "SIGN_IN_REQUIRED", couponId: coupon._id.toString(), code };
@@ -115,7 +154,7 @@ export async function validateCoupon(
   }
   return {
     valid: true,
-    discount: discountFor(coupon, eligibleSubtotal),
+    discount: garbaSaving ?? discountFor(coupon, eligibleSubtotal),
     couponId: coupon._id.toString(),
     code,
   };

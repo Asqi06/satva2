@@ -60,6 +60,7 @@ export async function listAdminCoupons(): Promise<AdminCouponRow[]> {
 export async function createAdminCoupon(input: CouponAdminInput): Promise<AdminCouponRow> {
   await connectDb();
   const code = input.code.trim().toUpperCase();
+  if (code === "NAV29") throw new AppError("VALIDATION_ERROR", "Nav29 is reserved for the Garba Ghumar campaign", 400);
   const taken = await Coupon.exists({ code });
   if (taken) throw new AppError("CONFLICT", "Coupon code already in use", 409);
   const created = await Coupon.create({
@@ -89,6 +90,11 @@ export async function updateAdminCoupon(
   if (!Types.ObjectId.isValid(id)) throw notFound();
   const doc = await Coupon.findById(id);
   if (!doc) throw notFound();
+  if (doc.garbaOfferIndex !== undefined || doc.requiresGarbaPass) {
+    if (Object.keys(input).some(key => key !== "isActive")) {
+      throw new AppError("VALIDATION_ERROR", "Wheel coupon terms are managed by the campaign. You may only enable or disable this coupon.", 400);
+    }
+  }
   if (input.code !== undefined && input.code.trim().toUpperCase() !== doc.code) {
     throw new AppError("VALIDATION_ERROR", "Coupon code is immutable — disable and recreate instead", 400);
   }
