@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { ProductForm, type ProductFormInitial } from "@/features/admin/ProductForm";
+import { GARBA_OFFERS } from "@/lib/garba-offers";
 
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -17,6 +18,43 @@ const initial: ProductFormInitial = {
 };
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
+
+it("saves selected Garba offers while preserving search tags and removing unticked offers", async () => {
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({ success: true })));
+  vi.stubGlobal("fetch", fetcher);
+  render(<ProductForm mode="edit" productId="first" categories={categories}
+    initial={{ ...initial, tagsText: "silver, garba-4-for-399, jhumka" }} />);
+  expect(screen.getByRole("checkbox", { name: GARBA_OFFERS[0].name })).toBeChecked();
+  for (const offer of GARBA_OFFERS.slice(1)) fireEvent.click(screen.getByRole("checkbox", { name: offer.name }));
+  fireEvent.click(screen.getByRole("checkbox", { name: GARBA_OFFERS[0].name }));
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+  const [, options] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+  expect(JSON.parse(options.body as string).tags).toEqual(["silver", "jhumka", ...GARBA_OFFERS.slice(1).map(offer => offer.tag)]);
+});
+
+it("loads each product's offer selections and keeps free gifts separate from paid offers", async () => {
+  const fetcher = vi.fn(async () => new Response(JSON.stringify({ success: true })));
+  vi.stubGlobal("fetch", fetcher);
+  const view = render(<ProductForm mode="edit" productId="first" categories={categories}
+    initial={{ ...initial, price: 149, tagsText: "silver, garba-half-price" }} />);
+  expect(screen.getByRole("status")).toHaveTextContent("not eligible until the product price is at least ₹299");
+  expect(screen.getByRole("checkbox", { name: "Use as a free reward gift" })).toBeDisabled();
+  view.rerender(<ProductForm mode="edit" productId="second" categories={categories}
+    initial={{ ...initial, name: "Gift ring", tagsText: "gift, garba-gift" }} />);
+  await waitFor(() => expect(screen.getByRole("checkbox", { name: "Use as a free reward gift" })).toBeChecked());
+  for (const offer of GARBA_OFFERS) {
+    expect(screen.getByRole("checkbox", { name: offer.name })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: offer.name })).toBeDisabled();
+  }
+  fireEvent.click(screen.getByRole("checkbox", { name: "Use as a free reward gift" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Use as a free reward gift" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+  const [url, options] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+  expect(url).toBe("/api/admin/products/second");
+  expect(JSON.parse(options.body as string).tags).toEqual(["gift", "garba-gift"]);
+});
 
 it("explains nested image validation failures instead of silently blocking save", async () => {
   const fetcher = vi.fn();

@@ -21,7 +21,13 @@ Remote deployments keep their own environment configuration.
 
 ## Founder-approved collections
 
-Use the existing admin product editor to tag only approved clearance stock.
+In Admin → Products → Edit (or New product), use the **Garba Ghumar offers**
+checkboxes below Price & inventory to select approved clearance offers, then save.
+Existing offer tags appear checked automatically. Multiple paid offers may be
+selected; **Use as a free reward gift** is a separate, mutually exclusive choice.
+The checkboxes maintain the campaign tags automatically and preserve other tags.
+Price requirements appear next to each offer; a selected underpriced product is
+flagged and still excluded by the server until its price meets the requirement.
 The first version supports products without variants; each gift is a physical
 cart item, reserved and fulfilled through the normal order/inventory flow.
 Customers add the selected gift through their reward guide; checkout then applies
