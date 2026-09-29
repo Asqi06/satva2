@@ -34,7 +34,7 @@ function Wheel({ rotation, spinning }: { rotation: number; spinning: boolean }) 
     <Rangoli className={styles.wheelHalo} />
     <div className={styles.pointer} aria-hidden="true">◆</div>
     <div className={`${styles.wheel} ${spinning ? styles.spinning : ""}`} style={{ transform: `rotate(${rotation}deg)` }}>
-      <svg viewBox="0 0 500 500" role="img" aria-label="Seven festive jewellery offers, including bundles, discounts and free pieces. Full terms and odds are listed below.">
+      <svg viewBox="0 0 500 500" role="img" aria-label="Seven festive jewellery offers, including bundles, discounts and free pieces. Full terms are listed below.">
         {GARBA_OFFERS.map((offer, i) => {
           const a = (i * STEP - 90) * Math.PI / 180;
           const b = ((i + 1) * STEP - 90) * Math.PI / 180;
@@ -201,9 +201,9 @@ export function GarbaWheel({ paymentsEnabled, demoMode = false }: { paymentsEnab
       <p className={styles.eyebrow}>SEVEN REASONS TO TWIRL</p><h2 id="offers-title">A wheel full of <em>little joys.</em></h2><p>Every spin lands on an offer. Pick your jewellery, meet the minimum spend, and let your shagun do the rest.</p>
       <div className={styles.offerGrid}>{GARBA_OFFERS.map((offer, i) => <article className={styles.offerCard} style={{ borderTopColor: offer.color }} key={offer.name}>
         <div className={styles.offerTop}><span style={{ color: offer.color }}>✦</span><small>FESTIVE SHAGUN / 0{i + 1}</small></div>
-        <h3>{offer.headline}</h3><p>{offer.description}</p><footer>{offer.chance}% chance <span>Single use</span></footer>
+        <h3>{offer.headline}</h3><p>{offer.description}</p><footer><span>Single use</span></footer>
       </article>)}</div>
-      <p className={styles.oddsNote}>Each section is shown equally for the design; reward probabilities differ and are listed above. Your reward is chosen securely after payment.</p>
+      <p className={styles.oddsNote}>Your reward is chosen securely after payment. Offer conditions apply.</p>
     </section>
 
     <section className={styles.steps} aria-label="How it works">{[["01", "Make a little shagun", "Sign in and pay ₹29 once when paid spins open."], ["02", "Find your festive favourites", "Win an offer, then follow your personal guide to pick eligible pieces."], ["03", "Let us do the saving", "Your wheel reward applies automatically when your cart qualifies. Keep Nav29 for later."]].map(([n, title, body]) => <div key={n}><span>{n}</span><h3>{title}</h3><p>{body}</p></div>)}</section>

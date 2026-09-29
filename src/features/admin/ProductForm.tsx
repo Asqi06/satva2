@@ -8,6 +8,8 @@ import { useState } from "react";
 import { useFieldArray, useForm, type FieldErrors } from "react-hook-form";
 import { z } from "zod";
 import { productBaseSchema, productInputSchema, type ProductInput } from "@/schemas/product";
+import { GARBA_OFFERS } from "@/lib/garba-offers";
+import { garbaApprovedPrice } from "@/lib/garba-pricing";
 
 /** Form shape: tags edited as comma text, image alt auto-filled from name. */
 const formImageSchema = z.object({
@@ -124,6 +126,16 @@ export function ProductForm({
   });
 
   const images = watch("images") ?? [];
+  const tags = (watch("tagsText") ?? "").split(",").map(tag => tag.trim()).filter(Boolean);
+  const price = watch("price");
+  const giftSelected = tags.includes("garba-gift");
+  const paidOfferSelected = GARBA_OFFERS.some(offer => tags.includes(offer.tag));
+  const toggleOffer = (tag: string, checked: boolean) => {
+    const current = (getValues("tagsText") ?? "").split(",").map(value => value.trim()).filter(Boolean);
+    const next = current.filter(value => value !== tag);
+    if (checked) next.push(tag);
+    setValue("tagsText", next.join(", "), { shouldDirty: true, shouldValidate: true });
+  };
   const {
     fields: variantFields,
     append: appendVariant,
@@ -292,7 +304,7 @@ export function ProductForm({
           <label className={`${labelCls} sm:col-span-2`}>
             Tags (comma separated)
             <input {...register("tagsText")} placeholder="korean, minimal, gift" className={inputCls} />
-            <span className={hintCls}>Add accurate search synonyms such as jhumka, bali, anguthi, haar or kangan for relevant products.</span>
+            <span className={hintCls}>Add accurate search synonyms such as jhumka, bali, anguthi, haar or kangan for relevant products. Use the Garba Ghumar checkboxes below for festive offers.</span>
           </label>
         </div>
       </fieldset>
@@ -341,6 +353,36 @@ export function ProductForm({
             </label>
           </div>
         </div>
+      </fieldset>
+
+      <fieldset disabled={saving} aria-label="Garba Ghumar offers" className="admin-card p-5">
+        <h2 className="text-base font-semibold text-ink">Garba Ghumar offers</h2>
+        <p className="mt-2 text-sm text-muted">Tick the offers this jewellery can join, then save the product. You can select multiple paid offers. Existing selections are shown automatically.</p>
+        <p className="mt-2 text-xs leading-6 text-muted">The product must be published, have available stock and have no variants to appear in the offer collection. Checkout still checks the customer’s selection and offer conditions.</p>
+        {variantFields.length > 0 && <p role="status" className="mt-3 text-sm text-clay">This product has variants, so it cannot currently qualify for Garba Ghumar offers.</p>}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {GARBA_OFFERS.map((offer, index) => {
+            const checked = tags.includes(offer.tag);
+            const minimum = garbaApprovedPrice(index);
+            const belowMinimum = !Number.isFinite(price) || (price ?? 0) < minimum;
+            const requirement = index === 0 ? "Customer picks exactly 4 pieces with a combined regular price above ₹399."
+              : index === 3 ? "Customer picks exactly 2 pieces with a combined regular price above ₹249."
+              : `Product price must be ₹${minimum} or more. ${offer.description}`;
+            return <label key={offer.tag} className={`flex items-start gap-3 rounded-lg border p-4 ${checked ? "border-primary/40 bg-primary/5" : "border-light-gray"} ${giftSelected && !checked ? "opacity-50" : "cursor-pointer"}`}>
+              <input type="checkbox" aria-label={offer.name} aria-describedby={`garba-condition-${index}`} checked={checked} disabled={giftSelected && !checked}
+                onChange={event => toggleOffer(offer.tag, event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-primary" />
+              <span><span className="block text-sm font-semibold text-ink">{offer.name}</span><span id={`garba-condition-${index}`} className="mt-1 block text-xs leading-6 text-muted">{requirement}</span>
+                {checked && belowMinimum && <span role="status" className="mt-2 block text-xs text-clay">Selected, but not eligible until the product price is at least ₹{minimum}.</span>}
+              </span>
+            </label>;
+          })}
+          <label className={`flex items-start gap-3 rounded-lg border p-4 ${giftSelected ? "border-primary/40 bg-primary/5" : "border-light-gray"} ${paidOfferSelected && !giftSelected ? "opacity-50" : "cursor-pointer"}`}>
+            <input type="checkbox" aria-label="Use as a free reward gift" aria-describedby="garba-gift-condition" checked={giftSelected} disabled={paidOfferSelected && !giftSelected}
+              onChange={event => toggleOffer("garba-gift", event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-primary" />
+            <span><span className="block text-sm font-semibold text-ink">Use as a free reward gift</span><span id="garba-gift-condition" className="mt-1 block text-xs leading-6 text-muted">Make this piece available as the free gift for the ₹499+ or mystery reward. Choose low-cost gift stock separately from paid offer pieces.</span></span>
+          </label>
+        </div>
+        <p className="mt-3 text-xs leading-6 text-muted">To switch between a paid piece and a free gift, untick its current selections first. New selections apply to rewards issued after you save; previously issued rewards keep their original product list.</p>
       </fieldset>
 
       <fieldset disabled={saving} aria-label="Images" className="admin-card p-5">
