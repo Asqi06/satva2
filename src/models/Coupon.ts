@@ -22,6 +22,10 @@ export interface ICoupon extends Document {
   perUserLimit?: number;
   expiresAt?: Date;
   isActive: boolean;
+  ownerUserId?: Types.ObjectId;
+  requiresGarbaPass?: boolean;
+  garbaOfferIndex?: number;
+  giftProductIds?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +52,10 @@ const couponSchema = new Schema<ICoupon>(
     perUserLimit: { type: Number, min: 1 },
     expiresAt: { type: Date },
     isActive: { type: Boolean, default: true },
+    ownerUserId: { type: Schema.Types.ObjectId, ref: "User" },
+    requiresGarbaPass: { type: Boolean, default: false },
+    garbaOfferIndex: { type: Number, min: 0, max: 6 },
+    giftProductIds: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
   },
   { timestamps: true, collection: "coupons" },
 );

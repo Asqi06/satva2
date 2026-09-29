@@ -5,6 +5,7 @@ import { POST } from "@/app/api/webhooks/razorpay/route";
 import { handleWebhookEvent } from "@/services/order-service";
 
 vi.mock("@/services/order-service", () => ({ handleWebhookEvent: vi.fn() }));
+vi.mock("@/services/garba-service", () => ({ handleGarbaWebhook: vi.fn().mockResolvedValue(null) }));
 
 function request() {
   process.env.RAZORPAY_WEBHOOK_SECRET = "webhook-check-secret";

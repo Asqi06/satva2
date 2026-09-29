@@ -33,6 +33,11 @@ function apiDenied(req: NextRequest, status: number, code: string, message: stri
 
 export async function proxy(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl;
+  // Derive the preview marker from the URL; never trust a browser-supplied marker.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.delete("x-satva-offline-demo");
+  if (pathname === "/garba-ghumar/demo") requestHeaders.set("x-satva-offline-demo", "true");
+  const passthrough = () => NextResponse.next({ request: { headers: requestHeaders } });
   const needsAdmin =
     pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
   const needsAuth =
@@ -42,7 +47,7 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     pathname.startsWith("/api/wishlist") ||
     pathname.startsWith("/api/uploads") ||
     pathname.startsWith("/api/reviews");
-  if (!needsAuth && !needsAdmin) return NextResponse.next();
+  if (!needsAuth && !needsAdmin) return passthrough();
 
   const isApi = pathname.startsWith("/api/");
   try {
@@ -62,9 +67,9 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   } catch {
     // Env missing or token undecodable: pass through; page/API
     // server checks fail explicitly with a clear error.
-    return NextResponse.next();
+    return passthrough();
   }
-  return NextResponse.next();
+  return passthrough();
 }
 
 export const config = {

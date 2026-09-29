@@ -13,6 +13,8 @@ import { AddressForm } from "./AddressForm";
 import { AddressFields } from "./AddressFields";
 import { OrderConfirmation, OrderSummary } from "./OrderSummary";
 import { loadRazorpay } from "./razorpay-checkout";
+import { useGarbaBenefit } from "@/features/garba/useGarbaBenefit";
+import { GarbaBenefitCard } from "@/features/garba/GarbaShoppingGuide";
 
 const PENDING_KEY = "satva:pending-order";
 async function request<T>(url: string, data?: unknown): Promise<T> {
@@ -39,7 +41,13 @@ export function CheckoutWizard({ settings, resumeOrderId }: { settings: Shipping
   const [error, setError] = useState("");
   const begun = useRef(false);
   const lock = useRef(false);
-  const discounted = Math.max(0, subtotal - discount);
+  const [manualCoupon, setManualCoupon] = useState(false);
+  const rewardState = useGarbaBenefit(authed && !loading && !restoring && !order && !manualCoupon, JSON.stringify(lines.map(l => [l.key, l.qty, l.price, l.available])));
+  const autoReward = rewardState.benefit?.valid ? rewardState.benefit : null;
+  const effectiveDiscount = autoReward?.discount ?? discount;
+  const effectiveCoupon = autoReward?.code ?? appliedCoupon;
+  const rewardChecking = !order && (rewardState.pending || rewardState.error || (!!rewardState.benefit && !rewardState.benefit.valid));
+  const discounted = Math.max(0, subtotal - effectiveDiscount);
   const shipping = discounted <= 0 || discounted >= settings.freeShippingThreshold ? 0 : settings.shippingFlatFee;
   const total = discounted + shipping;
 
@@ -102,7 +110,7 @@ export function CheckoutWizard({ settings, resumeOrderId }: { settings: Shipping
     } catch (e) { setDiscount(0); setAppliedCoupon(""); setCouponMessage(e instanceof Error ? e.message : "Could not check this coupon."); } finally { setBusy(false); }
   };
   const pay = async () => {
-    if (lock.current) return;
+    if (lock.current || rewardChecking) return;
     lock.current = true; setBusy(true); setError("");
     const finish = () => { lock.current = false; setBusy(false); };
     try {
@@ -111,7 +119,7 @@ export function CheckoutWizard({ settings, resumeOrderId }: { settings: Shipping
       let placed = order;
       if (!placed) {
         if (sessionStorage.getItem(PENDING_KEY)) throw new Error("An unfinished order is saved. Reload this page to check it before paying again.");
-        const data = await request<{ order: OrderDTO }>("/api/orders", authed ? { addressId, couponCode: appliedCoupon || undefined } : { ...guest, couponCode: appliedCoupon || undefined });
+        const data = await request<{ order: OrderDTO }>("/api/orders", authed ? { addressId, couponCode: effectiveCoupon || undefined } : { ...guest, couponCode: effectiveCoupon || undefined });
         placed = data.order; setOrder(placed); sessionStorage.setItem(PENDING_KEY, placed.id);
         if (placed.total !== total || placed.items.length !== lines.length || placed.items.some((item,index) => item.qty !== lines[index]?.qty || item.unitPrice !== lines[index]?.price)) {
           setError("Your order amount or items changed. Review the updated summary, then confirm payment."); finish(); return;
@@ -160,6 +168,9 @@ export function CheckoutWizard({ settings, resumeOrderId }: { settings: Shipping
   if (!lines.length && !order) return <div className="py-10"><h2 className="section-title text-2xl">Your cart is empty.</h2><p className="mt-3 text-sm text-muted">Add a piece to continue.</p><Link href="/shop" className="btn-primary mt-6">Continue shopping</Link>{error && <p role="alert" className="mt-5 text-sm text-primary">{error}</p>}</div>;
   const address = order?.address || (authed ? addresses.find(a => a.id === addressId) : guest?.address);
   return <div>
+    {!order && !manualCoupon && rewardState.benefit && <><GarbaBenefitCard benefit={rewardState.benefit} checkout /><button className="mb-6 text-xs underline underline-offset-4" onClick={() => setManualCoupon(true)}>Use a different coupon</button></>}
+    {rewardState.pending && <p role="status" className="mb-5 text-sm">Checking your saved festive reward…</p>}
+    {rewardState.error && <div role="alert" className="mb-5 text-sm">We couldn’t check your festive reward. <button className="underline" onClick={rewardState.retry}>Retry</button><button className="ml-4 underline" onClick={() => setManualCoupon(true)}>Continue without automatic reward</button></div>}
     <ol aria-label="Checkout progress" className="mb-8 flex gap-8 border-b border-light-gray pb-5 text-sm"><li aria-current={step === "information" ? "step" : undefined} className={step === "information" ? "font-semibold" : "text-muted"}>1. Information</li><li aria-current={step === "payment" ? "step" : undefined} className={step === "payment" ? "font-semibold" : "text-muted"}>2. Payment</li></ol>
     <a href="#checkout-summary" className="mb-6 flex min-h-12 items-center justify-between gap-3 border-b border-light-gray pb-4 text-sm lg:hidden"><span>Order total · View summary</span><strong>{formatINR(order?.total ?? total)}</strong></a>
     <div className="grid items-start gap-8 lg:grid-cols-[1fr_380px] lg:gap-14"><div>
@@ -175,14 +186,14 @@ export function CheckoutWizard({ settings, resumeOrderId }: { settings: Shipping
         <h2 className="text-lg font-medium">Review & pay</h2>{address && <div className="mt-5 border-b border-light-gray pb-5 text-sm leading-7"><p className="font-medium">{address.fullName}</p><p className="text-muted">{address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ""}<br />{address.city}, {address.state} {address.pincode}<br />{address.phone}</p>{!order && <button onClick={() => setStep("information")} className="mt-2 min-h-11 text-xs underline">Edit information</button>}</div>}
         <p className="mt-6 text-sm leading-7 text-muted">Pay securely through Razorpay. Available payment methods are shown in the payment window.</p>
         {order?.reservationExpiresAt && order.paymentStatus === "PENDING" && <p className="mt-3 text-xs leading-6 text-muted">Unpaid stock reservation expires at {new Date(order.reservationExpiresAt).toLocaleString("en-IN")}. No payment has been confirmed yet.</p>}
-        <button disabled={busy || (!!order && (order.orderStatus !== "PENDING" || order.paymentStatus !== "PENDING"))} className="btn-primary mt-6 w-full" onClick={() => void pay()}>{busy ? "Opening secure payment…" : `${order ? "Retry payment" : "Pay"} ${formatINR(order?.total ?? total)}`}</button>
+        <button disabled={busy || rewardChecking || (!!order && (order.orderStatus !== "PENDING" || order.paymentStatus !== "PENDING"))} className="btn-primary mt-6 w-full" onClick={() => void pay()}>{busy ? "Opening secure payment…" : `${order ? "Retry payment" : "Pay"} ${formatINR(order?.total ?? total)}`}</button>
         <p className="mt-3 text-xs leading-6 text-muted">By placing your order you agree to our <Link className="underline" href="/terms">terms</Link> and <Link className="underline" href="/privacy">privacy policy</Link>.</p>
         {order && <div className="mt-5 flex flex-wrap gap-4 text-sm"><Link href={`/orders/${order.id}`} className="min-h-11 py-3 underline">Check order status</Link><button disabled={busy} className="min-h-11 underline" onClick={() => void startAgain()}>Edit or restart checkout</button></div>}
       </>}
     </div><aside id="checkout-summary" className="bg-cream p-5 sm:p-7"><h2 className="section-title text-2xl">Order summary</h2>{order ? <OrderSummary order={order} /> : <>
       <ul className="mt-4 divide-y divide-light-gray">{lines.map(l => <li key={l.key} className="flex justify-between gap-4 py-3 text-sm"><div className="min-w-0"><p className="clamp-2">{l.name}</p>{l.variantSku && <p className="mt-1 text-xs text-muted">{l.variantLabel || l.variantSku}</p>}<p className="mt-1 text-xs text-muted">Quantity {l.qty}</p></div><p className="shrink-0">{formatINR(l.price * l.qty)}</p></li>)}</ul>
-      <dl className="space-y-3 border-t border-light-gray pt-4 text-sm"><div className="flex justify-between"><dt>Subtotal</dt><dd>{formatINR(subtotal)}</dd></div>{discount > 0 && <div className="flex justify-between"><dt>Discount</dt><dd>−{formatINR(discount)}</dd></div>}<div className="flex justify-between"><dt>Delivery</dt><dd>{shipping ? formatINR(shipping) : "Free"}</dd></div><div className="flex justify-between border-t border-light-gray pt-4 text-base font-semibold"><dt>Total payable</dt><dd>{formatINR(total)}</dd></div></dl><p className="mt-2 text-xs text-muted">Taxes included in product prices.</p>
-      <details className="mt-6 border-t border-light-gray pt-4"><summary className="min-h-11 cursor-pointer text-sm">Have a coupon?</summary><div className="mt-2 flex gap-2"><label className="min-w-0 flex-1"><span className="sr-only">Coupon code</span><input maxLength={32} className="field" value={coupon} onChange={e => { setCoupon(e.target.value); setDiscount(0); setAppliedCoupon(""); setCouponMessage(""); }} /></label><button type="button" className="btn-ghost !px-3" disabled={busy || !coupon.trim()} onClick={() => void applyCoupon()}>Apply</button></div>{couponMessage && <p className="mt-3 text-xs leading-6" role="status">{couponMessage}</p>}</details>
+      <dl className="space-y-3 border-t border-light-gray pt-4 text-sm"><div className="flex justify-between"><dt>Subtotal</dt><dd>{formatINR(subtotal)}</dd></div>{effectiveDiscount > 0 && <div className="flex justify-between"><dt>Discount</dt><dd>−{formatINR(effectiveDiscount)}</dd></div>}<div className="flex justify-between"><dt>Delivery</dt><dd>{shipping ? formatINR(shipping) : "Free"}</dd></div><div className="flex justify-between border-t border-light-gray pt-4 text-base font-semibold"><dt>Total payable</dt><dd>{formatINR(total)}</dd></div></dl><p className="mt-2 text-xs text-muted">Taxes included in product prices.</p>
+      <details className="mt-6 border-t border-light-gray pt-4"><summary className="min-h-11 cursor-pointer text-sm">Have a coupon?</summary><div className="mt-2 flex gap-2"><label className="min-w-0 flex-1"><span className="sr-only">Coupon code</span><input maxLength={32} className="field" value={coupon} onChange={e => { setManualCoupon(true); setCoupon(e.target.value); setDiscount(0); setAppliedCoupon(""); setCouponMessage(""); }} /></label><button type="button" className="btn-ghost !px-3" disabled={busy || !coupon.trim()} onClick={() => void applyCoupon()}>Apply</button></div>{couponMessage && <p className="mt-3 text-xs leading-6" role="status">{couponMessage}</p>}</details>
     </>}<Link href="/shipping" className="mt-5 inline-block min-h-11 text-xs underline underline-offset-4">Shipping information</Link><Link href="/returns" className="ml-4 inline-block min-h-11 text-xs underline underline-offset-4">Returns & refunds</Link></aside></div>
   </div>;
 }

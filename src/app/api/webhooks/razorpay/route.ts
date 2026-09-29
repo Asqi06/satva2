@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/razorpay";
 import { handleWebhookEvent } from "@/services/order-service";
+import { handleGarbaWebhook } from "@/services/garba-service";
 
 const entitySchema = z.object({
   id: z.string(),
@@ -62,6 +63,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ success: true, data: { ack: true, settled: false } });
   }
   try {
+    const garba = await handleGarbaWebhook(event, entity);
+    if (garba) return NextResponse.json({ success: true, data: garba });
     const result = await handleWebhookEvent(eventId, event, {
       id: entity.id,
       order_id: entity.order_id,

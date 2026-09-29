@@ -39,6 +39,7 @@ export function SiteHeader({ settings, categories }: { settings: ShippingSetting
             <Link href="/shop" aria-current={pathname === "/shop" ? "page" : undefined}>Shop all</Link>
             {categories.slice(0, 3).map(c => <Link key={c.id} href={`/shop/${c.slug}`}>{c.name}</Link>)}
             <Link href="/shop?sort=newest">New arrivals</Link>
+            <Link href="/garba-ghumar" className="font-medium text-primary" aria-current={pathname === "/garba-ghumar" ? "page" : undefined}>Garba Ghumar ✦</Link>
           </nav>
           <button type="button" className="icon-button" aria-label="Search jewellery" onClick={() => setSearchOpen(true)}><Icon name="search" /></button>
           <Link href="/account" aria-label="Account" className="icon-button hidden sm:inline-flex"><Icon name="user" /></Link>
@@ -52,6 +53,7 @@ export function SiteHeader({ settings, categories }: { settings: ShippingSetting
       <div className="flex items-center justify-between border-b border-light-gray px-5 py-4"><h2 id="menu-title" className="font-display text-2xl">Explore SatvaStones</h2><button className="icon-button" onClick={close} aria-label="Close menu"><Icon name="close" /></button></div>
       <nav aria-label="Mobile" className="p-5" onClick={e => { if ((e.target as HTMLElement).closest("a")) close(); }}>
         <Link href="/shop" className="block py-3 font-semibold">Shop all jewellery</Link>
+        <Link href="/garba-ghumar" className="block py-3 font-semibold text-primary">Garba Ghumar · Navratri special ✦</Link>
         {categories.map(c => <Link className="flex items-center justify-between py-3" key={c.id} href={`/shop/${c.slug}`}>{c.name}<Icon name="chevron" className="-rotate-90" /></Link>)}
         <div className="mt-4 border-t border-light-gray pt-4">
           {[["/shop?sort=newest", "New arrivals"], ["/account", "My account"], ["/wishlist", "Wishlist"], ["/account/orders", "My orders"], ["/contact", "Contact & help"], ["/about", "Our story"]].map(([href, label]) => <Link className="block py-3 text-sm" href={href} key={href}>{label}</Link>)}

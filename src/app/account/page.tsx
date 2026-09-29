@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { SignOutButton } from "@/features/auth/SignOutButton";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: { absolute: "My Account — SatvaStones" },
@@ -42,6 +43,7 @@ export default async function AccountPage() {
           <p className="mt-1 text-sm text-warm-gray">{user.email}</p>
         </div>
       </div>
+      <Link href="/garba-ghumar" className="mt-6 inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4">My Garba Ghumar reward & Nav29 coupon ↗</Link>
       {user.role === "ADMIN" && (
         <div className="mt-6 border border-gold/30 bg-gold/10 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">Admin access</p>
