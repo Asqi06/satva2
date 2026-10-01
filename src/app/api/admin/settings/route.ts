@@ -3,10 +3,11 @@ import { requireAdmin } from "@/lib/admin-guard";
 import { auditAdmin } from "@/lib/audit";
 import { errorResponse, successResponse } from "@/lib/errors";
 import { getSettings, updateSettings } from "@/services/settings-service";
+import { businessSeoInputSchema } from "@/lib/business-seo";
 
 export const dynamic = "force-dynamic";
 
-const settingsInputSchema = z.object({
+const settingsInputSchema = businessSeoInputSchema.extend({
   freeShippingThreshold: z.number().int().min(0).max(100000),
   shippingFlatFee: z.number().int().min(0).max(10000),
   reservationTtlMinutes: z.number().int().min(5).max(1440),

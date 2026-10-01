@@ -12,19 +12,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if ((process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") || process.env.SITE_INDEXING_ENABLED === "false") return [];
   const base = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const staticPages: MetadataRoute.Sitemap = [
-    { path: "", priority: 1, changeFrequency: "daily" as const },
-    { path: "/shop", priority: 0.9, changeFrequency: "daily" as const },
-    { path: "/about", priority: 0.6, changeFrequency: "monthly" as const },
-    { path: "/contact", priority: 0.5, changeFrequency: "monthly" as const },
-    { path: "/faq", priority: 0.6, changeFrequency: "monthly" as const },
-    { path: "/shipping", priority: 0.5, changeFrequency: "monthly" as const },
-    { path: "/returns", priority: 0.5, changeFrequency: "monthly" as const },
-    { path: "/privacy", priority: 0.3, changeFrequency: "yearly" as const },
-    { path: "/terms", priority: 0.3, changeFrequency: "yearly" as const },
-  ].map(({ path, priority, changeFrequency }) => ({
+    "", "/shop", "/about", "/contact", "/faq", "/shipping", "/returns", "/privacy", "/terms", "/guides/jewellery-buying-guide",
+  ].map((path) => ({
     url: `${base}${path}`,
-    priority,
-    changeFrequency,
   }));
 
   try {
@@ -36,22 +26,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     await connectDb();
     // ponytail: one sitemap covers this catalogue; split with generateSitemaps before 50,000 URLs.
     const [products, categories] = await Promise.all([
-      Product.find({ isPublished: true }).select("slug updatedAt").lean<{ slug: string; updatedAt?: Date }[]>(),
+      Product.find({ isPublished: true }).select("slug updatedAt images.secureUrl").lean<{ slug: string; updatedAt?: Date; images?: { secureUrl: string }[] }[]>(),
       listPublicCategories(),
     ]);
     return [
       ...staticPages,
       ...categories.filter((c) => (c.productCount ?? 0) > 0).map((c) => ({
-        url: `${base}/shop?category=${c.slug}`,
+        url: `${base}/shop?category=${encodeURIComponent(c.slug)}`,
         ...(c.updatedAt ? { lastModified: new Date(c.updatedAt) } : {}),
-        priority: 0.7,
-        changeFrequency: "weekly" as const,
+        ...(c.image ? { images: [c.image.secureUrl] } : {}),
       })),
       ...products.map((p) => ({
-        url: `${base}/products/${p.slug}`,
+        url: `${base}/products/${encodeURIComponent(p.slug)}`,
         ...(p.updatedAt ? { lastModified: new Date(p.updatedAt) } : {}),
-        priority: 0.8,
-        changeFrequency: "weekly" as const,
+        ...(p.images?.length ? { images: [...new Set(p.images.map((image) => image.secureUrl))] } : {}),
       })),
     ];
   } catch (error) {

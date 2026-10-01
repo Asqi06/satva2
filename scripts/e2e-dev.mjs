@@ -17,10 +17,10 @@ await fixtureDb.db().collection("users").insertOne({
   email: "e2e-admin@example.com", name: "E2E Admin", role: "ADMIN", addresses: [],
 });
 await fixtureDb.close();
-const child = spawn("npx", ["next", "dev", "--port", "3100"], {
+const child = spawn("npx", ["next", "dev", "--port", process.env.E2E_PORT || "3100"], {
   stdio: "inherit",
   shell: true,
-  env: { ...process.env, MONGODB_URI: mongod.getUri("satvastones-e2e"), E2E_DIST_DIR: ".next-e2e" },
+  env: { ...process.env, MONGODB_URI: mongod.getUri("satvastones-e2e"), E2E_DIST_DIR: process.env.E2E_DIST_DIR || ".next-e2e" },
 });
 
 let stopping = false;

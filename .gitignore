@@ -49,3 +49,10 @@ next-env.d.ts
 
 # Isolated browser test server build output
 .next-e2e/
+.next-seo-audit/
+.next-seo-e2e/
+.next-seo-browser/
+audit/*-validation.log
+
+# Local SEO evidence cache
+.seo-cache/

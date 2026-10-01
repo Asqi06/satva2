@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getSettings } from "@/services/settings-service";
-import { getClientEnv } from "@/lib/env";
-import { getPublicProductBySlug } from "@/services/product-service";
+import { getClientEnv, isIndexingEnabled } from "@/lib/env";
+import { getPublicProductBySlug, type ProductDetail } from "@/services/product-service";
 import { ProductCard } from "@/features/products/ProductCard";
 import { ProductGallery } from "@/features/products/ProductGallery";
 import { PurchasePanel } from "@/features/products/PurchasePanel";
@@ -13,6 +13,15 @@ import { ReviewsSection } from "@/features/reviews/ReviewsSection";
 import { ViewItemTracker } from "@/features/products/ViewItemTracker";
 
 type Params = { slug: string };
+
+function productDescription(product: ProductDetail): string {
+  const copy = product.shortDescription?.trim() || product.description.trim();
+  if (copy) return copy;
+  const specifications = [
+    ["Material", product.material], ["Colour", product.color], ["Size", product.size], ["Dimensions", product.dimensions],
+  ].flatMap(([label, value]) => value?.trim() ? [`${label}: ${value.trim()}`] : []);
+  return `${product.name.trim()} in the ${product.category.name.trim()} collection at SatvaStones. ${specifications.length ? `${specifications.join(". ")}.` : "View current price, options and availability on this product page."}`;
+}
 
 export async function generateMetadata({
   params,
@@ -23,14 +32,12 @@ export async function generateMetadata({
   const product = await getPublicProductBySlug(slug);
   if (!product) notFound();
   if (slug !== product.slug) permanentRedirect(`/products/${encodeURIComponent(product.slug)}`);
-  const title = product.seo.title || `${product.name} | SatvaStones`;
+  const title = product.seo.title?.trim() || `${product.name} | SatvaStones`;
   const description =
-    product.seo.description ||
-    product.shortDescription ||
-    product.description.slice(0, 155);
+    product.seo.description?.trim() || productDescription(product).slice(0, 160);
   const images = product.images.slice(0, 4).map((i) => ({ url: i.secureUrl, alt: i.alt }));
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const canonical = `${appUrl}/products/${product.slug}`;
+  const canonical = `${appUrl}/products/${encodeURIComponent(product.slug)}`;
   return {
     title: { absolute: title },
     description,
@@ -49,7 +56,10 @@ export async function generateMetadata({
       description,
       images: images.map((i) => i.url),
     },
-    robots: { index: true, follow: true },
+    robots: {
+      index: isIndexingEnabled(), follow: true,
+      googleBot: { index: isIndexingEnabled(), follow: true, "max-image-preview": "large" },
+    },
   };
 }
 
@@ -63,43 +73,59 @@ export default async function ProductPage({ params, searchParams }: {
   if (slug !== product.slug) permanentRedirect(`/products/${encodeURIComponent(product.slug)}`);
 
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const canonical = `${appUrl}/products/${product.slug}`;
+  const canonical = `${appUrl}/products/${encodeURIComponent(product.slug)}`;
   const settings = await getSettings();
   const query = await searchParams;
   const requestedSku = typeof query.variant === "string" ? query.variant : undefined;
   const selectedVariant = product.variants.find((variant) => variant.sku === requestedSku)
     ?? product.variants.find((variant) => variant.stock > 0) ?? product.variants[0];
+  // Legacy catalogue records may predate SKU validation. Never publish a fabricated
+  // variant URL or offer that cannot select an identifiable option in the bag.
+  const schemaVariants = product.variants.filter((variant) => typeof variant.sku === "string" && variant.sku.trim().length > 0);
+  const variesBy = [
+    ...(schemaVariants.some((variant) => variant.size) ? ["https://schema.org/size"] : []),
+    ...(schemaVariants.some((variant) => variant.color) ? ["https://schema.org/color"] : []),
+  ];
   const offer = (price: number, inStock: boolean, url: string) => ({
     "@type": "Offer", price, priceCurrency: "INR",
     availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
     url, itemCondition: "https://schema.org/NewCondition",
-    seller: { "@type": "Organization", name: "SatvaStones", url: appUrl },
+    seller: { "@type": "Organization", "@id": `${appUrl}/#organization`, name: "SatvaStones", url: appUrl },
   });
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": product.variants.length ? "ProductGroup" : "Product",
+    "@type": schemaVariants.length ? "ProductGroup" : "Product",
+    "@id": `${canonical}#product`,
     name: product.name,
-    description: product.shortDescription || product.description,
+    description: productDescription(product),
     ...(product.material ? { material: product.material } : {}),
+    ...(!product.variants.length && product.color ? { color: product.color } : {}),
+    ...(!product.variants.length && product.size ? { size: product.size } : {}),
     category: product.category.name,
     image: product.images.map((image) => image.secureUrl),
     url: canonical,
-    ...(product.variants.length ? {
-      productGroupID: product.sku,
-      variesBy: [
-        ...(product.variants.some((variant) => variant.size) ? ["https://schema.org/size"] : []),
-        ...(product.variants.some((variant) => variant.color) ? ["https://schema.org/color"] : []),
-      ],
-      hasVariant: product.variants.map((variant) => ({
+    ...(schemaVariants.length ? {
+      productGroupID: product.sku?.trim() || product.id,
+      ...(variesBy.length ? { variesBy } : {}),
+      hasVariant: schemaVariants.map((variant) => ({
         "@type": "Product", sku: variant.sku,
-        name: [product.name, variant.size, variant.color, variant.style].filter(Boolean).join(" — "),
+        "@id": `${canonical}?variant=${encodeURIComponent(variant.sku)}#product`,
+        url: `${canonical}?variant=${encodeURIComponent(variant.sku)}`,
+        isVariantOf: { "@id": `${canonical}#product` },
+        name: [product.name, variant.size, variant.color, variant.style].filter(Boolean).join(" — ") +
+          (!variant.size && !variant.color && !variant.style ? ` — ${variant.sku}` : ""),
         ...(variant.size ? { size: variant.size } : {}),
         ...(variant.color ? { color: variant.color } : {}),
-        description: product.shortDescription || product.description,
+        ...(variant.style ? { additionalProperty: { "@type": "PropertyValue", name: "Style", value: variant.style } } : {}),
+        description: productDescription(product),
         image: product.images.map((image) => image.secureUrl),
         offers: offer(variant.price ?? product.price, variant.stock > 0, `${canonical}?variant=${encodeURIComponent(variant.sku)}`),
       })),
-    } : { sku: product.sku, offers: offer(product.price, product.inStock, canonical) }),
+    } : {
+      ...(product.sku?.trim() ? { sku: product.sku } : {}),
+      // A product with only malformed legacy variants is not a simple purchasable offer.
+      ...(!product.variants.length ? { offers: offer(product.price, product.inStock, canonical) } : {}),
+    }),
     ...(product.ratingCount > 0 ? {
       aggregateRating: {
         "@type": "AggregateRating", ratingValue: product.ratingAverage,
@@ -120,7 +146,7 @@ export default async function ProductPage({ params, searchParams }: {
               "@type": "ListItem",
               position: 3,
               name: product.category.name,
-              item: `${appUrl}/shop?category=${product.category.slug}`,
+              item: `${appUrl}/shop?category=${encodeURIComponent(product.category.slug)}`,
             },
           ]
         : []),
@@ -163,7 +189,7 @@ export default async function ProductPage({ params, searchParams }: {
               <>
                 <li aria-hidden="true">/</li>
                 <li>
-                  <Link href={`/shop?category=${product.category.slug}`} className="hover:text-ink hover:underline">
+                  <Link href={`/shop?category=${encodeURIComponent(product.category.slug)}`} className="hover:text-ink hover:underline">
                     {product.category.name}
                   </Link>
                 </li>
@@ -197,7 +223,7 @@ export default async function ProductPage({ params, searchParams }: {
             )}
 
             {/* Short description */}
-            {product.shortDescription && (
+            {product.shortDescription?.trim() && (
               <p className="mt-5 max-w-prose text-base leading-7 text-warm-gray">{product.shortDescription}</p>
             )}
 
@@ -226,7 +252,7 @@ export default async function ProductPage({ params, searchParams }: {
         </div>
 
         <section aria-label="Product details" className="mt-12 max-w-3xl">
-          <details className="detail-section" open><summary>Description</summary><div className="space-y-4">{product.description.split(/\n\s*\n/).filter(Boolean).map((text, index) => <p className="whitespace-pre-line" key={index}>{text}</p>)}</div></details>
+          <details className="detail-section" open><summary>Description</summary><div className="space-y-4">{(product.description.trim() || productDescription(product)).split(/\n\s*\n/).filter(Boolean).map((text, index) => <p className="whitespace-pre-line" key={index}>{text}</p>)}</div></details>
           <details className="detail-section"><summary>Details & dimensions</summary><div><dl>{([["SKU",product.sku],["Material",product.material],["Colour",product.color],["Size",product.size],["Dimensions",product.dimensions],["Weight",product.weight]] as [string,string | undefined][]).filter(([,value]) => value).map(([term,value]) => <div key={term} className="grid grid-cols-[110px_1fr] gap-4 py-2"><dt>{term}</dt><dd className="text-ink">{value}</dd></div>)}</dl></div></details>
           <details className="detail-section"><summary>Shipping & returns</summary><div><p>Delivery is free from ₹{settings.freeShippingThreshold} after discounts; otherwise ₹{settings.shippingFlatFee}.</p>{settings.dispatchInformation && <p className="mt-2">{settings.dispatchInformation}</p>}{settings.deliveryInformation && <p className="mt-2">{settings.deliveryInformation}</p>}<p className="mt-3"><Link className="underline underline-offset-4" href="/shipping">Shipping information</Link> · <Link className="underline underline-offset-4" href="/returns">Return & refund eligibility</Link></p></div></details>
         </section>

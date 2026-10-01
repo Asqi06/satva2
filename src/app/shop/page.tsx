@@ -23,11 +23,11 @@ export async function generateMetadata({
     const { pagination } = await listPublicProducts(parsed.data);
     if (page > Math.max(pagination.totalPages, 1)) notFound();
   }
-  const filtered = !parsed.success || Object.entries(parsed.data).some(([key, value]) =>
+  const filtered = Object.entries(parsed.data).some(([key, value]) =>
     !["category", "page"].includes(key) && value !== undefined &&
     !(key === "sort" && value === "featured") && !(key === "limit" && value === 12));
   const suffix = page > 1 ? ` — Page ${page}` : "";
-  const category = (Array.isArray(raw.category) ? raw.category[0] : raw.category)?.toLowerCase();
+  const category = parsed.data.category?.toLowerCase();
   const categories = category ? await listPublicCategories() : [];
   const selected = categories.find((item) => (item.slug === category || item.previousSlugs?.includes(category!)));
   if (category && !selected) notFound();
@@ -37,7 +37,7 @@ export async function generateMetadata({
     const description = selected.seo.description || selected.description?.slice(0, 160) || `Shop ${selected.name.toLowerCase()} online at SatvaStones. Explore the collection, prices and product details.`;
     const canonical = `${appUrl}${shopUrl(selected.slug, page)}`;
     const images = selected.image ? [{ url: selected.image.secureUrl, alt: selected.image.alt }] : undefined;
-    if (category !== selected.slug) permanentRedirect(shopUrl(selected.slug, page));
+    if (first(raw.category) !== selected.slug) permanentRedirect(categoryRedirectUrl(raw, selected.slug));
     return {
       title: { absolute: title },
       description,
@@ -72,6 +72,17 @@ function shopUrl(category: string | undefined, page = 1): string {
   return `/shop${params.size ? `?${params}` : ""}`;
 }
 
+// Slug normalization must keep a customer's search, facets and sort selection.
+function categoryRedirectUrl(raw: Record<string, string | string[] | undefined>, category: string): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    if (key === "category" || value === undefined) continue;
+    for (const entry of Array.isArray(value) ? value : [value]) params.append(key, entry);
+  }
+  params.set("category", category);
+  return `/shop?${params.toString()}`;
+}
+
 function pageLink(params: Record<string, string | undefined>, page: number): string {
   const search = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -102,17 +113,29 @@ export default async function ShopPage({
   ]);
 
   const appUrl = getClientEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const selectedCategory = flat.category ? categories.find((c) => c.slug === flat.category.toLowerCase() || c.previousSlugs?.includes(flat.category.toLowerCase())) : undefined;
+  const selectedCategory = query.category ? categories.find((c) => c.slug === query.category!.toLowerCase() || c.previousSlugs?.includes(query.category!.toLowerCase())) : undefined;
   if (query.category && !selectedCategory) notFound();
-  if (selectedCategory && flat.category !== selectedCategory.slug) permanentRedirect(shopUrl(selectedCategory.slug, query.page));
+  if (selectedCategory && flat.category !== selectedCategory.slug) permanentRedirect(categoryRedirectUrl(raw, selectedCategory.slug));
   if (query.page > Math.max(pagination.totalPages, 1)) notFound();
   const categoryName = selectedCategory?.name ?? null;
+  const heading = query.q ? `Results for “${query.q}”` : categoryName ?? "All jewellery";
+  const collectionUrl = `${appUrl}${shopUrl(selectedCategory?.slug, query.page)}`;
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: categoryName ? `${categoryName} jewellery` : "All jewellery",
-    url: `${appUrl}${shopUrl(selectedCategory?.slug, query.page)}`,
-    isPartOf: { "@type": "WebSite", name: "SatvaStones", url: appUrl },
+    "@id": `${collectionUrl}#collection`,
+    name: heading + (query.page > 1 ? ` — Page ${query.page}` : ""),
+    ...(selectedCategory?.description ? { description: selectedCategory.description } : {}),
+    url: collectionUrl,
+    isPartOf: { "@type": "WebSite", "@id": `${appUrl}/#website`, name: "SatvaStones", url: appUrl },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: products.length,
+      itemListElement: products.map((product, index) => ({
+        "@type": "ListItem", position: index + 1,
+        name: product.name, url: `${appUrl}/products/${encodeURIComponent(product.slug)}`,
+      })),
+    },
   };
   const breadcrumbLd =
     categoryName !== null
@@ -122,14 +145,19 @@ export default async function ShopPage({
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Home", item: appUrl },
             { "@type": "ListItem", position: 2, name: "Shop", item: `${appUrl}/shop` },
-            { "@type": "ListItem", position: 3, name: categoryName, item: `${appUrl}/shop?category=${encodeURIComponent(flat.category!)}` },
+            { "@type": "ListItem", position: 3, name: categoryName, item: `${appUrl}${shopUrl(selectedCategory?.slug)}` },
           ],
         }
-      : null;
+      : {
+          "@context": "https://schema.org", "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: appUrl },
+            { "@type": "ListItem", position: 2, name: "Shop", item: `${appUrl}/shop` },
+          ],
+        };
 
   const facets = await getCatalogueFilters(selectedCategory?.slug);
   const suggestions = !products.length && query.q ? (await listPublicProducts({ sort: "best-selling", page: 1, limit: 4 })).products : [];
-  const heading = query.q ? `Results for “${query.q}”` : categoryName ?? "All jewellery";
   return (
     <div className="min-h-full flex-1 bg-white text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionLd) }} />
@@ -152,7 +180,7 @@ export default async function ShopPage({
           <h1 className="section-title mt-2 text-3xl sm:text-4xl">
             {heading}
           </h1>
-          {selectedCategory?.description && <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/70">{selectedCategory.description}</p>}
+          {selectedCategory?.description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/70">{selectedCategory.description}</p> : !query.q && <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/70">Browse {categoryName ? categoryName.toLowerCase() : "jewellery"} and compare current prices, available options and materials on each product page. Check <Link href="/shipping" className="underline underline-offset-4">shipping information</Link> and <Link href="/returns" className="underline underline-offset-4">return eligibility</Link> before ordering.</p>}
           <p className="mt-2 max-w-xl text-[13px] text-ink/60">
             {pagination.total === 0
               ? "No pieces match — try clearing a filter."
@@ -187,7 +215,7 @@ export default async function ShopPage({
             >
               Clear all filters
             </Link>
-            <div className="mt-5 flex flex-wrap justify-center gap-2">{categories.slice(0, 5).map(c => <Link key={c.id} className="filter-chip" href={`/shop/${c.slug}`}>{c.name}</Link>)}</div>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">{categories.slice(0, 5).map(c => <Link key={c.id} className="filter-chip" href={shopUrl(c.slug)}>{c.name}</Link>)}</div>
           </div>
         )}
 
