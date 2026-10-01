@@ -7,7 +7,7 @@ test.beforeAll(async ({ request }) => {
   expect(response.ok()).toBeTruthy();
 });
 
-test("crawlable product HTML, canonical variant and real missing-page status", async ({ request, page }) => {
+test("crawlable product HTML, canonical variant and real missing-page status", async ({ request, page, baseURL }) => {
   const product = await request.get("/products/e2e-dainty-ring?variant=E2E-RING-001-S8");
   expect(product.status()).toBe(200);
   const html = await product.text();
@@ -20,7 +20,7 @@ test("crawlable product HTML, canonical variant and real missing-page status", a
   await page.goto("/products/e2e-dainty-ring?variant=E2E-RING-001-S8");
   await expect(page.getByRole("radio", { name: "8 — Sold out", exact: true })).toBeChecked();
   await expect(page.getByRole("button", { name: "Sold out", exact: true })).toBeDisabled();
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "http://localhost:3100/products/e2e-dainty-ring");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${baseURL}/products/e2e-dainty-ring`);
 });
 
 test("mobile pages have one main landmark and no horizontal overflow", async ({ page }) => {

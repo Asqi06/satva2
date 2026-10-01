@@ -20,6 +20,13 @@ export interface ISettings extends Document {
   privacyPolicy?: string;
   termsPolicy?: string;
   aboutInformation?: string;
+  addressStreet?: string;
+  addressLocality?: string;
+  addressRegion?: string;
+  addressPostalCode?: string;
+  physicalStore?: boolean;
+  googleMapsUrl?: string;
+  sameAs?: string[];
 
   homeSeoTitle?: string;
   homeSeoDescription?: string;
@@ -47,6 +54,13 @@ const settingsSchema = new Schema<ISettings>(
     privacyPolicy: { type: String, trim: true, maxlength: 5000 },
     termsPolicy: { type: String, trim: true, maxlength: 5000 },
     aboutInformation: { type: String, trim: true, maxlength: 5000 },
+    addressStreet: { type: String, trim: true, maxlength: 500 },
+    addressLocality: { type: String, trim: true, maxlength: 200, default: "Vapi" },
+    addressRegion: { type: String, trim: true, maxlength: 200, default: "Gujarat" },
+    addressPostalCode: { type: String, trim: true, maxlength: 6 },
+    physicalStore: { type: Boolean, default: false },
+    googleMapsUrl: { type: String, trim: true, maxlength: 2048 },
+    sameAs: { type: [String], default: ["https://www.instagram.com/satvastonesjewelry/"] },
 
     homeSeoTitle: { type: String, trim: true, maxlength: 160 },
     homeSeoDescription: { type: String, trim: true, maxlength: 320 },

@@ -18,8 +18,9 @@ export default async function TermsPage() {
         {settings.termsPolicy ? <div className="mt-6 whitespace-pre-line leading-8 text-ink/85">{settings.termsPolicy}</div> : (
         <div className="mt-6 space-y-5 leading-8 text-ink/85">
           <p>
-            <strong>What we sell:</strong> gold-coloured imitation jewellery — stainless steel, brass
-            and plated pieces with an anti-tarnish finish. Not solid gold, and priced accordingly.
+            <strong>What we sell:</strong> jewellery with materials, finishes and available options
+            described on each product page. Contact us before ordering if you need a detail that
+            is not listed.
           </p>
           <p>
             <strong>Prices & payment:</strong> prices in Indian Rupees, inclusive of taxes. Payment

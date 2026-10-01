@@ -35,6 +35,15 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
   const [shopSeoDescription, setShopSeoDescription] = useState(
     initial.shopSeoDescription ?? "",
   );
+  const [localDetails, setLocalDetails] = useState({
+    addressStreet: initial.addressStreet ?? "",
+    addressLocality: initial.addressLocality ?? "",
+    addressRegion: initial.addressRegion ?? "",
+    addressPostalCode: initial.addressPostalCode ?? "",
+    googleMapsUrl: initial.googleMapsUrl ?? "",
+  });
+  const [physicalStore, setPhysicalStore] = useState(initial.physicalStore ?? false);
+  const [profiles, setProfiles] = useState((initial.sameAs ?? []).join("\n"));
   const [details, setDetails] = useState(() =>
     Object.fromEntries(
       Object.keys(DETAIL_FIELDS).map((key) => [
@@ -56,6 +65,9 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...details,
+          ...localDetails,
+          physicalStore,
+          sameAs: profiles.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
           freeShippingThreshold: Number(threshold),
           shippingFlatFee: Number(flatFee),
           reservationTtlMinutes: Number(ttl),
@@ -236,6 +248,25 @@ export function SettingsForm({ initial }: { initial: ShippingSettings }) {
           </fieldset>
         </details>
       ))}
+      <details className="admin-card">
+        <summary className="min-h-11 cursor-pointer text-base font-semibold">Business location & profiles</summary>
+        <p className="mt-2 text-sm leading-6 text-muted">SatvaStones is based in Vapi, Gujarat and sells online across India. Keep street address and PIN code blank until verified. Add official profiles using HTTPS URLs, one per line.</p>
+        <fieldset disabled={saving} className="mt-5 grid gap-5 sm:grid-cols-2">
+          <legend className="sr-only">Business location & profiles</legend>
+          {Object.entries({ addressStreet: "Street address", addressLocality: "City", addressRegion: "State", addressPostalCode: "PIN code", googleMapsUrl: "Google Maps place or directions URL (physical shop only)" }).map(([key, label]) => (
+            <label key={key} className="flex flex-col gap-2 text-sm">{label}<input
+              value={localDetails[key as keyof typeof localDetails]}
+              onChange={(event) => setLocalDetails({ ...localDetails, [key]: event.target.value })}
+              type={key === "googleMapsUrl" ? "url" : "text"}
+              maxLength={key === "addressPostalCode" ? 6 : key === "googleMapsUrl" ? 2048 : 500}
+              inputMode={key === "addressPostalCode" ? "numeric" : undefined}
+              className={inputCls}
+            /></label>
+          ))}
+          <label className="flex flex-col gap-2 text-sm sm:col-span-2">Official brand profiles<textarea value={profiles} onChange={(event) => setProfiles(event.target.value)} rows={3} className={inputCls} /></label>
+          <label className="flex items-start gap-3 text-sm sm:col-span-2"><input type="checkbox" checked={physicalStore} onChange={(event) => setPhysicalStore(event.target.checked)} className="mt-1" /><span>We operate a verified shop where customers can visit in person. Online-only businesses should leave this off. A complete address and support phone are required before physical-store information is published.</span></label>
+        </fieldset>
+      </details>
       <details className="admin-card">
         <summary className="min-h-11 cursor-pointer text-base font-semibold">
           Search appearance

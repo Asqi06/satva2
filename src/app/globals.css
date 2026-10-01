@@ -84,10 +84,6 @@ video {
     font-size: 16px;
   }
 
-  button,
-  a {
-    min-height: 24px;
-  }
 }
 
 ::selection {

@@ -37,7 +37,7 @@ export function SiteHeader({ settings, categories }: { settings: ShippingSetting
         {checkout ? <span className="flex items-center gap-2 text-xs text-muted"><Icon name="shield" />Secure checkout</span> : <>
           <nav aria-label="Primary" className="mr-auto hidden items-center gap-6 text-sm lg:flex">
             <Link href="/shop" aria-current={pathname === "/shop" ? "page" : undefined}>Shop all</Link>
-            {categories.slice(0, 3).map(c => <Link key={c.id} href={`/shop/${c.slug}`}>{c.name}</Link>)}
+            {categories.slice(0, 3).map(c => <Link key={c.id} href={`/shop?category=${encodeURIComponent(c.slug)}`}>{c.name}</Link>)}
             <Link href="/shop?sort=newest">New arrivals</Link>
             <Link href="/garba-ghumar" className="font-medium text-primary" aria-current={pathname === "/garba-ghumar" ? "page" : undefined}>Garba Ghumar ✦</Link>
           </nav>
@@ -54,7 +54,7 @@ export function SiteHeader({ settings, categories }: { settings: ShippingSetting
       <nav aria-label="Mobile" className="p-5" onClick={e => { if ((e.target as HTMLElement).closest("a")) close(); }}>
         <Link href="/shop" className="block py-3 font-semibold">Shop all jewellery</Link>
         <Link href="/garba-ghumar" className="block py-3 font-semibold text-primary">Garba Ghumar · Navratri special ✦</Link>
-        {categories.map(c => <Link className="flex items-center justify-between py-3" key={c.id} href={`/shop/${c.slug}`}>{c.name}<Icon name="chevron" className="-rotate-90" /></Link>)}
+        {categories.map(c => <Link className="flex items-center justify-between py-3" key={c.id} href={`/shop?category=${encodeURIComponent(c.slug)}`}>{c.name}<Icon name="chevron" className="-rotate-90" /></Link>)}
         <div className="mt-4 border-t border-light-gray pt-4">
           {[["/shop?sort=newest", "New arrivals"], ["/account", "My account"], ["/wishlist", "Wishlist"], ["/account/orders", "My orders"], ["/contact", "Contact & help"], ["/about", "Our story"]].map(([href, label]) => <Link className="block py-3 text-sm" href={href} key={href}>{label}</Link>)}
           {session?.user?.role === "ADMIN" && <Link href="/admin" className="block py-3 text-sm">Admin panel</Link>}

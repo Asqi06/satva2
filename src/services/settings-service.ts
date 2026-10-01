@@ -1,8 +1,9 @@
 import { cache } from "react";
 import { connectDb } from "@/lib/db";
 import { Settings } from "@/models/Settings";
+import { businessSeoInputSchema, type BusinessSeoSettings } from "@/lib/business-seo";
 
-export interface ShippingSettings {
+export interface ShippingSettings extends BusinessSeoSettings {
   freeShippingThreshold: number;
   shippingFlatFee: number;
   reservationTtlMinutes: number;
@@ -49,6 +50,13 @@ export const getSettings = cache(async (): Promise<ShippingSettings> => {
     privacyPolicy: doc?.privacyPolicy,
     termsPolicy: doc?.termsPolicy,
     aboutInformation: doc?.aboutInformation,
+    addressStreet: doc?.addressStreet,
+    addressLocality: doc?.addressLocality ?? "Vapi",
+    addressRegion: doc?.addressRegion ?? "Gujarat",
+    addressPostalCode: doc?.addressPostalCode,
+    physicalStore: doc?.physicalStore ?? false,
+    googleMapsUrl: doc?.googleMapsUrl,
+    sameAs: doc?.sameAs ?? ["https://www.instagram.com/satvastonesjewelry/"],
 
     homeSeoTitle: doc?.homeSeoTitle,
     homeSeoDescription: doc?.homeSeoDescription,
@@ -63,7 +71,7 @@ export function shippingFor(subtotalAfterDiscount: number, settings: ShippingSet
   return subtotalAfterDiscount >= settings.freeShippingThreshold ? 0 : settings.shippingFlatFee;
 }
 
-export interface SettingsInput {
+export interface SettingsInput extends BusinessSeoSettings {
   freeShippingThreshold: number;
   shippingFlatFee: number;
   reservationTtlMinutes: number;
@@ -90,12 +98,14 @@ export interface SettingsInput {
 
 /** Upsert the singleton site row; returns the fresh view. */
 export async function updateSettings(input: SettingsInput): Promise<ShippingSettings> {
+  const businessSeo = businessSeoInputSchema.parse(input);
   await connectDb();
   const announcement = input.announcement?.trim() ? input.announcement.trim() : undefined;
   await Settings.findOneAndUpdate(
     { key: "site" },
     {
       $set: {
+        ...Object.fromEntries(Object.entries(businessSeo).filter(([, value]) => value !== undefined)),
         freeShippingThreshold: input.freeShippingThreshold,
         shippingFlatFee: input.shippingFlatFee,
         reservationTtlMinutes: input.reservationTtlMinutes,

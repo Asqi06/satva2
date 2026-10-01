@@ -10,10 +10,11 @@ import { listPublicCategories } from "@/services/category-service";
 import { listPublicProducts } from "@/services/product-service";
 import { listFeaturedReviews } from "@/services/review-service";
 import { getSettings } from "@/services/settings-service";
+import { getBusinessSchema } from "@/lib/business-seo";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
-  const title = settings.homeSeoTitle || "SatvaStones — Everyday Aesthetic Jewellery";
+  const title = settings.homeSeoTitle || "Jewellery Online in India | SatvaStones";
   const description = settings.homeSeoDescription || "Shop rings, bracelets, necklaces, earrings and oxidised jewellery online in India at SatvaStones.";
   return {
     title: { absolute: title }, description, alternates: { canonical: "/" },
@@ -37,30 +38,16 @@ export default async function Home() {
   ]);
   const hero = banners[0];
 
-  const orgLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "SatvaStones",
-    url: appUrl,
-
-    description: "Jewellery online in India with current prices and product details.",
-    ...(settings.legalName ? { legalName: settings.legalName } : {}),
-    ...(settings.businessAddress ? { address: settings.businessAddress } : {}),
-    ...(settings.supportEmail || settings.supportPhone ? { contactPoint: {
-      "@type": "ContactPoint", contactType: "customer service",
-      ...(settings.supportEmail ? { email: settings.supportEmail } : {}),
-      ...(settings.supportPhone ? { telephone: settings.supportPhone } : {}),
-    } } : {}),
-    sameAs: [],
-  };
+  const orgLd = getBusinessSchema(settings, appUrl);
 
   const websiteLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${appUrl}/#website`,
     name: "SatvaStones",
     url: appUrl,
     description: "Korean, Western and Pinterest-inspired jewellery for India.",
-    publisher: { "@type": "Organization", name: "SatvaStones", url: appUrl },
+    publisher: { "@id": `${appUrl}/#organization` },
     potentialAction: {
       "@type": "SearchAction",
       target: `${appUrl}/shop?q={search_term_string}`,
@@ -76,8 +63,8 @@ export default async function Home() {
 
       <section className="mx-auto grid w-full max-w-7xl bg-cream md:grid-cols-2" aria-label="Featured collection">
         <div className="flex flex-col items-start justify-center px-6 py-10 sm:px-10 md:py-16 lg:px-16">
-          <p className="eyebrow">Everyday jewellery</p>
-          <h1 className="section-title mt-4 max-w-md text-4xl sm:text-5xl lg:text-6xl">{hero?.title || "Small pieces. Everyday favourites."}</h1>
+          <p className="eyebrow">{hero?.title || "SatvaStones · Vapi, Gujarat"}</p>
+          <h1 className="section-title mt-4 max-w-md text-4xl sm:text-5xl lg:text-6xl">Everyday jewellery for India</h1>
           <p className="mt-5 max-w-sm text-sm leading-7 text-muted">{hero?.subtitle || "Discover rings, earrings, necklaces and bracelets to wear your way."}</p>
           <Link href={hero?.link || "/shop"} className="btn-primary mt-7">Explore the collection</Link>
         </div>
@@ -85,11 +72,16 @@ export default async function Home() {
           {(hero?.image || allProducts[0]?.images[0]) && <Image src={(hero?.image || allProducts[0].images[0]).secureUrl} alt={(hero?.image || allProducts[0].images[0]).alt || "SatvaStones jewellery collection"} fill priority fetchPriority="high" sizes="(min-width: 1280px) 640px, (min-width: 768px) 50vw, 100vw" className="object-cover" />}
         </div>
       </section>
+      <section aria-labelledby="jewellery-online-heading" className="shopping-section">
+        <h2 id="jewellery-online-heading" className="section-title text-2xl sm:text-3xl">Shop jewellery online in India</h2>
+        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted">Explore rings, earrings, necklaces and bracelets at SatvaStones, an online jewellery business based in Vapi, Gujarat. Compare the current price, available options and product details before choosing your piece. For delivery timing to your PIN code, contact our team.</p>
+        <Link href="/guides/jewellery-buying-guide" className="mt-3 inline-block py-3 text-sm underline underline-offset-4">Jewellery buying guide: materials, sizing and delivery</Link>
+      </section>
       {categories.length > 0 && <section aria-labelledby="category-heading" className="shopping-section">
         <div className="flex items-baseline justify-between gap-4"><h2 id="category-heading" className="section-title text-2xl sm:text-3xl">Shop by category</h2><Link href="/shop" className="text-sm underline underline-offset-4">View all</Link></div>
         <ul className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-6 sm:gap-5">{categories.filter(c => c.image || (c.productCount ?? 0) > 0).slice(0,6).map(c => {
           const image = c.image;
-          return <li key={c.id}><Link href={`/shop/${c.slug}`} className="group block"><span className="relative block aspect-square overflow-hidden rounded-[3px] bg-cream">{image ? <Image src={image.secureUrl} alt={image.alt || c.name} fill sizes="(min-width: 1280px) 186px, (min-width: 640px) calc((100vw - 164px) / 6), calc((100vw - 56px) / 3)" className="object-cover transition-opacity duration-200 group-hover:opacity-90" /> : <span className="flex h-full items-center justify-center px-2 text-center text-xs text-muted">{c.name}</span>}</span><span className="mt-3 block text-center text-xs font-medium sm:text-sm">{c.name}</span></Link></li>;
+          return <li key={c.id}><Link href={`/shop?category=${encodeURIComponent(c.slug)}`} className="group block"><span className="relative block aspect-square overflow-hidden rounded-[3px] bg-cream">{image ? <Image src={image.secureUrl} alt={image.alt || c.name} fill sizes="(min-width: 1280px) 186px, (min-width: 640px) calc((100vw - 164px) / 6), calc((100vw - 56px) / 3)" className="object-cover transition-opacity duration-200 group-hover:opacity-90" /> : <span className="flex h-full items-center justify-center px-2 text-center text-xs text-muted">{c.name}</span>}</span><span className="mt-3 block text-center text-xs font-medium sm:text-sm">{c.name}</span></Link></li>;
         })}</ul>
       </section>}
       {bestsellers.products.length > 0 && <section aria-labelledby="popular-heading" className="shopping-section">

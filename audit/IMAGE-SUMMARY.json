@@ -1,0 +1,38 @@
+{
+  "analyzed_at": "2026-10-01T09:22:35.096245+00:00",
+  "sample_size": 4,
+  "images": [
+    {
+      "label": "homepage hero 640px",
+      "url": "https://res.cloudinary.com/dqguetjwm/image/upload/f_auto,q_auto,w_640/v1790162274/satvastones/products/kx7zdzm66s8801vvibpt.webp",
+      "status": 200,
+      "bytes": 50980,
+      "content_type": "image/webp",
+      "cache_control": "private, no-transform, immutable, max-age=2592000"
+    },
+    {
+      "label": "mobile product 384px",
+      "url": "https://res.cloudinary.com/dqguetjwm/image/upload/f_auto,q_auto,w_384/v1789977043/satvastones/products/cjvv4d7ghtgcskqxzijo.png",
+      "status": 200,
+      "bytes": 35500,
+      "content_type": "image/webp",
+      "cache_control": "private, no-transform, immutable, max-age=2592000"
+    },
+    {
+      "label": "desktop product 640px",
+      "url": "https://res.cloudinary.com/dqguetjwm/image/upload/f_auto,q_auto,w_640/v1789977043/satvastones/products/cjvv4d7ghtgcskqxzijo.png",
+      "status": 200,
+      "bytes": 86848,
+      "content_type": "image/webp",
+      "cache_control": "private, no-transform, immutable, max-age=2592000"
+    },
+    {
+      "label": "category thumbnail 256px",
+      "url": "https://res.cloudinary.com/dqguetjwm/image/upload/f_auto,q_auto,w_256/v1777905134/lmejzk8ypnfy2ycfacbs.png",
+      "status": 200,
+      "bytes": 10112,
+      "content_type": "image/webp",
+      "cache_control": "private, no-transform, immutable, max-age=2592000"
+    }
+  ]
+}

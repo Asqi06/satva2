@@ -1,0 +1,19 @@
+{
+  "analyzed_at": "2026-10-01T09:18:11.031304+00:00",
+  "url": "https://www.satvastones.in/",
+  "measurements": [
+    {
+      "strategy": "mobile",
+      "available": false,
+      "http_status": 429,
+      "error": "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'.\",\n    \"errors\": [\n      {\n        \"message\": \"Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'.\",\n        \"domain\": \"global\",\n        \"reason\": \"rateLimitExceeded\"\n      }\n    ],\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n        \"reason\": \"RATE_LIMIT_EXCEEDED\",\n        \"domain\": \"googleapis.com\",\n        \"metadata\": {\n          \"quota_location\": \"global\",\n          \"quota_limit_value\": \"0\",\n          \"quota_metric\": \"pagespeedonline.googleapis.com/default\",\n          \"service\": \"pagespeedonline.googleapis.com\",\n          \"quota_limit\": \"defaultPerDayPerProject\",\n          \"quota_unit\": \"1/d/{project"
+    },
+    {
+      "strategy": "desktop",
+      "available": false,
+      "http_status": 429,
+      "error": "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'.\",\n    \"errors\": [\n      {\n        \"message\": \"Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'.\",\n        \"domain\": \"global\",\n        \"reason\": \"rateLimitExceeded\"\n      }\n    ],\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n        \"reason\": \"RATE_LIMIT_EXCEEDED\",\n        \"domain\": \"googleapis.com\",\n        \"metadata\": {\n          \"quota_limit\": \"defaultPerDayPerProject\",\n          \"consumer\": \"projects/583797351490\",\n          \"quota_metric\": \"pagespeedonline.googleapis.com/default\",\n          \"quota_unit\": \"1/d/{project}\",\n          \"quota_location\": \"global\",\n          \"quota_limit_value\": \"0\",\n    "
+    }
+  ],
+  "note": "No inferred scores or metrics. Request time from crawl is not LCP/INP/CLS."
+}
