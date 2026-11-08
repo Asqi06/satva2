@@ -1,0 +1,222 @@
+.atelier-collection-page {
+  background-color: var(--canvas);
+  min-height: 80vh;
+}
+
+.collection-editorial-header {
+  padding: 56px 0 40px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.collection-header-content {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.collection-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.collection-title {
+  font-size: 2.4rem;
+  margin-bottom: 10px;
+}
+
+.collection-lead {
+  font-size: 0.95rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.collection-count {
+  font-size: 0.78rem;
+  color: var(--ink-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Controls Strip */
+.collection-controls-strip {
+  position: relative;
+  background-color: var(--canvas-subtle);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+
+.controls-inner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.subcategory-tabs-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.subcategory-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.subcategory-tab {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-quick);
+  touch-action: manipulation;
+}
+
+.subcategory-tab:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.subcategory-tab.is-active {
+  background-color: var(--ink);
+  color: #FFFFFF;
+  border-color: var(--ink);
+}
+
+.dropdowns-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.atelier-select {
+  appearance: none;
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  min-height: 40px;
+  padding: 6px 28px 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2358554E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 13px;
+  touch-action: manipulation;
+}
+
+.atelier-select:focus {
+  border-color: var(--ink);
+}
+
+.clear-filters-btn,
+.clear-filters-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--crimson);
+  min-height: 40px;
+  padding: 4px 10px;
+  background: rgba(158, 42, 43, 0.08);
+  border-radius: var(--radius-xs);
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Grid Layout */
+.collection-grid-container,
+.collection-grid-section {
+  padding: 36px 0 72px;
+}
+
+.collection-products-grid,
+.collection-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.collection-empty-box,
+.collection-empty-slate {
+  text-align: center;
+  padding: 64px 0;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.collection-empty-box h3,
+.collection-empty-slate h3 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.collection-empty-box p,
+.collection-empty-slate p {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1024px) {
+  .collection-products-grid,
+  .collection-grid-layout {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .collection-editorial-header {
+    padding: 36px 0 24px;
+  }
+  .collection-title {
+    font-size: 1.75rem;
+  }
+  .collection-grid-container,
+  .collection-grid-section {
+    padding: 24px 0 48px;
+  }
+  .collection-products-grid,
+  .collection-grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .controls-inner-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .dropdowns-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .atelier-select {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .collection-products-grid,
+  .collection-grid-layout {
+    gap: 8px;
+  }
+}

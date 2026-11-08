@@ -1,0 +1,47 @@
+.atelier-concierge-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-subtle);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  min-height: 44px;
+  touch-action: manipulation;
+  transition: border-color var(--transition-quick), box-shadow var(--transition-quick), bottom var(--transition-quick);
+}
+
+.atelier-concierge-trigger:hover {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-lift);
+}
+
+.concierge-icon {
+  color: #25D366;
+}
+
+@media (max-width: 600px) {
+  .atelier-concierge-trigger {
+    bottom: 20px;
+    right: 16px;
+    padding: 10px;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+  }
+}
+
+/* Prevent collision with sticky PDP Add to Bag bar on mobile */
+body:has(.sticky-mobile-pdp-bar) .atelier-concierge-trigger {
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+}

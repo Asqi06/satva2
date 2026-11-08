@@ -1,0 +1,309 @@
+/* CollectionSeoFaq.css - Editorial Long-Form SEO Content & Rich FAQ Accordion */
+
+.collection-seo-faq-section {
+  padding-top: 64px;
+  padding-bottom: 80px;
+  background-color: var(--canvas);
+  border-top: 1px solid var(--line);
+}
+
+/* 1. Buyer Guide Card */
+.collection-seo-guide-card {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 48px;
+  margin-bottom: 48px;
+}
+
+.guide-header {
+  max-width: 760px;
+  margin-bottom: 36px;
+}
+
+.guide-kicker {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.guide-title {
+  font-family: var(--font-editorial);
+  font-size: 2.1rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+
+.guide-subtitle {
+  font-size: 0.92rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+.guide-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.guide-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-section-heading {
+  font-family: var(--font-editorial);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.guide-section-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-section-text p {
+  font-size: 0.88rem;
+  color: var(--ink-secondary);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* Standards Matrix Table */
+.guide-comparison-box {
+  background-color: var(--canvas-subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 28px;
+  margin-top: 24px;
+}
+
+.comparison-box-title {
+  font-family: var(--font-editorial);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.comparison-table-wrapper {
+  overflow-x: auto;
+}
+
+.seo-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.seo-comparison-table th {
+  padding: 12px 14px;
+  background-color: var(--surface);
+  border-bottom: 2px solid var(--line-strong);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.seo-comparison-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-secondary);
+}
+
+.seo-comparison-table .highlight-cell {
+  background-color: rgba(212, 175, 55, 0.08);
+  color: var(--ink);
+  font-weight: 600;
+  border-left: 1px solid rgba(212, 175, 55, 0.2);
+  border-right: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* 2. Interactive FAQ Accordion */
+.collection-faqs-wrapper {
+  max-width: 840px;
+  margin: 0 auto 48px;
+}
+
+.faqs-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.faqs-title {
+  font-family: var(--font-editorial);
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+.faqs-subtitle {
+  font-size: 0.88rem;
+  color: var(--ink-secondary);
+  max-width: 540px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.faqs-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-accordion-item {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  transition: border-color var(--transition-quick);
+}
+
+.faq-accordion-item:hover {
+  border-color: var(--line-strong);
+}
+
+.faq-accordion-item.is-open {
+  border-color: var(--gold);
+}
+
+.faq-question-button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  padding: 18px 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+  touch-action: manipulation;
+}
+
+.faq-question-text {
+  font-family: var(--font-sans);
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.faq-icon {
+  color: var(--ink-tertiary);
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.faq-icon.is-rotated {
+  transform: rotate(180deg);
+  color: var(--gold);
+}
+
+.faq-answer-panel {
+  padding: 0 24px 20px 24px;
+  border-top: 1px solid var(--line);
+  background-color: var(--surface);
+}
+
+.faq-answer-panel p {
+  font-size: 0.86rem;
+  color: var(--ink-secondary);
+  line-height: 1.65;
+  margin: 14px 0 0 0;
+}
+
+/* 3. Internal Links Bar */
+.collection-internal-links-bar {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.links-bar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.links-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.related-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink);
+  background-color: var(--canvas-subtle);
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  border-radius: var(--radius-xs);
+  text-decoration: none;
+  touch-action: manipulation;
+  transition: all var(--transition-quick);
+}
+
+.related-cat-pill:hover {
+  background-color: var(--ink);
+  color: #FFFFFF;
+  border-color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .collection-seo-faq-section {
+    padding-top: 40px;
+    padding-bottom: 56px;
+  }
+  .collection-seo-guide-card {
+    padding: 24px 16px;
+    margin-bottom: 32px;
+  }
+  .guide-content-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .guide-title {
+    font-size: 1.55rem;
+  }
+  .faq-question-button {
+    padding: 14px 16px;
+  }
+  .faq-answer-panel {
+    padding: 0 16px 16px 16px;
+  }
+  .collection-internal-links-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+}

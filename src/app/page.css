@@ -1,0 +1,519 @@
+/* Homepage Editorial Stylesheet */
+
+.section-title-centered {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 40px;
+}
+
+.section-title-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 36px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.editorial-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.kicker-gold {
+  color: var(--gold-light);
+}
+
+.section-text-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 2px;
+  transition: color var(--transition-quick), border-color var(--transition-quick);
+}
+
+.section-text-link:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.link-on-dark {
+  color: #EDEAE3;
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+}
+
+.link-on-dark:hover {
+  color: var(--gold-light);
+  border-bottom-color: var(--gold-light);
+}
+
+.home-products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.section-mobile-action {
+  text-align: center;
+  margin-top: 32px;
+}
+
+/* 1. Category Strip */
+.home-category-strip {
+  padding: 56px 0 40px;
+}
+
+.category-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.category-tile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 18px 10px;
+  transition: border-color var(--transition-quick), box-shadow var(--transition-quick), transform var(--transition-quick);
+  touch-action: manipulation;
+}
+
+.category-tile-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-subtle);
+}
+
+.category-tile-card:active {
+  transform: scale(0.98);
+}
+
+.category-tile-cover {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  background: var(--canvas-subtle);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.category-tile-img {
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.category-tile-card:hover .category-tile-img {
+  transform: scale(1.08);
+}
+
+.category-tile-card:hover .category-tile-cover {
+  border-color: var(--gold);
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.15);
+}
+
+.category-tile-initial {
+  font-family: var(--font-editorial);
+  font-size: 1.25rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.category-tile-name {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.category-tile-desc {
+  font-size: 0.7rem;
+  color: var(--ink-tertiary);
+}
+
+/* 2. Bestsellers Band */
+.home-bestsellers-band {
+  padding: 72px 0;
+  background-color: var(--canvas-subtle);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* 3. Craftsmanship Narrative */
+.craftsmanship-narrative-section {
+  padding: 72px 0;
+  background-color: var(--surface);
+}
+
+.craftsmanship-block {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.craftsmanship-copy-col h2 {
+  font-size: 2.1rem;
+  margin-bottom: 16px;
+}
+
+.craftsmanship-copy-col p {
+  font-size: 0.94rem;
+  line-height: 1.65;
+  color: var(--ink-secondary);
+  margin-bottom: 14px;
+}
+
+.craftsmanship-points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 24px 0 28px;
+}
+
+.point-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.point-icon-box {
+  color: var(--forest);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.craftsmanship-cta {
+  margin-top: 8px;
+}
+
+/* Technical Specification Table */
+.materials-spec-table {
+  background-color: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.table-caption-bar {
+  padding: 12px 18px;
+  background-color: var(--ink);
+  color: #FFFFFF;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spec-table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.3fr 1.3fr;
+  padding: 14px 18px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.spec-table-row:last-child {
+  border-bottom: none;
+}
+
+.spec-table-row.header-row {
+  background-color: var(--canvas-subtle);
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.highlight-col {
+  color: var(--gold);
+}
+
+.spec-label {
+  color: var(--ink-secondary);
+}
+
+/* 4. Korean Spotlight */
+.home-collection-spotlight {
+  padding: 80px 24px;
+}
+
+/* 5. Heritage Showcase */
+.heritage-editorial-spotlight {
+  background-color: #1F1416;
+  padding: 80px 0;
+}
+
+.text-on-dark {
+  color: #FFFFFF;
+}
+
+.text-on-dark-subtle {
+  color: #C8B8BA;
+}
+
+/* 6. Journal Band */
+.home-journal-band {
+  padding: 80px 0;
+  background-color: var(--canvas-subtle);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.journal-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.journal-entry-card {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-quick), box-shadow var(--transition-quick);
+}
+
+.journal-entry-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-subtle);
+}
+
+.journal-cover {
+  aspect-ratio: 16 / 9;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.journal-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--line);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  color: var(--ink);
+}
+
+.journal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.journal-reading-estimate {
+  font-size: 0.72rem;
+  color: var(--ink-tertiary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.journal-entry-title {
+  font-family: var(--font-editorial);
+  font-size: 1.2rem;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+
+.journal-entry-title a:hover {
+  color: var(--gold);
+}
+
+.journal-synopsis {
+  font-size: 0.86rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  margin-bottom: 18px;
+  flex: 1;
+}
+
+.journal-continue-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-top: auto;
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 2px;
+  align-self: flex-start;
+}
+
+.journal-continue-link:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+/* 7. Voucher Strip */
+.first-order-voucher-band {
+  padding: 72px 24px;
+}
+
+.voucher-card-inner {
+  background-color: var(--ink);
+  color: #FFFFFF;
+  border-radius: var(--radius-xs);
+  padding: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.voucher-copy h2 {
+  font-size: 2.2rem;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+}
+
+.voucher-copy p {
+  color: #C8C5BD;
+  font-size: 0.94rem;
+}
+
+.voucher-action-btn {
+  background-color: #FFFFFF;
+  color: var(--ink);
+  border-color: #FFFFFF;
+}
+
+.voucher-action-btn:hover {
+  background-color: var(--gold-light);
+  border-color: var(--gold-light);
+}
+
+/* Responsive Breakpoints & Mobile Register */
+@media (max-width: 1024px) {
+  .home-products-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .category-tiles-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .home-category-strip {
+    padding: 48px 0 32px;
+  }
+  .home-bestsellers-band,
+  .craftsmanship-narrative-section,
+  .home-editorial-journal-band {
+    padding: 56px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-category-strip {
+    padding: 32px 0 20px;
+  }
+  .home-bestsellers-band,
+  .craftsmanship-narrative-section,
+  .home-editorial-journal-band {
+    padding: 40px 0;
+  }
+  .first-order-voucher-band {
+    padding: 32px 0;
+  }
+  .section-title-centered,
+  .section-title-split {
+    margin-bottom: 24px;
+  }
+  .home-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .category-tiles-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .category-tile-card {
+    padding: 12px 6px;
+  }
+  .category-tile-cover {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 8px;
+  }
+  .category-tile-name {
+    font-size: 0.74rem;
+    line-height: 1.25;
+  }
+  .category-tile-desc {
+    font-size: 0.62rem;
+  }
+  .craftsmanship-block {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .journal-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .voucher-card-inner {
+    flex-direction: column;
+    text-align: center;
+    padding: 28px 16px;
+    gap: 20px;
+  }
+  .voucher-copy h2 {
+    font-size: 1.65rem;
+  }
+  .voucher-action-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-products-grid {
+    gap: 8px;
+  }
+  .category-tiles-grid {
+    gap: 8px;
+  }
+  .category-tile-cover {
+    width: 52px;
+    height: 52px;
+  }
+  .category-tile-name {
+    font-size: 0.7rem;
+  }
+}
