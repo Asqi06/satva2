@@ -111,6 +111,7 @@ const SAMPLE_ORDERS = [
     destination: "Bandra West, Mumbai 400050",
     total: 1148,
     paymentMethod: "Cash on Delivery",
+    userEmail: "demo@satvastones.com",
     items: [
       {
         id: 101,
@@ -161,7 +162,32 @@ export function CartProvider({ children }) {
       if (savedBanners) setPromoBanners(JSON.parse(savedBanners));
 
       const savedUser = localStorage.getItem('satva_user');
-      if (savedUser) setCurrentUser(JSON.parse(savedUser));
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          if (parsed?.email === 'aditi.sharma@gmail.com') {
+            localStorage.removeItem('satva_user');
+          } else if (parsed) {
+            setCurrentUser(parsed);
+          }
+        } catch {}
+      }
+
+      // Check for user profile cookie set by OAuth callback for instant hydration
+      if (typeof document !== 'undefined') {
+        const match = document.cookie.match(/(^|;\s*)satva_user_profile=([^;]*)/);
+        if (match && match[2]) {
+          try {
+            const cookieUser = JSON.parse(decodeURIComponent(match[2]));
+            if (cookieUser && cookieUser.email && cookieUser.email !== 'aditi.sharma@gmail.com') {
+              setCurrentUser(cookieUser);
+              try {
+                localStorage.setItem('satva_user', JSON.stringify(cookieUser));
+              } catch {}
+            }
+          } catch {}
+        }
+      }
 
       const savedCust = localStorage.getItem('satva_customers');
       if (savedCust) setRegisteredUsers(JSON.parse(savedCust));
@@ -173,6 +199,30 @@ export function CartProvider({ children }) {
     } finally {
       setIsHydrated(true);
     }
+
+    // Verify session with server in background
+    fetch('/api/auth/session')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          try {
+            localStorage.setItem('satva_user', JSON.stringify(data.user));
+          } catch {}
+        } else if (!data.authenticated) {
+          const raw = localStorage.getItem('satva_user');
+          if (raw) {
+            try {
+              const u = JSON.parse(raw);
+              if (u?.email === 'aditi.sharma@gmail.com') {
+                setCurrentUser(null);
+                localStorage.removeItem('satva_user');
+              }
+            } catch {}
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Sync back to localStorage only after initial client hydration completes
@@ -331,45 +381,63 @@ export function CartProvider({ children }) {
   };
 
   // Customer Authentication (Google Sign-In)
-  const signInWithGoogle = (profileData = {}) => {
-    const defaultGoogleUser = {
-      id: `cust-${Date.now()}`,
-      name: profileData.name || "Aditi Sharma",
-      email: profileData.email || "aditi.sharma@gmail.com",
-      avatar: profileData.avatar || "",
-      provider: "google",
-      joinedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      ordersCount: 0,
-      totalSpend: 0,
-      status: "Verified Client",
-      addresses: [
-        {
-          id: `addr-${Date.now()}`,
-          isDefault: true,
-          fullName: profileData.name || "Aditi Sharma",
-          address: "Flat 301, Ocean View Apts, Juhu Tara Road",
-          landmark: "Near Soho House",
-          city: "Mumbai",
-          state: "Maharashtra",
-          pincode: "400049",
-          phone: "+91 98200 12345",
-        },
-      ],
-    };
+  const signInWithGoogle = (profileData = null) => {
+    // If explicit profile data is provided (e.g. from custom email modal or verification callback)
+    if (profileData && profileData.email && profileData.email !== 'aditi.sharma@gmail.com') {
+      const explicitUser = {
+        id: profileData.id || `cust-${Date.now()}`,
+        name: profileData.name || profileData.email.split('@')[0],
+        email: profileData.email.toLowerCase().trim(),
+        avatar: profileData.avatar || profileData.picture || '',
+        provider: "google",
+        joinedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        ordersCount: profileData.ordersCount || 0,
+        totalSpend: profileData.totalSpend || 0,
+        status: "Verified Client",
+        addresses: profileData.addresses || [],
+      };
 
-    setCurrentUser(defaultGoogleUser);
-    setRegisteredUsers((prev) => {
-      const exists = prev.some((u) => u.email.toLowerCase() === defaultGoogleUser.email.toLowerCase());
-      if (exists) return prev;
-      return [defaultGoogleUser, ...prev];
-    });
+      setCurrentUser(explicitUser);
+      setRegisteredUsers((prev) => {
+        const exists = prev.some((u) => u.email.toLowerCase() === explicitUser.email);
+        if (exists) return prev;
+        return [explicitUser, ...prev];
+      });
 
-    showToast(`Signed in with Google as ${defaultGoogleUser.name}`);
-    return defaultGoogleUser;
+      try {
+        localStorage.setItem('satva_user', JSON.stringify(explicitUser));
+      } catch {}
+
+      showToast(`Signed in as ${explicitUser.name}`);
+      return explicitUser;
+    }
+
+    // Default flow: Redirect to genuine Google OAuth 2.0 endpoint
+    if (typeof window !== 'undefined') {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/api/auth/google?returnUrl=${returnUrl}`;
+    }
   };
 
-  const signOut = () => {
+  const signOut = async () => {
+    try {
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch (err) {
+      console.error('Logout request failed:', err);
+    }
+
     setCurrentUser(null);
+
+    try {
+      localStorage.removeItem('satva_user');
+      document.cookie = 'satva_customer_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'satva_user_profile=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    } catch {}
+
     showToast("Signed out successfully");
   };
 

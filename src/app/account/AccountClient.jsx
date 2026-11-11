@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, MapPin, Tag, Truck, CheckCircle2, ShieldCheck, LogOut, Copy, Check, Edit2, Plus } from 'lucide-react';
+import { Package, MapPin, Tag, Truck, CheckCircle2, ShieldCheck, LogOut, Copy, Check, Edit2, Plus, AlertCircle } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import './page.css';
 
@@ -45,6 +45,19 @@ export default function AccountClient() {
   const [customEmail, setCustomEmail] = useState('');
   const [customName, setCustomName] = useState('');
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Read URL parameters on mount (auth error or success)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('auth_error');
+      if (err) {
+        setAuthError(err);
+      }
+    }
+  }, []);
 
   // Address edit state
   const defaultAddr = currentUser?.addresses?.[0] || {
@@ -59,10 +72,21 @@ export default function AccountClient() {
 
   const [addrForm, setAddrForm] = useState(defaultAddr);
 
-  // Filter orders for the current user
-  const userOrders = (orders || []).filter(
-    (order) => !order.userEmail || !currentUser?.email || order.userEmail.toLowerCase() === currentUser.email.toLowerCase()
-  );
+  // Aggregate orders for the authenticated user from server session & local state
+  const rawOrders = [
+    ...(currentUser?.orders || []),
+    ...(orders || []).filter(
+      (order) => order.userEmail && currentUser?.email && order.userEmail.toLowerCase() === currentUser.email.toLowerCase()
+    ),
+  ];
+
+  const seenIds = new Set();
+  const userOrders = rawOrders.filter((order) => {
+    const key = order.orderId || order._id?.toString() || order.id;
+    if (!key || seenIds.has(key)) return false;
+    seenIds.add(key);
+    return true;
+  });
 
   const handleCopyVoucher = (code) => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -76,6 +100,12 @@ export default function AccountClient() {
     e.preventDefault();
     updateUserAddress(addrForm);
     setIsEditingAddress(false);
+  };
+
+  const handleGoogleSignInClick = () => {
+    setIsRedirecting(true);
+    setAuthError('');
+    signInWithGoogle();
   };
 
   const handleCustomGoogleSignIn = (e) => {
@@ -102,18 +132,39 @@ export default function AccountClient() {
             </p>
           </div>
 
+          {authError && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '6px',
+                color: '#991B1B',
+                fontSize: '0.85rem',
+                marginBottom: '20px',
+              }}
+            >
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{authError}</span>
+            </div>
+          )}
+
           <div className="auth-google-cta-box">
             <button
               type="button"
               className="google-signin-btn"
-              onClick={() => signInWithGoogle({ name: "Aditi Sharma", email: "aditi.sharma@gmail.com" })}
+              disabled={isRedirecting}
+              onClick={handleGoogleSignInClick}
             >
               <GoogleIcon />
-              <span>Continue with Google</span>
+              <span>{isRedirecting ? 'Connecting to Google...' : 'Continue with Google'}</span>
             </button>
 
             <div className="auth-divider">
-              <span>or sign in with another Google account</span>
+              <span>or sign in with email</span>
             </div>
 
             <button
@@ -121,7 +172,7 @@ export default function AccountClient() {
               className="google-alternate-btn"
               onClick={() => setShowCustomModal(true)}
             >
-              Enter Google Account Email
+              Enter Client Email
             </button>
           </div>
 
@@ -151,25 +202,25 @@ export default function AccountClient() {
           </div>
         </div>
 
-        {/* Custom Google Account Modal */}
+        {/* Custom Email Modal */}
         {showCustomModal && (
           <div className="modal-backdrop" onClick={() => setShowCustomModal(false)}>
             <div className="modal-card" onClick={(e) => e.stopPropagation()}>
               <div className="modal-head">
                 <GoogleIcon />
-                <h3>Sign in with Google</h3>
+                <h3>Sign In with Email</h3>
               </div>
               <p className="modal-desc">
-                Enter your Google account details to sign into Satvastones Atelier.
+                Enter your details to access your Satvastones Atelier client portal.
               </p>
               <form onSubmit={handleCustomGoogleSignIn} className="modal-form">
                 <div className="form-group">
-                  <label htmlFor="custom-email">Google Email Address *</label>
+                  <label htmlFor="custom-email">Email Address *</label>
                   <input
                     id="custom-email"
                     type="email"
                     required
-                    placeholder="you@gmail.com"
+                    placeholder="you@domain.com"
                     value={customEmail}
                     onChange={(e) => setCustomEmail(e.target.value)}
                   />
@@ -211,15 +262,52 @@ export default function AccountClient() {
     <div className="container account-page-wrapper">
       {/* Client Overview Card */}
       <header className="account-hero-bar">
-        <div className="client-identity">
-          <div className="client-google-badge">
-            <GoogleIcon />
-            <span>Google Verified Account</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          {currentUser.avatar ? (
+            <img
+              src={currentUser.avatar}
+              alt={currentUser.name || "Client"}
+              referrerPolicy="no-referrer"
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid var(--gold, #B38E46)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #2D2721, #1A1613)',
+                color: '#FAF8F5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'var(--font-editorial, serif)',
+                fontSize: '1.6rem',
+                fontWeight: 600,
+                border: '2px solid var(--gold, #B38E46)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              }}
+            >
+              {(currentUser.name || currentUser.email || 'S').charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="client-identity">
+            <div className="client-google-badge">
+              <GoogleIcon />
+              <span>Google Verified Account</span>
+            </div>
+            <h1 className="client-name">{currentUser.name || "Valued Client"}</h1>
+            <p className="client-meta">
+              {currentUser.email} • Member since {currentUser.joinedDate || "2026"} • {userOrders.length} {userOrders.length === 1 ? 'order' : 'orders'}
+            </p>
           </div>
-          <h1 className="client-name">{currentUser.name || "Valued Client"}</h1>
-          <p className="client-meta">
-            {currentUser.email} • Member since {currentUser.joinedDate || "2026"} • {userOrders.length} orders
-          </p>
         </div>
 
         <div className="client-perks-box">
