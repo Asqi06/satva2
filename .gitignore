@@ -56,3 +56,6 @@ audit/*-validation.log
 
 # Local SEO evidence cache
 .seo-cache/
+
+# GSD state
+.gsd/

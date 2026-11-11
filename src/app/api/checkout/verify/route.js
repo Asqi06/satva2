@@ -43,20 +43,44 @@ export async function POST(request) {
     const orderNumber = `SAT-${Math.floor(1000 + Math.random() * 9000)}`;
     const trackingId = `BD-${Math.floor(10000000 + Math.random() * 90000000)}-IN`;
 
+    const customerName = customer?.fullName || customer?.name || 'Valued Client';
+    const customerPhone = customer?.phone || '';
+    const customerEmail = customer?.email || '';
+    const addressLine1 = customer?.address || '';
+    const city = customer?.city || '';
+    const state = customer?.state || '';
+    const pincode = customer?.pincode || '';
+
     const orderDoc = {
       orderNumber,
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
       customer: {
-        name: customer?.fullName || customer?.name || 'Valued Client',
-        email: customer?.email || '',
-        phone: customer?.phone || '',
-        address: customer?.address || '',
-        city: customer?.city || '',
-        state: customer?.state || '',
-        pincode: customer?.pincode || '',
+        name: customerName,
+        fullName: customerName,
+        email: customerEmail,
+        phone: customerPhone,
+        address: addressLine1,
+        city,
+        state,
+        pincode,
+        country: 'India',
       },
+      shippingAddress: {
+        fullName: customerName,
+        phone: customerPhone,
+        email: customerEmail,
+        addressLine1,
+        city,
+        state,
+        postalCode: pincode,
+        pincode,
+        country: 'India',
+      },
+      customerName,
+      customerPhone,
+      guestEmail: customerEmail,
       items: (items || []).map((it) => ({
         id: String(it.id),
         title: it.title,

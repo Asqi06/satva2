@@ -28,6 +28,15 @@ import {
   Layers,
   ImagePlus,
   Check,
+  Lock,
+  Unlock,
+  LogOut,
+  Phone,
+  Mail,
+  Copy,
+  MapPin,
+  ShoppingBag,
+  MessageSquare,
 } from 'lucide-react';
 import { useCart, DEFAULT_PROMO_BANNERS, DEFAULT_VOUCHERS } from '../../context/CartContext';
 import { products as fallbackInitialProducts } from '../../data/products';
@@ -168,7 +177,7 @@ const PRESET_CATEGORY_IMAGES = [
   },
 ];
 
-export default function AdminClient() {
+export default function AdminClient({ initialAuthenticated = false, initialAdminEmail = '' }) {
   const {
     orders: liveOrders,
     promoBanners = DEFAULT_PROMO_BANNERS,
@@ -185,6 +194,42 @@ export default function AdminClient() {
     resetVouchersToDefault,
     registeredUsers = [],
   } = useCart();
+
+  // Admin Authentication & Session State
+  const [isAuthenticated, setIsAuthenticated] = useState(initialAuthenticated);
+  const [adminEmail, setAdminEmail] = useState(initialAdminEmail || 'admin@satvastones.in');
+  const [authEmail, setAuthEmail] = useState(initialAdminEmail || 'techmax1245@gmail.com');
+  const [authPassword, setAuthPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  // Live Customers State (from MongoDB Atlas)
+  const [dbCustomers, setDbCustomers] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
+
+  // Selected Order for Details Modal
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+
+  // Selected Customer for Profile Modal
+  const [selectedCustomerProfile, setSelectedCustomerProfile] = useState(null);
+
+  // Copy Feedback Tracking
+  const [copiedKey, setCopiedKey] = useState(null);
+
+  // Live Tracking Number updating
+  const [editingTrackingOrderId, setEditingTrackingOrderId] = useState(null);
+  const [trackingInputVal, setTrackingInputVal] = useState('');
+  const [savingTracking, setSavingTracking] = useState(false);
+
+  const handleCopy = (text, key) => {
+    if (!text) return;
+    navigator.clipboard?.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => {
+      setCopiedKey((prev) => (prev === key ? null : prev));
+    }, 2500);
+  };
 
   const [activeTab, setActiveTab] = useState('products'); // Default to Product Database
   const [filterStatus, setFilterStatus] = useState('all');
@@ -230,13 +275,53 @@ export default function AdminClient() {
     isPublished: true,
   });
 
-  // Fetch live products, banners, orders, and coupons from MongoDB Atlas on mount
+  const fetchOrders = () => {
+    fetch('/api/orders')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.orders && data.orders.length > 0) {
+          setApiOrders(data.orders);
+        }
+      })
+      .catch(() => {});
+  };
+
+  const fetchCustomers = () => {
+    setCustomersLoading(true);
+    fetch('/api/customers')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.customers && data.customers.length > 0) {
+          setDbCustomers(data.customers);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCustomersLoading(false));
+  };
+
+  // Fetch live products, banners, orders, customers, and coupons from MongoDB Atlas on mount
   useEffect(() => {
     const safeJson = (res) => {
       if (!res.ok) return null;
       const ct = res.headers.get('content-type') || '';
       return ct.includes('application/json') ? res.json() : null;
     };
+
+    // Check admin session if not passed initially
+    if (!initialAuthenticated) {
+      fetch('/api/admin/auth')
+        .then(safeJson)
+        .then((data) => {
+          if (data && data.authenticated) {
+            setIsAuthenticated(true);
+            if (data.user?.email) {
+              setAdminEmail(data.user.email);
+              setAuthEmail(data.user.email);
+            }
+          }
+        })
+        .catch(() => {});
+    }
 
     // 1. Live Products
     fetch('/api/products')
@@ -259,16 +344,12 @@ export default function AdminClient() {
       .catch(() => {});
 
     // 3. Live Orders
-    fetch('/api/orders')
-      .then(safeJson)
-      .then((data) => {
-        if (data && data.orders && data.orders.length > 0) {
-          setApiOrders(data.orders);
-        }
-      })
-      .catch(() => {});
+    fetchOrders();
 
-    // 4. Live Coupons
+    // 4. Live Customers
+    fetchCustomers();
+
+    // 5. Live Coupons
     fetch('/api/coupons')
       .then(safeJson)
       .then((data) => {
@@ -278,7 +359,7 @@ export default function AdminClient() {
       })
       .catch(() => {});
 
-    // 5. Live Categories
+    // 6. Live Categories
     fetch('/api/categories?all=true')
       .then(safeJson)
       .then((data) => {
@@ -287,7 +368,7 @@ export default function AdminClient() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialAuthenticated]);
 
   // Filtered Products for Catalog Table
   const filteredCatalogProducts = useMemo(() => {
@@ -438,31 +519,104 @@ export default function AdminClient() {
     const formattedApi = (apiOrders || []).map((o) => ({
       id: o.orderNumber || o.id,
       mongoId: o.id,
-      client: o.customer || o.client || 'Client',
-      city: o.city ? `${o.city}, India` : (o.address?.split(',')?.[1] || 'India'),
-      items: (o.items || []).map((it) => it.title || 'Piece').join(', ') || 'Atelier Piece',
-      value: o.amount || o.value || 0,
+      client: o.customer || o.customerName || o.client || 'Client',
+      customerName: o.customerName || o.customer || 'Client',
+      email: o.email || '',
+      phone: o.phone || '',
+      address: o.address || '',
+      city: o.city || '',
+      state: o.state || '',
+      pincode: o.pincode || '',
+      country: o.country || 'India',
+      fullAddress:
+        o.fullAddress ||
+        [o.address, o.city, o.state ? `${o.state} - ${o.pincode}` : o.pincode, o.country]
+          .filter(Boolean)
+          .join(', '),
+      itemsList: o.items || [],
+      items:
+        (o.items || [])
+          .map((it) => `${it.title || 'Piece'} × ${it.quantity || it.qty || 1}`)
+          .join(', ') || 'Atelier Piece',
+      value: o.amount || o.total || o.value || 0,
+      subtotal: o.subtotal || o.amount || o.value || 0,
+      discountAmount: o.discountAmount || 0,
+      shippingFee: o.shippingFee || 0,
+      couponCode: o.couponCode || '',
       payment: o.paymentMethod || 'Razorpay',
+      paymentStatus: o.paymentStatus || 'COMPLETED',
+      paymentId: o.paymentId || '',
+      orderId: o.orderId || '',
+      trackingId: o.trackingId || '',
+      courierName: o.courierName || 'BlueDart Express',
       status: o.status || 'Confirmed',
-      created: o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recently',
+      created: o.createdAt
+        ? new Date(o.createdAt).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'Recently',
+      rawDate: o.createdAt,
     }));
 
     const formattedLive = (liveOrders || []).map((o) => ({
       id: o.orderId,
-      client: o.clientName || o.destination?.split(',')?.[0] || 'Client Order',
-      city: o.destination?.split(',')?.[1] || 'India',
+      mongoId: null,
+      client: o.clientName || o.customer?.fullName || o.destination?.split(',')?.[0] || 'Client Order',
+      customerName: o.clientName || o.customer?.fullName || 'Client Order',
+      email: o.email || o.customer?.email || '',
+      phone: o.phone || o.customer?.phone || '',
+      address: o.destination || o.customer?.address || '',
+      city: o.city || o.destination?.split(',')?.[1] || 'India',
+      state: o.state || o.customer?.state || '',
+      pincode: o.pincode || o.customer?.pincode || '',
+      country: 'India',
+      fullAddress: o.destination || 'Address on record',
+      itemsList: o.items || [],
       items:
         o.items
-          ?.map((it) => it.title.split(' ')[0] + ' ' + (it.subcategory || 'Piece'))
+          ?.map((it) => `${it.title?.split(' ')?.[0] || 'Piece'} × ${it.quantity || 1}`)
           .join(', ') || 'Atelier Jewellery',
       value: o.total,
-      payment: o.paymentMethod?.includes('Cash') ? 'COD' : 'UPI Prepaid',
+      subtotal: o.subtotal || o.total,
+      discountAmount: o.discountAmount || 0,
+      shippingFee: o.shippingFee || 0,
+      couponCode: o.couponCode || '',
+      payment: o.paymentMethod?.includes('Cash') || o.paymentMethod === 'COD' ? 'COD' : 'UPI Prepaid',
+      paymentStatus: 'CONFIRMED',
+      paymentId: o.paymentId || '',
+      orderId: o.orderId,
+      trackingId: o.trackingId || '',
+      courierName: 'BlueDart Express',
       status: o.status || 'Pending Dispatch',
       created: o.date || 'Just now',
+      rawDate: new Date(),
     }));
 
     const existingIds = new Set([...formattedApi.map((o) => o.id), ...formattedLive.map((o) => o.id)]);
-    const dedupedHistorical = initialOrdersQueue.filter((o) => !existingIds.has(o.id));
+    const dedupedHistorical = initialOrdersQueue
+      .filter((o) => !existingIds.has(o.id))
+      .map((o) => ({
+        ...o,
+        customerName: o.client,
+        email: 'client@satvastones.in',
+        phone: '+91 98200 12345',
+        address: `${o.client} Residence, ${o.city}`,
+        state: o.city?.split(',')?.[1]?.trim() || '',
+        pincode: '400001',
+        country: 'India',
+        fullAddress: `${o.client} Residence, ${o.city} - 400001, India`,
+        itemsList: [{ title: o.items, quantity: 1, price: o.value, finish: '18K Gold Plated' }],
+        subtotal: o.value,
+        discountAmount: 0,
+        shippingFee: 0,
+        couponCode: '',
+        paymentStatus: o.payment === 'COD' ? 'PENDING' : 'COMPLETED',
+        trackingId: 'BD-88492019-IN',
+        courierName: 'BlueDart Express',
+      }));
+
     return [...formattedApi, ...formattedLive, ...dedupedHistorical];
   }, [apiOrders, liveOrders]);
 
@@ -499,21 +653,169 @@ export default function AdminClient() {
     }
   };
 
+  const handleSaveTracking = async (orderId, trackingId) => {
+    setSavingTracking(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNumber: orderId,
+          trackingId: (trackingId || '').trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditingTrackingOrderId(null);
+        fetchOrders();
+        if (selectedOrderDetails && selectedOrderDetails.id === orderId) {
+          setSelectedOrderDetails((prev) => ({ ...prev, trackingId: (trackingId || '').trim() }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update tracking ID:', err);
+    } finally {
+      setSavingTracking(false);
+    }
+  };
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          email: authEmail.trim(),
+          password: authPassword.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+        setAdminEmail(data.user?.email || authEmail);
+        setAuthPassword('');
+        setAuthError('');
+        fetchOrders();
+        fetchCustomers();
+      } else {
+        setAuthError(data.error || 'Access denied. Master password incorrect.');
+      }
+    } catch (err) {
+      setAuthError('Connection error. Could not verify credentials.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleAdminLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsAuthenticated(false);
+      setAuthPassword('');
+    }
+  };
+
   const filteredOrders =
     filterStatus === 'all'
       ? orders
       : orders.filter((o) => o.status.toLowerCase().includes(filterStatus.toLowerCase()));
 
-  // Filtered Customers
-  const filteredCustomers = (registeredUsers || []).filter((u) => {
-    if (!customerSearch.trim()) return true;
+  // Unified Customers List (combines /api/customers from MongoDB with session data)
+  const unifiedCustomers = useMemo(() => {
+    if (dbCustomers && dbCustomers.length > 0) {
+      return dbCustomers;
+    }
+    const map = new Map();
+    (orders || []).forEach((o) => {
+      const email = o.email?.toLowerCase();
+      const phone = o.phone;
+      const key = email || phone || o.client;
+      if (!map.has(key)) {
+        map.set(key, {
+          id: o.id,
+          name: o.client,
+          email: o.email || 'client@satvastones.in',
+          phone: o.phone || '',
+          addresses: [
+            {
+              address: o.address,
+              city: o.city,
+              state: o.state,
+              pincode: o.pincode,
+              formatted: o.fullAddress,
+            },
+          ],
+          defaultAddress: {
+            address: o.address,
+            city: o.city,
+            state: o.state,
+            pincode: o.pincode,
+            formatted: o.fullAddress,
+          },
+          ordersCount: 1,
+          totalSpend: o.value,
+          orders: [{ id: o.id, orderNumber: o.id, amount: o.value, status: o.status, date: o.created }],
+          authProvider: 'Order Customer',
+          status: o.value >= 2000 ? 'VIP Platinum Tier' : 'Active Member',
+          joinedDate: o.created,
+        });
+      } else {
+        const c = map.get(key);
+        c.ordersCount += 1;
+        c.totalSpend += o.value;
+        c.orders.push({ id: o.id, orderNumber: o.id, amount: o.value, status: o.status, date: o.created });
+      }
+    });
+
+    (registeredUsers || []).forEach((u) => {
+      const email = u.email?.toLowerCase();
+      if (!map.has(email)) {
+        map.set(email, {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.addresses?.[0]?.phone || '',
+          addresses: u.addresses || [],
+          defaultAddress: u.addresses?.[0] || null,
+          ordersCount: u.ordersCount || 0,
+          totalSpend: u.totalSpend || 0,
+          orders: [],
+          authProvider: 'Google Verified',
+          status: u.status || 'Active Member',
+          joinedDate: u.joinedDate || 'Nov 2026',
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [dbCustomers, orders, registeredUsers]);
+
+  // Filtered Customers based on search
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch.trim()) return unifiedCustomers;
     const term = customerSearch.toLowerCase();
-    return (
-      u.name?.toLowerCase().includes(term) ||
-      u.email?.toLowerCase().includes(term) ||
-      u.id?.toLowerCase().includes(term)
-    );
-  });
+    return unifiedCustomers.filter((u) => {
+      const matchName = u.name?.toLowerCase().includes(term);
+      const matchEmail = u.email?.toLowerCase().includes(term);
+      const matchPhone = u.phone?.includes(term);
+      const matchCity = u.defaultAddress?.city?.toLowerCase().includes(term);
+      const matchAddr = u.defaultAddress?.formatted?.toLowerCase().includes(term);
+      return matchName || matchEmail || matchPhone || matchCity || matchAddr;
+    });
+  }, [unifiedCustomers, customerSearch]);
 
   // Metrics
   const totalRevenueToday = orders.reduce((acc, o) => acc + o.value, 0);
@@ -808,6 +1110,105 @@ export default function AdminClient() {
     });
   };
 
+  // 1. Password Protection Gate for Admin Portal
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-page-shell admin-lock-shell">
+        <div className="admin-lock-card">
+          <div className="admin-lock-header">
+            <div className="admin-lock-icon-circle">
+              <Lock size={28} />
+            </div>
+            <span className="admin-brand-tag">SATVASTONES ATELIER</span>
+            <h1 className="admin-lock-title">Merchant Operations Portal</h1>
+            <p className="admin-lock-desc">
+              Restricted management area for customer order dispatch, customer database, and atelier catalog. Enter master administrator authorization key.
+            </p>
+          </div>
+
+          <form onSubmit={handleAdminLogin} className="admin-lock-form">
+            {authError && (
+              <div className="admin-lock-alert">
+                <AlertCircle size={16} />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <div className="admin-lock-field">
+              <label htmlFor="admin-email-input">Admin Email / Username</label>
+              <div className="admin-input-icon-wrap">
+                <Mail size={16} className="admin-field-icon" />
+                <input
+                  id="admin-email-input"
+                  type="text"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="techmax1245@gmail.com or admin@satvastones.in"
+                  className="admin-lock-input"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="admin-lock-field">
+              <div className="admin-lock-label-row">
+                <label htmlFor="admin-password-input">Master Key / Password</label>
+              </div>
+              <div className="admin-input-icon-wrap">
+                <Lock size={16} className="admin-field-icon" />
+                <input
+                  id="admin-password-input"
+                  type={showPassword ? 'text' : 'password'}
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  placeholder="Enter master password"
+                  className="admin-lock-input"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  className="admin-pw-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="admin-lock-submit-btn"
+            >
+              {authLoading ? (
+                <>
+                  <RefreshCw size={16} className="spin-icon" />
+                  <span>Verifying Master Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <Unlock size={16} />
+                  <span>Unlock Atelier Portal</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="admin-lock-footer">
+            <span className="admin-lock-security-note">
+              <ShieldCheck size={14} /> End-to-end encrypted session • 256-bit HMAC Token Guard
+            </span>
+            <Link href="/" className="admin-lock-back-link">
+              ← Return to Public Storefront
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page-shell">
       {/* Top Operations Header */}
@@ -829,6 +1230,19 @@ export default function AdminClient() {
             <h1 className="admin-page-heading">Merchant Storefront & Operations Engine</h1>
           </div>
           <div className="admin-quick-links">
+            <div className="admin-auth-status-pill">
+              <span className="admin-status-dot pulse" />
+              <span className="admin-auth-email">{adminEmail}</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary admin-btn-sm admin-logout-btn"
+              onClick={handleAdminLogout}
+              title="Lock admin portal and sign out"
+            >
+              <Lock size={13} style={{ marginRight: 6 }} />
+              <span>Lock Portal</span>
+            </button>
             <Link href="/" className="btn btn-secondary admin-btn-sm" target="_blank">
               View Storefront <ExternalLink size={14} style={{ marginLeft: 6 }} />
             </Link>
@@ -918,7 +1332,7 @@ export default function AdminClient() {
             onClick={() => setActiveTab('customers')}
           >
             <Users size={16} />
-            <span>Customer Directory ({registeredUsers.length})</span>
+            <span>Customer Directory ({unifiedCustomers.length})</span>
           </button>
 
           <button
@@ -2115,26 +2529,47 @@ export default function AdminClient() {
           </section>
         )}
 
-        {/* TAB 3: CUSTOMER DIRECTORY & GOOGLE ACCOUNTS */}
+        {/* TAB 3: CUSTOMER DIRECTORY & DATABASE RECORDS */}
         {activeTab === 'customers' && (
           <section className="admin-card-section">
             <div className="admin-card-header">
               <div>
-                <h2 className="admin-card-title">Registered Customer Directory</h2>
+                <h2 className="admin-card-title">Registered & Order Customer Directory</h2>
                 <p className="admin-card-subtitle">
-                  Clients authenticated via Google Sign-In and orders on record. All user data, saved shipping addresses, and spend history are synchronized here.
+                  Live synchronized directory of clients from MongoDB Atlas orders and authenticated users. View full customer profile, saved addresses, contact numbers, and order history.
                 </p>
               </div>
 
-              <div className="admin-search-box">
-                <Search size={14} className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search by client name or email..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  className="admin-search-input"
-                />
+              <div className="admin-header-controls-row">
+                <div className="admin-search-box">
+                  <Search size={14} className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, phone, email, city, address..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    className="admin-search-input"
+                  />
+                  {customerSearch && (
+                    <button
+                      type="button"
+                      className="search-clear-btn"
+                      onClick={() => setCustomerSearch('')}
+                      aria-label="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchCustomers}
+                  className="btn btn-secondary admin-btn-sm"
+                  title="Refresh customers from database"
+                >
+                  <RefreshCw size={13} className={customersLoading ? 'spin-icon' : ''} />
+                  <span>Refresh</span>
+                </button>
               </div>
             </div>
 
@@ -2142,49 +2577,143 @@ export default function AdminClient() {
               <table className="admin-data-table">
                 <thead>
                   <tr>
-                    <th>Client Profile</th>
-                    <th>Authentication</th>
-                    <th>Joined</th>
-                    <th>Orders Count</th>
-                    <th>Total Spend</th>
-                    <th>Default Shipping Address</th>
-                    <th>Status</th>
+                    <th>Customer Profile</th>
+                    <th>Contact Info</th>
+                    <th>Detailed Shipping Address</th>
+                    <th>Orders Placed</th>
+                    <th>Lifetime Value</th>
+                    <th>Tier & Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCustomers.map((cust) => {
-                    const defaultAddress = cust.addresses?.[0];
-                    return (
-                      <tr key={cust.id}>
-                        <td>
-                          <strong>{cust.name}</strong>
-                          <span className="customer-email-sub">{cust.email}</span>
-                        </td>
-                        <td>
-                          <span className="google-auth-badge">
-                            <span className="google-dot">G</span> Google Verified
-                          </span>
-                        </td>
-                        <td>{cust.joinedDate || 'Nov 2026'}</td>
-                        <td>
-                          <strong>{cust.ordersCount || 0}</strong>
-                        </td>
-                        <td className="value-cell">₹{cust.totalSpend || 0}</td>
-                        <td className="address-snippet-cell">
-                          {defaultAddress ? (
-                            <span>
-                              {defaultAddress.address}, {defaultAddress.city} {defaultAddress.pincode}
+                  {filteredCustomers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="empty-table-state">
+                        <Users size={32} />
+                        <p>No customer profiles found matching &ldquo;{customerSearch}&rdquo;</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCustomers.map((cust) => {
+                      const defaultAddr = cust.defaultAddress || cust.addresses?.[0];
+                      const cleanPhone = (cust.phone || '').replace(/[^0-9]/g, '');
+                      const isCopied = copiedKey === `cust-addr-${cust.id}`;
+
+                      return (
+                        <tr key={cust.id} className="customer-table-row">
+                          <td>
+                            <div className="customer-avatar-lockup">
+                              <div className="customer-avatar-circle">
+                                {cust.name ? cust.name.slice(0, 2).toUpperCase() : 'CU'}
+                              </div>
+                              <div>
+                                <strong className="customer-primary-name">{cust.name}</strong>
+                                <span className="customer-joined-date">Joined {cust.joinedDate || 'Recently'}</span>
+                                <span className="google-auth-badge">
+                                  {cust.authProvider?.includes('Google') ? (
+                                    <>
+                                      <span className="google-dot">G</span> Google Verified
+                                    </>
+                                  ) : (
+                                    <span className="order-verified-dot">✓ Store Client</span>
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td>
+                            <div className="customer-contact-cell">
+                              {cust.phone ? (
+                                <div className="contact-item">
+                                  <a href={`tel:${cust.phone}`} className="phone-link">
+                                    <Phone size={12} /> {cust.phone}
+                                  </a>
+                                  {cleanPhone && (
+                                    <a
+                                      href={`https://wa.me/91${cleanPhone.slice(-10)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="whatsapp-pill-link"
+                                      title="WhatsApp this customer"
+                                    >
+                                      <MessageSquare size={11} />
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="contact-missing">No phone</span>
+                              )}
+                              {cust.email ? (
+                                <a href={`mailto:${cust.email}`} className="email-link">
+                                  <Mail size={12} /> {cust.email}
+                                </a>
+                              ) : (
+                                <span className="contact-missing">No email</span>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="address-snippet-cell">
+                            {defaultAddr ? (
+                              <div className="address-full-view">
+                                <span className="address-line-text">{defaultAddr.address || defaultAddr.formatted}</span>
+                                {(defaultAddr.city || defaultAddr.pincode) && (
+                                  <span className="address-city-pincode">
+                                    {defaultAddr.city} {defaultAddr.state ? `, ${defaultAddr.state}` : ''} {defaultAddr.pincode ? `- ${defaultAddr.pincode}` : ''}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  className={`copy-address-btn ${isCopied ? 'is-copied' : ''}`}
+                                  onClick={() =>
+                                    handleCopy(
+                                      defaultAddr.formatted ||
+                                        `${cust.name}\n${defaultAddr.address}\n${defaultAddr.city} ${defaultAddr.pincode}\nPhone: ${cust.phone}`,
+                                      `cust-addr-${cust.id}`
+                                    )
+                                  }
+                                >
+                                  {isCopied ? <Check size={11} /> : <Copy size={11} />}
+                                  <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="no-address">No saved address yet</span>
+                            )}
+                          </td>
+
+                          <td className="orders-count-cell">
+                            <span className="orders-counter-chip">
+                              <ShoppingBag size={13} /> {cust.ordersCount || 0}
                             </span>
-                          ) : (
-                            <span className="no-address">No saved address yet</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className="client-tier-chip">{cust.status || 'Active Member'}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+
+                          <td className="value-cell">
+                            <strong>₹{cust.totalSpend || 0}</strong>
+                          </td>
+
+                          <td>
+                            <span className={`client-tier-chip tier-${(cust.status || 'Active').toLowerCase().replace(/\s+/g, '-')}`}>
+                              {cust.status || 'Active Member'}
+                            </span>
+                          </td>
+
+                          <td>
+                            <button
+                              type="button"
+                              className="view-details-action-btn"
+                              onClick={() => setSelectedCustomerProfile(cust)}
+                            >
+                              <Eye size={13} />
+                              <span>View Profile</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2322,75 +2851,210 @@ export default function AdminClient() {
           <section className="admin-card-section">
             <div className="admin-card-header">
               <div>
-                <h2 className="admin-card-title">Order Dispatch Queue</h2>
-                <p className="admin-card-subtitle">Verify items and advance status for courier pickup</p>
+                <h2 className="admin-card-title">Order Dispatch & Customer Fulfillment Queue</h2>
+                <p className="admin-card-subtitle">
+                  Inspect complete customer contact and shipping addresses, verify jewelry items, update courier tracking, and advance fulfillment steps.
+                </p>
               </div>
 
-              <div className="admin-filter-bar">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="admin-select"
-                  aria-label="Filter orders by status"
+              <div className="admin-header-controls-row">
+                <div className="admin-filter-bar">
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="admin-select"
+                    aria-label="Filter orders by status"
+                  >
+                    <option value="all">All statuses ({orders.length})</option>
+                    <option value="pending">Pending dispatch</option>
+                    <option value="courier">Ready for courier</option>
+                    <option value="transit">In transit</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchOrders}
+                  className="btn btn-secondary admin-btn-sm"
+                  title="Refresh orders from database"
                 >
-                  <option value="all">All statuses</option>
-                  <option value="pending">Pending dispatch</option>
-                  <option value="courier">Ready for courier</option>
-                  <option value="transit">In transit</option>
-                  <option value="delivered">Delivered</option>
-                </select>
+                  <RefreshCw size={13} />
+                  <span>Refresh Orders</span>
+                </button>
               </div>
             </div>
 
             <div className="orders-table-wrapper">
-              <table className="admin-data-table">
+              <table className="admin-data-table orders-rich-table">
                 <thead>
                   <tr>
-                    <th>Order Reference</th>
-                    <th>Client & City</th>
-                    <th>Items Ordered</th>
-                    <th>Settlement</th>
-                    <th>Value</th>
+                    <th>Order &amp; Time</th>
+                    <th>Customer &amp; Contact</th>
+                    <th>Full Shipping Address</th>
+                    <th>Items &amp; Variants</th>
+                    <th>Amount &amp; Payment</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Actions &amp; Details</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOrders.map((ord) => (
-                    <tr key={ord.id}>
-                      <td>
-                        <span className="order-id-badge">{ord.id}</span>
-                        <span className="order-time-sub">{ord.created}</span>
-                      </td>
-                      <td>
-                        <strong>{ord.client}</strong>
-                        <span className="city-sub">{ord.city}</span>
-                      </td>
-                      <td className="items-cell">{ord.items}</td>
-                      <td>
-                        <span className={`payment-pill ${ord.payment.includes('UPI') ? 'is-upi' : 'is-cod'}`}>
-                          {ord.payment}
-                        </span>
-                      </td>
-                      <td className="value-cell">₹{ord.value}</td>
-                      <td>
-                        <span className="status-badge-cell">{ord.status}</span>
-                      </td>
-                      <td>
-                        {ord.status !== "Delivered" ? (
-                          <button
-                            type="button"
-                            className="advance-action-btn"
-                            onClick={() => advanceStatus(ord.id)}
-                          >
-                            Advance Step →
-                          </button>
-                        ) : (
-                          <span className="complete-indicator">✓ Complete</span>
-                        )}
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="empty-table-state">
+                        <PackageCheck size={32} />
+                        <p>No orders currently match the selected status filter &ldquo;{filterStatus}&rdquo;.</p>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredOrders.map((ord) => {
+                      const cleanPhone = (ord.phone || '').replace(/[^0-9]/g, '');
+                      const waText = encodeURIComponent(
+                        `Hello ${ord.client}, thank you for choosing SatvaStones Atelier! Your order #${ord.id} is being processed.`
+                      );
+                      const isCopied = copiedKey === `addr-${ord.id}`;
+
+                      return (
+                        <tr key={ord.id} className="order-table-row">
+                          {/* 1. Order & Time */}
+                          <td>
+                            <div className="order-ref-cell">
+                              <span className="order-id-badge">{ord.id}</span>
+                              <span className="order-time-sub">{ord.created}</span>
+                              {ord.trackingId && (
+                                <span className="tracking-sub-pill" title={`Tracking: ${ord.trackingId}`}>
+                                  📦 {ord.trackingId}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 2. Customer & Contact */}
+                          <td>
+                            <div className="customer-info-cell">
+                              <strong className="customer-primary-name">{ord.client}</strong>
+                              {ord.phone ? (
+                                <div className="customer-contact-links">
+                                  <a href={`tel:${ord.phone}`} className="customer-contact-link phone-link" title="Call Customer">
+                                    <Phone size={12} />
+                                    <span>{ord.phone}</span>
+                                  </a>
+                                  {cleanPhone && (
+                                    <a
+                                      href={`https://wa.me/91${cleanPhone.slice(-10)}?text=${waText}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="customer-contact-link whatsapp-link"
+                                      title="Message customer on WhatsApp"
+                                    >
+                                      <MessageSquare size={12} />
+                                      <span>WhatsApp</span>
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="contact-missing">No phone provided</span>
+                              )}
+                              {ord.email && (
+                                <a href={`mailto:${ord.email}`} className="customer-email-sub" title="Send Email">
+                                  <Mail size={11} />
+                                  <span>{ord.email}</span>
+                                </a>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 3. Full Shipping Address */}
+                          <td className="address-column-cell">
+                            <div className="address-info-block">
+                              <p className="address-street-line">{ord.address || 'Address on record'}</p>
+                              <span className="address-city-state">
+                                {ord.city}
+                                {ord.state ? `, ${ord.state}` : ''}
+                                {ord.pincode ? ` - ${ord.pincode}` : ''}
+                              </span>
+                              <button
+                                type="button"
+                                className={`copy-address-btn ${isCopied ? 'is-copied' : ''}`}
+                                onClick={() =>
+                                  handleCopy(
+                                    `${ord.client}\n${ord.address}\n${ord.city}${ord.state ? ', ' + ord.state : ''} - ${ord.pincode}\nPhone: ${ord.phone}`,
+                                    `addr-${ord.id}`
+                                  )
+                                }
+                                title="Copy complete delivery address for courier"
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check size={12} /> Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} /> Copy Address
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* 4. Items Ordered */}
+                          <td className="items-cell">
+                            <div className="items-summary-wrap">
+                              <span className="items-count-chip">
+                                <ShoppingBag size={12} /> {ord.itemsList?.length || 1} piece{(ord.itemsList?.length || 1) > 1 ? 's' : ''}
+                              </span>
+                              <p className="items-title-string">{ord.items}</p>
+                            </div>
+                          </td>
+
+                          {/* 5. Amount & Settlement */}
+                          <td>
+                            <div className="settlement-cell-wrap">
+                              <span className="value-number">₹{ord.value}</span>
+                              <span className={`payment-pill ${ord.payment?.includes('COD') ? 'is-cod' : 'is-upi'}`}>
+                                {ord.payment?.includes('COD') ? 'COD' : 'Paid Online'}
+                              </span>
+                              {ord.discountAmount > 0 && (
+                                <span className="discount-tag-sub">
+                                  Saved ₹{ord.discountAmount} {ord.couponCode && `(${ord.couponCode})`}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 6. Status */}
+                          <td>
+                            <span className={`status-badge-cell status-${(ord.status || 'Confirmed').toLowerCase().replace(/\s+/g, '-')}`}>
+                              {ord.status}
+                            </span>
+                          </td>
+
+                          {/* 7. Action & View Details */}
+                          <td>
+                            <div className="order-actions-cell">
+                              <button
+                                type="button"
+                                className="view-details-action-btn"
+                                onClick={() => setSelectedOrderDetails(ord)}
+                                title="View full customer and order details"
+                              >
+                                <Eye size={13} />
+                                <span>View Full Info</span>
+                              </button>
+                              {ord.status !== 'Delivered' && (
+                                <button
+                                  type="button"
+                                  className="advance-action-btn"
+                                  onClick={() => advanceStatus(ord.id)}
+                                >
+                                  Advance Step →
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2431,6 +3095,398 @@ export default function AdminClient() {
           </section>
         )}
       </div>
+
+      {/* ORDER & CUSTOMER FULL DETAILS MODAL */}
+      {selectedOrderDetails && (
+        <div className="admin-modal-overlay" onClick={() => setSelectedOrderDetails(null)}>
+          <div className="admin-modal-container order-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div className="modal-title-lockup">
+                <span className="modal-kicker">Order &amp; Customer Full Dossier</span>
+                <h3 className="admin-modal-title">Order #{selectedOrderDetails.id}</h3>
+                <span className="order-modal-timestamp">Placed on {selectedOrderDetails.created}</span>
+              </div>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setSelectedOrderDetails(null)}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="order-details-modal-body">
+              {/* TOP CARDS: Customer Details & Dispatch Information */}
+              <div className="order-modal-cards-grid">
+                {/* Card 1: Customer Contact & Profile */}
+                <div className="order-detail-card customer-card">
+                  <div className="card-heading-bar">
+                    <Users size={16} />
+                    <h4>Customer Contact &amp; Profile</h4>
+                  </div>
+                  <div className="customer-dossier-list">
+                    <div className="dossier-row">
+                      <span className="dossier-label">Full Name:</span>
+                      <strong className="dossier-value highlight">{selectedOrderDetails.client}</strong>
+                    </div>
+
+                    <div className="dossier-row">
+                      <span className="dossier-label">Phone Number:</span>
+                      <div className="dossier-value contact-actions-value">
+                        <a href={`tel:${selectedOrderDetails.phone}`} className="phone-badge-link">
+                          <Phone size={13} /> {selectedOrderDetails.phone || 'Not provided'}
+                        </a>
+                        {selectedOrderDetails.phone && (
+                          <a
+                            href={`https://wa.me/91${selectedOrderDetails.phone.replace(/[^0-9]/g, '').slice(-10)}?text=${encodeURIComponent(
+                              `Hello ${selectedOrderDetails.client}, your SatvaStones order #${selectedOrderDetails.id} is confirmed.`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="whatsapp-badge-link"
+                          >
+                            <MessageSquare size={13} /> WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="dossier-row">
+                      <span className="dossier-label">Email Address:</span>
+                      <div className="dossier-value">
+                        {selectedOrderDetails.email ? (
+                          <a href={`mailto:${selectedOrderDetails.email}`} className="email-badge-link">
+                            <Mail size={13} /> {selectedOrderDetails.email}
+                          </a>
+                        ) : (
+                          <span className="contact-missing">No email on file</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="dossier-row">
+                      <span className="dossier-label">Payment Mode:</span>
+                      <span className={`payment-pill ${selectedOrderDetails.payment?.includes('COD') ? 'is-cod' : 'is-upi'}`}>
+                        {selectedOrderDetails.payment} • {selectedOrderDetails.paymentStatus || 'CONFIRMED'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Full Shipping Address & Courier Dispatch */}
+                <div className="order-detail-card shipping-card">
+                  <div className="card-heading-bar">
+                    <MapPin size={16} />
+                    <h4>Full Delivery Address &amp; Shipping</h4>
+                  </div>
+                  <div className="shipping-dossier-body">
+                    <div className="full-address-paper-box">
+                      <p className="paper-ship-to">SHIP TO:</p>
+                      <p className="paper-name"><strong>{selectedOrderDetails.client}</strong></p>
+                      <p className="paper-street">{selectedOrderDetails.address || 'Address line on file'}</p>
+                      <p className="paper-city-state">
+                        {selectedOrderDetails.city}{selectedOrderDetails.state ? `, ${selectedOrderDetails.state}` : ''}
+                        {selectedOrderDetails.pincode ? ` - ${selectedOrderDetails.pincode}` : ''}
+                      </p>
+                      <p className="paper-country">{selectedOrderDetails.country || 'India'}</p>
+                      <p className="paper-phone">Phone: {selectedOrderDetails.phone || 'N/A'}</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`btn btn-secondary copy-full-slip-btn ${copiedKey === `slip-${selectedOrderDetails.id}` ? 'is-copied' : ''}`}
+                      onClick={() =>
+                        handleCopy(
+                          `SHIP TO:\n${selectedOrderDetails.client}\n${selectedOrderDetails.address}\n${selectedOrderDetails.city}${selectedOrderDetails.state ? ', ' + selectedOrderDetails.state : ''} - ${selectedOrderDetails.pincode}\nPhone: ${selectedOrderDetails.phone}\nOrder: ${selectedOrderDetails.id}`,
+                          `slip-${selectedOrderDetails.id}`
+                        )
+                      }
+                    >
+                      {copiedKey === `slip-${selectedOrderDetails.id}` ? (
+                        <>
+                          <Check size={14} /> Full Courier Slip Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} /> Copy Full Courier Shipping Slip
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: ORDERED ITEMS BREAKDOWN */}
+              <div className="order-modal-items-section">
+                <h4 className="modal-section-heading">Ordered Atelier Pieces ({selectedOrderDetails.itemsList?.length || 1})</h4>
+                <div className="modal-items-table-wrap">
+                  <table className="modal-items-table">
+                    <thead>
+                      <tr>
+                        <th>Piece</th>
+                        <th>Variant / Finish</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedOrderDetails.itemsList || []).map((it, idx) => (
+                        <tr key={it.id || idx}>
+                          <td>
+                            <div className="item-piece-title-lockup">
+                              {it.image && (
+                                <Image
+                                  src={it.image}
+                                  alt={it.title}
+                                  width={40}
+                                  height={40}
+                                  className="order-item-thumb"
+                                />
+                              )}
+                              <div>
+                                <strong>{it.title || 'Demi-Fine Jewellery'}</strong>
+                                {it.sku && <span className="item-sku-sub">SKU: {it.sku}</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="item-finish-badge">{it.finish || '18K Gold Plated'}</span>
+                          </td>
+                          <td>{it.quantity || it.qty || 1}</td>
+                          <td>₹{it.price || 0}</td>
+                          <td><strong>₹{(it.price || 0) * (it.quantity || it.qty || 1)}</strong></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="order-modal-financials-bar">
+                  <div className="financial-item">
+                    <span>Subtotal:</span>
+                    <strong>₹{selectedOrderDetails.subtotal || selectedOrderDetails.value}</strong>
+                  </div>
+                  {selectedOrderDetails.discountAmount > 0 && (
+                    <div className="financial-item discount">
+                      <span>Privilege Discount ({selectedOrderDetails.couponCode || 'Promo'}):</span>
+                      <strong>-₹{selectedOrderDetails.discountAmount}</strong>
+                    </div>
+                  )}
+                  <div className="financial-item">
+                    <span>Shipping:</span>
+                    <strong>{selectedOrderDetails.shippingFee ? `₹${selectedOrderDetails.shippingFee}` : 'Free Express'}</strong>
+                  </div>
+                  <div className="financial-item grand-total">
+                    <span>Final Amount:</span>
+                    <strong className="total-gold">₹{selectedOrderDetails.value}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: FULFILLMENT & TRACKING CONTROLS */}
+              <div className="order-modal-dispatch-bar">
+                <div className="dispatch-control-left">
+                  <label htmlFor="modal-tracking-input">Courier AWB / Tracking ID:</label>
+                  <div className="tracking-input-group">
+                    <input
+                      id="modal-tracking-input"
+                      type="text"
+                      placeholder="e.g. BD-89240182-IN"
+                      value={
+                        editingTrackingOrderId === selectedOrderDetails.id
+                          ? trackingInputVal
+                          : selectedOrderDetails.trackingId || ''
+                      }
+                      onChange={(e) => {
+                        setEditingTrackingOrderId(selectedOrderDetails.id);
+                        setTrackingInputVal(e.target.value);
+                      }}
+                      className="tracking-input-field"
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary tracking-save-btn"
+                      disabled={savingTracking}
+                      onClick={() =>
+                        handleSaveTracking(
+                          selectedOrderDetails.id,
+                          editingTrackingOrderId === selectedOrderDetails.id
+                            ? trackingInputVal
+                            : selectedOrderDetails.trackingId || ''
+                        )
+                      }
+                    >
+                      {savingTracking ? 'Saving...' : 'Save Tracking'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="dispatch-control-right">
+                  <span className="current-status-label">
+                    Status: <strong>{selectedOrderDetails.status}</strong>
+                  </span>
+                  {selectedOrderDetails.status !== 'Delivered' && (
+                    <button
+                      type="button"
+                      className="advance-action-btn modal-advance"
+                      onClick={() => {
+                        advanceStatus(selectedOrderDetails.id);
+                        setSelectedOrderDetails((prev) => ({
+                          ...prev,
+                          status:
+                            prev.status === 'Pending Dispatch' || prev.status === 'Confirmed' || prev.status === 'Paid'
+                              ? 'Ready for Courier'
+                              : prev.status === 'Ready for Courier'
+                              ? 'In Transit (Bluedart)'
+                              : 'Delivered',
+                        }));
+                      }}
+                    >
+                      Advance Status Step →
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOMER PROFILE & ORDER HISTORY MODAL */}
+      {selectedCustomerProfile && (
+        <div className="admin-modal-overlay" onClick={() => setSelectedCustomerProfile(null)}>
+          <div className="admin-modal-container customer-profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div className="modal-title-lockup">
+                <span className="modal-kicker">Client Dossier &amp; Order History</span>
+                <h3 className="admin-modal-title">{selectedCustomerProfile.name}</h3>
+                <span className="customer-modal-badge">{selectedCustomerProfile.status}</span>
+              </div>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setSelectedCustomerProfile(null)}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="customer-profile-modal-body">
+              {/* Profile summary cards */}
+              <div className="customer-metrics-row">
+                <div className="cust-metric-card">
+                  <span className="cust-metric-label">Lifetime Spend</span>
+                  <strong className="cust-metric-value">₹{selectedCustomerProfile.totalSpend || 0}</strong>
+                </div>
+                <div className="cust-metric-card">
+                  <span className="cust-metric-label">Orders Placed</span>
+                  <strong className="cust-metric-value">{selectedCustomerProfile.ordersCount || 0}</strong>
+                </div>
+                <div className="cust-metric-card">
+                  <span className="cust-metric-label">Authentication</span>
+                  <strong className="cust-metric-value">{selectedCustomerProfile.authProvider || 'Store Client'}</strong>
+                </div>
+                <div className="cust-metric-card">
+                  <span className="cust-metric-label">Joined</span>
+                  <strong className="cust-metric-value">{selectedCustomerProfile.joinedDate || 'Nov 2026'}</strong>
+                </div>
+              </div>
+
+              {/* Contact info and saved addresses */}
+              <div className="customer-contact-addresses-grid">
+                <div className="cust-info-card">
+                  <h4>Contact Channels</h4>
+                  <div className="contact-info-list">
+                    <p>
+                      <strong>Phone:</strong>{' '}
+                      {selectedCustomerProfile.phone ? (
+                        <a href={`tel:${selectedCustomerProfile.phone}`} className="phone-badge-link">
+                          <Phone size={13} /> {selectedCustomerProfile.phone}
+                        </a>
+                      ) : (
+                        'None on record'
+                      )}
+                    </p>
+                    <p>
+                      <strong>Email:</strong>{' '}
+                      {selectedCustomerProfile.email ? (
+                        <a href={`mailto:${selectedCustomerProfile.email}`} className="email-badge-link">
+                          <Mail size={13} /> {selectedCustomerProfile.email}
+                        </a>
+                      ) : (
+                        'None on record'
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="cust-info-card">
+                  <h4>Saved Shipping Addresses ({(selectedCustomerProfile.addresses || []).length})</h4>
+                  <div className="saved-addresses-list">
+                    {(selectedCustomerProfile.addresses || []).length > 0 ? (
+                      selectedCustomerProfile.addresses.map((a, i) => (
+                        <div key={i} className="saved-address-item">
+                          <MapPin size={14} className="addr-pin-icon" />
+                          <div>
+                            <p className="addr-main-line">{a.address || a.formatted}</p>
+                            {(a.city || a.pincode) && (
+                              <p className="addr-city-sub">
+                                {a.city}{a.state ? `, ${a.state}` : ''} {a.pincode ? `- ${a.pincode}` : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="no-address">No saved shipping addresses found.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order History */}
+              <div className="customer-orders-history-section">
+                <h4>Orders on Record ({(selectedCustomerProfile.orders || []).length})</h4>
+                <div className="modal-items-table-wrap">
+                  <table className="modal-items-table">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Settlement</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedCustomerProfile.orders || []).length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', padding: '16px', color: '#6B7280' }}>
+                            No past orders on record.
+                          </td>
+                        </tr>
+                      ) : (
+                        selectedCustomerProfile.orders.map((o, idx) => (
+                          <tr key={o.id || idx}>
+                            <td><strong>{o.orderNumber || o.id}</strong></td>
+                            <td>{o.date}</td>
+                            <td>{o.paymentMethod || 'Razorpay'}</td>
+                            <td>₹{o.amount}</td>
+                            <td><span className="status-badge-cell">{o.status}</span></td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
