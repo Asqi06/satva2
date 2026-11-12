@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Package, MapPin, Tag, Truck, CheckCircle2, ShieldCheck, LogOut, Copy, Check, Edit2, Plus, AlertCircle } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import './page.css';
@@ -45,19 +46,13 @@ export default function AccountClient() {
   const [customEmail, setCustomEmail] = useState('');
   const [customName, setCustomName] = useState('');
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
-  // Read URL parameters on mount (auth error or success)
-  useEffect(() => {
+  const [authError, setAuthError] = useState(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const err = params.get('auth_error');
-      if (err) {
-        setAuthError(err);
-      }
+      return new URLSearchParams(window.location.search).get('auth_error') || '';
     }
-  }, []);
+    return '';
+  });
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Address edit state
   const defaultAddr = currentUser?.addresses?.[0] || {
@@ -264,10 +259,12 @@ export default function AccountClient() {
       <header className="account-hero-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {currentUser.avatar ? (
-            <img
+            <Image
               src={currentUser.avatar}
               alt={currentUser.name || "Client"}
-              referrerPolicy="no-referrer"
+              width={64}
+              height={64}
+              unoptimized
               style={{
                 width: '64px',
                 height: '64px',
@@ -389,33 +386,41 @@ export default function AccountClient() {
                 </div>
 
                 {/* Progress Tracker */}
-                <div className="order-live-tracker">
-                  <div className="tracker-steps-line">
-                    <div className="step-point is-complete">
-                      <span className="step-dot"><CheckCircle2 size={12} /></span>
-                      <span className="step-label">Confirmed</span>
+                {(() => {
+                  const s = (order.status || 'Confirmed').toLowerCase();
+                  const isPacked = s.includes('pack') || s.includes('ready') || s.includes('transit') || s.includes('dispatch') || s.includes('deliver') || s === 'processing';
+                  const isInTransit = s.includes('transit') || s.includes('dispatch') || s.includes('out for delivery') || s.includes('deliver');
+                  const isDelivered = s.includes('deliver');
+                  return (
+                    <div className="order-live-tracker">
+                      <div className="tracker-steps-line">
+                        <div className="step-point is-complete">
+                          <span className="step-dot"><CheckCircle2 size={12} /></span>
+                          <span className="step-label">Confirmed</span>
+                        </div>
+                        <div className={`step-point ${isPacked ? 'is-complete' : ''}`}>
+                          <span className="step-dot"><CheckCircle2 size={12} /></span>
+                          <span className="step-label">Packed</span>
+                        </div>
+                        <div className={`step-point ${isInTransit ? 'is-complete' : ''}`}>
+                          <span className="step-dot"><CheckCircle2 size={12} /></span>
+                          <span className="step-label">In Transit ({order.carrier || 'Bluedart'})</span>
+                        </div>
+                        <div className={`step-point ${isDelivered ? 'is-complete' : ''}`}>
+                          <span className="step-dot"><CheckCircle2 size={12} /></span>
+                          <span className="step-label">Delivered</span>
+                        </div>
+                      </div>
+                      {order.trackingNumber && (
+                        <div className="order-tracking-meta">
+                          <span>Airway Bill: <strong>{order.trackingNumber}</strong></span>
+                          <span>Carrier: <strong>{order.carrier || 'Bluedart Express'}</strong></span>
+                          {order.destination && <span>Destination: <strong>{order.destination}</strong></span>}
+                        </div>
+                      )}
                     </div>
-                    <div className={`step-point ${order.status !== 'Confirmed' ? 'is-complete' : ''}`}>
-                      <span className="step-dot"><CheckCircle2 size={12} /></span>
-                      <span className="step-label">Packed</span>
-                    </div>
-                    <div className={`step-point ${order.status === 'In Transit' || order.status === 'Out for delivery' || order.status === 'Delivered' ? 'is-complete' : ''}`}>
-                      <span className="step-dot"><CheckCircle2 size={12} /></span>
-                      <span className="step-label">In Transit ({order.carrier || 'Bluedart'})</span>
-                    </div>
-                    <div className={`step-point ${order.status === 'Delivered' ? 'is-complete' : ''}`}>
-                      <span className="step-dot"><CheckCircle2 size={12} /></span>
-                      <span className="step-label">Delivered</span>
-                    </div>
-                  </div>
-                  {order.trackingNumber && (
-                    <div className="order-tracking-meta">
-                      <span>Airway Bill: <strong>{order.trackingNumber}</strong></span>
-                      <span>Carrier: <strong>{order.carrier || 'Bluedart Express'}</strong></span>
-                      {order.destination && <span>Destination: <strong>{order.destination}</strong></span>}
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Items List in Order */}
                 <div className="order-items-sublist">

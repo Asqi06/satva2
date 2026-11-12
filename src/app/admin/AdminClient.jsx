@@ -632,9 +632,10 @@ export default function AdminClient({ initialAuthenticated = false, initialAdmin
   const advanceStatus = async (orderId) => {
     const ord = orders.find((o) => o.id === orderId);
     let next = ord?.status || 'Pending Dispatch';
-    if (next === 'Pending Dispatch' || next === 'Confirmed' || next === 'Paid') next = 'Ready for Courier';
-    else if (next === 'Ready for Courier') next = 'In Transit (Bluedart)';
-    else if (next === 'In Transit (Bluedart)' || next === 'Dispatched') next = 'Delivered';
+    const s = next.toLowerCase();
+    if (s.includes('pending') || s.includes('confirmed') || s.includes('paid')) next = 'Ready for Courier';
+    else if (s.includes('ready') || s.includes('packed') || s.includes('processing')) next = 'In Transit (Bluedart)';
+    else if (s.includes('transit') || s.includes('dispatched')) next = 'Delivered';
 
     setStatusOverrides((prev) => ({ ...prev, [orderId]: next }));
 

@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 import { act, cleanup, render, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { CartProvider, useBag } from "@/features/cart/CartProvider";
 import { GUEST_CART_KEY, saveGuestCart } from "@/features/cart/guest-cart";
@@ -10,7 +11,13 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear(); });
 
 it("merges new guest picks on a later login with the same account, once per login", async () => {
   let bag: ReturnType<typeof useBag>;
-  function Probe() { bag = useBag(); return null; }
+  function Probe() {
+    const currentBag = useBag();
+    useEffect(() => {
+      bag = currentBag;
+    });
+    return null;
+  }
   const item = { productId: "64f000000000000000000001", qty: 1, name: "Ring", slug: "ring", price: 499 };
   // Legacy bookkeeping must not prevent new picks from being merged.
   localStorage.setItem("satvastones:cart-merged:v1", JSON.stringify(["buyer@example.com"]));

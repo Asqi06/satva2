@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { products, getProductById } from '../data/products';
 import { DEFAULT_PROMO_BANNERS, DEFAULT_VOUCHERS } from '../data/promotions';
 
@@ -45,6 +45,7 @@ export const defaultCartContextValue = {
   signOut: () => {},
   updateUserAddress: () => {},
   placeOrder: () => {},
+  recordPlacedOrder: () => {},
   promoBanners: DEFAULT_PROMO_BANNERS,
   addPromoBanner: () => {},
   updatePromoBanner: () => {},
@@ -145,6 +146,29 @@ export function CartProvider({ children }) {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherError, setVoucherError] = useState('');
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Calculations derived from cart state
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalMrp = cart.reduce((sum, item) => sum + (item.mrp || item.price * 2) * item.quantity, 0);
+  const totalSavings = Math.max(0, totalMrp - subtotal);
+
+  const freeShippingThreshold = 499;
+  const isFreeShipping = subtotal >= freeShippingThreshold;
+  const amountToFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+  const shippingCost = subtotal === 0 || isFreeShipping ? 0 : 49;
+
+  let voucherDiscount = 0;
+  if (appliedVoucher) {
+    const isFixed = appliedVoucher.type?.toLowerCase() === 'fixed';
+    if (isFixed) {
+      voucherDiscount = Math.min(subtotal, Number(appliedVoucher.value) || 0);
+    } else {
+      voucherDiscount = Math.round((subtotal * (Number(appliedVoucher.value) || 0)) / 100);
+    }
+  }
+
+  const grandTotal = Math.max(0, subtotal - voucherDiscount + shippingCost);
 
   // Restore client state from localStorage once mounted
   useEffect(() => {
@@ -279,13 +303,40 @@ export function CartProvider({ children }) {
     } catch {}
   }, [vouchers, isHydrated]);
 
-  // Show auto-dismissing toast notification
+  // Show auto-dismissing toast notification with timer cleanup
+  const toastTimerRef = useRef(null);
   const showToast = (text) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToastMessage(text);
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToastMessage(null);
+      toastTimerRef.current = null;
     }, 2800);
   };
+
+  // Auto-validate applied voucher whenever subtotal or itemCount changes
+  useEffect(() => {
+    if (!appliedVoucher) return;
+    const clean = appliedVoucher.code.trim().toUpperCase();
+    const found = vouchers.find((v) => v.code === clean && v.active !== false);
+    if (!found) {
+      setAppliedVoucher(null);
+      setVoucherError(`Voucher ${clean} is no longer active.`);
+      return;
+    }
+    if (found.minOrder && subtotal < found.minOrder) {
+      setAppliedVoucher(null);
+      setVoucherError(`Voucher ${clean} removed: minimum cart value of ₹${found.minOrder} required.`);
+      return;
+    }
+    if (found.minItems && itemCount < found.minItems) {
+      setAppliedVoucher(null);
+      setVoucherError(`Voucher ${clean} removed: at least ${found.minItems} pieces required in bag.`);
+      return;
+    }
+  }, [subtotal, itemCount, appliedVoucher, vouchers]);
 
   // Add item to cart
   const addToCart = (item, quantity = 1, options = { openDrawer: true }) => {
@@ -577,6 +628,42 @@ export function CartProvider({ children }) {
     return newOrder;
   };
 
+  // Record an order confirmed via API (COD or Razorpay) and sync user metrics
+  const recordPlacedOrder = (orderData) => {
+    const orderId = orderData.orderId || orderData.orderNumber || `SATVA-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newOrder = {
+      orderId,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      status: orderData.status || "Confirmed",
+      carrier: orderData.carrier || orderData.courierName || "Bluedart Express",
+      trackingNumber: orderData.trackingNumber || orderData.trackingId || `BD-${Math.floor(100000000 + Math.random() * 900000000)}-IN`,
+      destination: orderData.destination || `${orderData.address || ''}, ${orderData.city || ''} ${orderData.pincode || ''}`,
+      total: Number(orderData.total) || 0,
+      paymentMethod: orderData.paymentMethod || 'Prepaid UPI',
+      items: orderData.items || [...cart],
+      userEmail: currentUser?.email || orderData.email || null,
+      clientName: currentUser?.name || orderData.fullName || orderData.customerName || "Client",
+    };
+
+    setOrders((prev) => [newOrder, ...prev.filter((o) => o.orderId !== newOrder.orderId)]);
+
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        ordersCount: (currentUser.ordersCount || 0) + 1,
+        totalSpend: (currentUser.totalSpend || 0) + (Number(orderData.total) || 0),
+      };
+      setCurrentUser(updatedUser);
+      setRegisteredUsers((prev) =>
+        prev.map((u) => (u.id === currentUser.id ? updatedUser : u))
+      );
+    }
+
+    clearCart();
+    setAppliedVoucher(null);
+    return newOrder;
+  };
+
   // Promo banner management (controlled via Admin Panel)
   const addPromoBanner = (newBanner) => {
     const banner = {
@@ -625,28 +712,6 @@ export function CartProvider({ children }) {
     showToast("Reset promotional banners to atelier defaults");
   };
 
-  // Calculations
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const totalMrp = cart.reduce((sum, item) => sum + (item.mrp || item.price * 2) * item.quantity, 0);
-  const totalSavings = Math.max(0, totalMrp - subtotal);
-
-  const freeShippingThreshold = 499;
-  const isFreeShipping = subtotal >= freeShippingThreshold;
-  const amountToFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
-  const shippingCost = subtotal === 0 || isFreeShipping ? 0 : 49;
-
-  let voucherDiscount = 0;
-  if (appliedVoucher) {
-    if (appliedVoucher.type === 'fixed') {
-      voucherDiscount = Math.min(subtotal, appliedVoucher.value);
-    } else if (appliedVoucher.type === 'percent') {
-      voucherDiscount = Math.round((subtotal * appliedVoucher.value) / 100);
-    }
-  }
-
-  const grandTotal = Math.max(0, subtotal - voucherDiscount + shippingCost);
-
   return (
     <CartContext.Provider
       value={{
@@ -689,6 +754,7 @@ export function CartProvider({ children }) {
         signOut,
         updateUserAddress,
         placeOrder,
+        recordPlacedOrder,
         promoBanners,
         addPromoBanner,
         updatePromoBanner,

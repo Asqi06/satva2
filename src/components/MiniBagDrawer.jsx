@@ -56,13 +56,12 @@ export default function MiniBagDrawer() {
   // Lock body scroll when drawer is open
   useEffect(() => {
     if (isMiniBagOpen) {
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+      };
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isMiniBagOpen]);
 
   if (!isMiniBagOpen) return null;

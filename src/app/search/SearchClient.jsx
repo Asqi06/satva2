@@ -22,9 +22,10 @@ export default function SearchClient({ initialProducts = [] }) {
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [activeChip, setActiveChip] = useState('');
   const [allProducts, setAllProducts] = useState(initialProducts);
+  const [hasFetched, setHasFetched] = useState(initialProducts.length > 0);
 
   useEffect(() => {
-    if (allProducts.length === 0) {
+    if (allProducts.length === 0 && !hasFetched) {
       fetch('/api/products?limit=150')
         .then((res) => {
           if (!res.ok) return null;
@@ -36,9 +37,14 @@ export default function SearchClient({ initialProducts = [] }) {
             setAllProducts(data.products);
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          setHasFetched(true);
+        });
     }
-  }, [allProducts.length]);
+  }, [allProducts.length, hasFetched]);
+
+  const isLoading = !hasFetched && allProducts.length === 0;
 
   const filteredProducts = useMemo(() => {
     const term = (activeChip || searchTerm).trim().toLowerCase();
@@ -118,7 +124,11 @@ export default function SearchClient({ initialProducts = [] }) {
         </span>
       </div>
 
-      {filteredProducts.length === 0 ? (
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: '64px 20px', color: '#6e675f', fontSize: '0.95rem' }}>
+          <p>Curating collection pieces...</p>
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div className="search-no-results">
           <p className="no-results-msg">No pieces found matching your query.</p>
           <div className="search-suggestions-box">

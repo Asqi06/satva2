@@ -14,6 +14,8 @@ export default function CheckoutClient() {
     appliedVoucher,
     voucherDiscount,
     placeOrder,
+    recordPlacedOrder,
+    clearCart,
     currentUser,
   } = useCart();
 
@@ -156,8 +158,15 @@ export default function CheckoutClient() {
                   total: orderData.orderSummary.total,
                   destination: `${formData.address}, ${formData.city} ${formData.pincode}`,
                   items: [...cart],
+                  status: 'Confirmed',
+                  email: formData.email,
+                  fullName: formData.fullName,
                 };
-                clearCart();
+                if (recordPlacedOrder) {
+                  recordPlacedOrder(confirmed);
+                } else {
+                  clearCart();
+                }
                 setConfirmedOrder(confirmed);
                 setIsSubmitted(true);
               } else {
@@ -181,6 +190,7 @@ export default function CheckoutClient() {
           modal: {
             ondismiss: function () {
               setIsProcessing(false);
+              setErrorMessage('Payment window was closed. You may retry or choose Cash on Delivery.');
             },
           },
         };
@@ -218,8 +228,15 @@ export default function CheckoutClient() {
             total: data.order?.amount ?? total,
             destination: `${formData.address}, ${formData.city} ${formData.pincode}`,
             items: [...cart],
+            status: 'Confirmed',
+            email: formData.email,
+            fullName: formData.fullName,
           };
-          clearCart();
+          if (recordPlacedOrder) {
+            recordPlacedOrder(confirmed);
+          } else {
+            clearCart();
+          }
           setConfirmedOrder(confirmed);
           setIsSubmitted(true);
         } else {

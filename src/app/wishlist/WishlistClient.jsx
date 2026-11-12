@@ -8,8 +8,9 @@ import ProductCard from '../../components/ProductCard';
 import './page.css';
 
 export default function WishlistClient() {
-  const { wishlist, toggleWishlist, addToCart } = useCart();
+  const { wishlist, toggleWishlist, addToCart, isHydrated } = useCart();
   const [dbProducts, setDbProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/products?limit=150')
@@ -21,7 +22,10 @@ export default function WishlistClient() {
       .then((data) => {
         if (data?.products) setDbProducts(data.products);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const savedProducts = wishlist
@@ -31,6 +35,14 @@ export default function WishlistClient() {
       return dbProducts.find((p) => String(p.id) === String(id) || String(p.mongoId) === String(id));
     })
     .filter(Boolean);
+
+  if (!isHydrated || (isLoading && wishlist.length > 0 && savedProducts.length === 0)) {
+    return (
+      <div className="container" style={{ textAlign: 'center', padding: '100px 20px', color: '#6e675f' }}>
+        <p>Retrieving your saved atelier pieces...</p>
+      </div>
+    );
+  }
 
   if (savedProducts.length === 0) {
     return (
