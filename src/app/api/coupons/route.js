@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { connectDb } from '../../../lib/db';
 import { Coupon } from '../../../models/Coupon';
+import { requireAdmin } from '../../../lib/adminAuth';
+import { checkRateLimit, getClientKey } from '../../../lib/rateLimit';
 
 export async function GET(request) {
   try {
+    const rate = checkRateLimit(`coupon-check:${getClientKey(request)}`, 30, 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ success: false, error: 'Too many coupon checks. Try again shortly.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
     await connectDb();
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
@@ -36,6 +40,8 @@ export async function GET(request) {
       });
     }
 
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     const coupons = await Coupon.find({}).sort({ createdAt: -1 }).lean();
     return NextResponse.json({ success: true, count: coupons.length, coupons });
   } catch (err) {
@@ -46,6 +52,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
 

@@ -147,7 +147,6 @@ export default function CloudinaryUploadButton({
               fill
               sizes="120px"
               style={{ objectFit: 'contain' }}
-              unoptimized={value.includes('cloudinary.com') || value.startsWith('/uploads/')}
             />
           </div>
           <div className="preview-meta-info">

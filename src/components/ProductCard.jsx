@@ -57,11 +57,10 @@ export default function ProductCard(rawProps) {
   const props = rawProps.product || rawProps;
   const {
     id,
+    slug,
     title,
     price,
     mrp,
-    rating = 4.8,
-    reviews = 120,
     badge,
     subcategory,
     material = "18k gold plated steel",
@@ -134,16 +133,15 @@ export default function ProductCard(rawProps) {
         </button>
 
         {/* Real Product Image or Bespoke Vector Silhouette */}
-        <Link href={`/products/${id}`} className="product-image-anchor">
+        <Link href={`/products/${slug || id}`} className="product-image-anchor">
           {displayImage ? (
             <Image
               src={isHovered && hoverImage ? hoverImage : displayImage}
-              alt={`${title} - 18K Gold Anti-Tarnish Demi-Fine Jewellery | Satvastones`}
+              alt={title}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="product-card-img"
               priority={false}
-              unoptimized={displayImage.includes('cloudinary.com')}
             />
           ) : (
             <div className="product-silhouette-anchor">
@@ -158,7 +156,7 @@ export default function ProductCard(rawProps) {
       <div className="product-info-block">
         <div className="product-header-row">
           <h3 className="product-heading">
-            <Link href={`/products/${id}`}>{title}</Link>
+            <Link href={`/products/${slug || id}`}>{title}</Link>
           </h3>
         </div>
 

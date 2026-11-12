@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { connectDb } from '@/lib/db';
 import mongoose from 'mongoose';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search')?.toLowerCase() || '';

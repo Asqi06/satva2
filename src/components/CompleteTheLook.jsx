@@ -118,7 +118,7 @@ export default function CompleteTheLook({ liveProducts = [] }) {
           <div className="set-pieces-grid">
             {items.map((item, idx) => (
               <div key={`${item.id}-${idx}`} className="set-piece-card">
-                <Link href={`/products/${item.id}`} className="piece-visual-stage" style={{ background: item.imageBg || 'var(--canvas-subtle)', overflow: 'hidden' }}>
+                <Link href={`/products/${item.slug || item.id}`} className="piece-visual-stage" style={{ background: item.imageBg || 'var(--canvas-subtle)', overflow: 'hidden' }}>
                   <span className="piece-category-label" style={{ zIndex: 2 }}>{item.subcategory}</span>
                   {item.image ? (
                     <Image
@@ -127,7 +127,6 @@ export default function CompleteTheLook({ liveProducts = [] }) {
                       fill
                       sizes="220px"
                       style={{ objectFit: 'cover' }}
-                      unoptimized={item.image.includes('cloudinary.com')}
                     />
                   ) : (
                     <div className="piece-monochrome-wireframe">
@@ -138,7 +137,7 @@ export default function CompleteTheLook({ liveProducts = [] }) {
 
                 <div className="piece-details-meta">
                   <h4 className="piece-title">
-                    <Link href={`/products/${item.id}`}>{item.title}</Link>
+                    <Link href={`/products/${item.slug || item.id}`}>{item.title}</Link>
                   </h4>
                   <div className="piece-price-row">
                     <span className="piece-price">₹{item.price}</span>

@@ -96,7 +96,9 @@ export default function CheckoutClient() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: total,
+            items: cart,
+            couponCode: appliedVoucher?.code || '',
+            paymentMethod: 'upi',
             notes: {
               customerName: formData.fullName,
               customerPhone: formData.phone,
@@ -137,8 +139,8 @@ export default function CheckoutClient() {
                   razorpay_signature: response.razorpay_signature,
                   customer: formData,
                   items: cart,
-                  amount: total,
-                  discountAmount: voucherDiscount + prepaidDiscount,
+                  amount: orderData.orderSummary.total,
+                  discountAmount: orderData.orderSummary.discountAmount,
                   couponCode: appliedVoucher?.code || '',
                 }),
               });
@@ -151,7 +153,7 @@ export default function CheckoutClient() {
                   trackingNumber: verifyData.trackingId,
                   paymentMethod: 'Prepaid UPI / Online (Razorpay Verified)',
                   paymentId: response.razorpay_payment_id,
-                  total,
+                  total: orderData.orderSummary.total,
                   destination: `${formData.address}, ${formData.city} ${formData.pincode}`,
                   items: [...cart],
                 };
@@ -213,7 +215,7 @@ export default function CheckoutClient() {
             mongoId: data.orderId,
             trackingNumber: data.order?.trackingId || `BD-${Math.floor(10000000 + Math.random() * 90000000)}-IN`,
             paymentMethod: 'Cash on Delivery',
-            total,
+            total: data.order?.amount ?? total,
             destination: `${formData.address}, ${formData.city} ${formData.pincode}`,
             items: [...cart],
           };

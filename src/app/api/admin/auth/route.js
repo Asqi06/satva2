@@ -6,6 +6,7 @@ import {
   validateAdminCredentials,
   ADMIN_COOKIE_NAME,
 } from '@/lib/adminAuth';
+import { checkRateLimit, getClientKey } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,12 +34,19 @@ export async function GET() {
     });
   } catch (err) {
     console.error('Admin session check error:', err);
-    return NextResponse.json({ authenticated: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ authenticated: false }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   try {
+    const rate = checkRateLimit(`admin-login:${getClientKey(request)}`, 10, 15 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json({ success: false, error: 'Too many login attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
+    }
+    if (Number(request.headers.get('content-length') || 0) > 16 * 1024) {
+      return NextResponse.json({ success: false, error: 'Request is too large.' }, { status: 413 });
+    }
     const body = await request.json().catch(() => ({}));
     const { action = 'login', password, email } = body;
 
@@ -102,7 +110,7 @@ export async function POST(request) {
   } catch (err) {
     console.error('Admin auth error:', err);
     return NextResponse.json(
-      { success: false, error: err.message || 'Authentication failed.' },
+      { success: false, error: 'Authentication could not be completed.' },
       { status: 500 }
     );
   }

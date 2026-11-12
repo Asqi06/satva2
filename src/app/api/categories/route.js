@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDb } from '../../../lib/db';
 import { Category } from '../../../models/Category';
 import { DEFAULT_HOMEPAGE_CATEGORIES } from '../../../lib/catalog';
+import { requireAdmin } from '../../../lib/adminAuth';
 
 function slugify(text) {
   return text
@@ -18,6 +19,10 @@ export async function GET(request) {
     await connectDb();
     const { searchParams } = new URL(request.url);
     const all = searchParams.get('all') === 'true';
+    if (all) {
+      const unauthorized = await requireAdmin();
+      if (unauthorized) return unauthorized;
+    }
     const featuredOnly = searchParams.get('featured') === 'true';
 
     const filter = {
@@ -54,6 +59,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
 
@@ -114,6 +121,8 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
     const id = body.id || body._id;
@@ -180,6 +189,8 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

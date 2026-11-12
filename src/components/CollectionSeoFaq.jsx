@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { serializeJsonLd } from '../lib/jsonLd';
 import { ChevronDown, ShieldCheck, Droplets, Sparkles, Check, ArrowRight } from 'lucide-react';
 import './CollectionSeoFaq.css';
 
@@ -38,7 +39,7 @@ export default function CollectionSeoFaq({
       {faqs.length > 0 && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
         />
       )}
 

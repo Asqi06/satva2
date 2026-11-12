@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { connectDb } from '@/lib/db';
 import mongoose from 'mongoose';
+import { requireAdmin } from '@/lib/adminAuth';
+import { priceOrder } from '@/lib/orderPricing';
+import { checkRateLimit, getClientKey } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
     const orderNumber = searchParams.get('orderNumber');
-    const limit = Number(searchParams.get('limit')) || 100;
+    const limit = Math.min(250, Math.max(1, Number(searchParams.get('limit')) || 100));
 
     const query = {};
     if (email) {
@@ -164,8 +169,12 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const rate = checkRateLimit(`cod-checkout:${getClientKey(request)}`, 10, 10 * 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ success: false, error: 'Too many checkout attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
+    if (Number(request.headers.get('content-length') || 0) > 64 * 1024) return NextResponse.json({ success: false, error: 'Request is too large.' }, { status: 413 });
     await connectDb();
     const body = await request.json();
+    const pricedOrder = await priceOrder({ items: body.items, couponCode: body.couponCode, paymentMethod: 'cod' });
 
     const orderNumber = `SAT-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -236,25 +245,19 @@ export async function POST(request) {
       customerName,
       customerPhone,
       guestEmail: customerEmail,
-      items: (body.items || []).map((it) => ({
-        id: it.id || it.productId || '',
-        title: it.title || it.name || 'Atelier Jewellery',
-        price: Number(it.price || it.unitPrice || 0),
-        quantity: Number(it.quantity || it.qty || 1),
-        finish: it.finish || (it.options?.[0]) || '18K Gold Plated',
-        image: it.image || '',
-        sku: it.sku || '',
-      })),
-      amount: Number(body.total || body.amount || 0),
-      total: Number(body.total || body.amount || 0),
-      subtotal: Number(body.subtotal || body.total || body.amount || 0),
-      discountAmount: Number(body.discountAmount || body.discount || 0),
-      couponCode: body.couponCode || '',
+      items: pricedOrder.items,
+      amount: pricedOrder.total,
+      total: pricedOrder.total,
+      subtotal: pricedOrder.subtotal,
+      shipping: pricedOrder.shippingFee,
+      shippingFee: pricedOrder.shippingFee,
+      discountAmount: pricedOrder.discountAmount,
+      couponCode: pricedOrder.couponCode,
       status: 'Confirmed',
-      paymentMethod: body.paymentMethod || 'COD',
-      paymentStatus: body.paymentMethod === 'COD' ? 'PENDING' : 'COMPLETED',
-      paymentId: body.paymentId || (body.paymentMethod === 'COD' ? `COD-${Date.now()}` : ''),
-      orderId: body.orderId || '',
+      paymentMethod: 'COD',
+      paymentStatus: 'PENDING',
+      paymentId: `COD-${Date.now()}`,
+      orderId: '',
       createdAt: new Date(),
       trackingId: `BD-${Math.floor(10000000 + Math.random() * 90000000)}`,
       courierName: 'BlueDart Express',
@@ -273,12 +276,15 @@ export async function POST(request) {
     );
   } catch (err) {
     console.error('API POST /api/orders error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    const invalidOrder = /cart|product|coupon|order|invalid|stock|minimum/i.test(err.message || '');
+    return NextResponse.json({ success: false, error: invalidOrder ? err.message : 'Could not place order.' }, { status: invalidOrder ? 400 : 500 });
   }
 }
 
 export async function PUT(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
     const { id, orderNumber, status, trackingId, courierName } = body;

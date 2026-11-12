@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const returnUrl = searchParams.get('returnUrl') || '/account';
+    const requestedReturnUrl = searchParams.get('returnUrl') || '/account';
+    const returnUrl = requestedReturnUrl.length <= 512 && requestedReturnUrl.startsWith('/') && !requestedReturnUrl.startsWith('//') && !requestedReturnUrl.includes('\\')
+      ? requestedReturnUrl
+      : '/account';
 
     const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) {
@@ -17,11 +21,8 @@ export async function GET(request) {
     }
 
     // Determine current host and scheme
-    const proto =
-      request.headers.get('x-forwarded-proto') ||
-      (request.headers.get('host')?.includes('localhost') ? 'http' : 'https');
-    const host = request.headers.get('host');
-    const redirectUri = `${proto}://${host}/api/auth/callback/google`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+    const redirectUri = new URL('/api/auth/callback/google', siteUrl).toString();
 
     const statePayload = {
       csrf: crypto.randomBytes(16).toString('hex'),
@@ -39,8 +40,8 @@ export async function GET(request) {
     googleAuthUrl.searchParams.set('prompt', 'select_account');
     googleAuthUrl.searchParams.set('state', state);
 
-    const response = NextResponse.redirect(googleAuthUrl.toString(), { status: 302 });
-    response.cookies.set({
+    const cookieStore = await cookies();
+    cookieStore.set({
       name: 'satva_oauth_state',
       value: state,
       path: '/',
@@ -49,8 +50,7 @@ export async function GET(request) {
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });
-
-    return response;
+    return NextResponse.redirect(googleAuthUrl.toString(), { status: 302 });
   } catch (err) {
     console.error('Failed to initiate Google OAuth:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

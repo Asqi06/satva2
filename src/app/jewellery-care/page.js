@@ -4,6 +4,7 @@ import TrustStrip from '../../components/TrustStrip';
 import WhatsAppWidget from '../../components/WhatsAppWidget';
 import Link from 'next/link';
 import { Shield, Check, X, ArrowRight, Sparkles, Droplets, HeartHandshake } from 'lucide-react';
+import { serializeJsonLd } from '../../lib/jsonLd';
 
 export const metadata = {
   title: "Does Gold-Plated Jewellery Tarnish? PVD Science & Care Guide | Satvastones",
@@ -125,15 +126,15 @@ export default function JewelleryCarePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
 
       <Header />

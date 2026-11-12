@@ -5,6 +5,7 @@ import WhatsAppWidget from '../../components/WhatsAppWidget';
 import Link from 'next/link';
 import { ArrowRight, Clock, BookOpen, ShieldCheck } from 'lucide-react';
 import './journal.css';
+import { serializeJsonLd } from '../../lib/jsonLd';
 
 export const metadata = {
   title: "Atelier Journal | Anti-Tarnish Metallurgy, Care & Styling | Satvastones",
@@ -95,17 +96,6 @@ export default function JournalPage() {
     name: "Satvastones Atelier Journal",
     url: "https://satvastones.com/journal",
     description: "Authoritative guides on 18K gold vacuum PVD metallurgy, anti-tarnish jewelry care, and daily styling.",
-    blogPost: articles.map((art, idx) => ({
-      "@type": "BlogPosting",
-      headline: art.title,
-      description: art.excerpt,
-      datePublished: "2026-10-15",
-      url: `https://satvastones.com${art.href}`,
-      author: {
-        "@type": "Organization",
-        name: "Satvastones Atelier",
-      },
-    })),
   };
 
   const breadcrumbSchema = {
@@ -131,11 +121,11 @@ export default function JournalPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(blogSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <Header />
       <main className="journal-page-main">

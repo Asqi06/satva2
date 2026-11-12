@@ -169,7 +169,6 @@ export default function ProductDetailClient({ product, relatedProducts = [] }) {
                   priority
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="pdp-featured-img"
-                  unoptimized={activeImageUrl.includes('cloudinary.com')}
                 />
               </div>
             ) : (

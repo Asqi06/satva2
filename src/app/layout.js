@@ -3,6 +3,7 @@ import { Bodoni_Moda, Plus_Jakarta_Sans } from "next/font/google";
 import { CartProvider } from "../context/CartContext";
 import MiniBagDrawer from "../components/MiniBagDrawer";
 import ToastNotification from "../components/ToastNotification";
+import { serializeJsonLd } from "../lib/jsonLd";
 
 const bodoniModa = Bodoni_Moda({
   subsets: ["latin"],
@@ -23,7 +24,7 @@ export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://satvastones.com"),
   title: {
     default: "Satvastones: Anti-Tarnish, Korean & Indian Demi-Fine Jewellery Online India",
-    template: "%s | Satvastones Jewellery",
+    template: "%s",
   },
   description:
     "Buy 18K gold-plated anti-tarnish jewellery, waterproof daily wear chains, Korean minimalist earrings, and handcrafted Indian bridal pieces. COD Available & Free Express Shipping ₹499+.",
@@ -35,7 +36,6 @@ export const metadata = {
     "18k gold plated jewellery",
     "korean jewellery online",
     "daily wear mangalsutra",
-    "palmonas alternatives",
     "skin safe jewellery",
     "satvastones",
   ],
@@ -74,7 +74,9 @@ export const metadata = {
     images: ["https://satvastones.com/logo.png"],
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "google-site-verification-satvastones",
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
   },
   robots: {
     index: true,
@@ -93,24 +95,18 @@ export default function RootLayout({ children }) {
   // Rich Structured Data (JSON-LD) for Google SERP & Knowledge Graph
   const organizationSchema = {
     "@context": "https://schema.org",
-    "@type": "JewelryStore",
+    "@type": "Organization",
     name: "Satvastones",
     url: "https://satvastones.com",
     logo: "https://satvastones.com/logo.png",
     image: "https://satvastones.com/logo.png",
-    description: "India's premier demi-fine jewellery brand offering waterproof, anti-tarnish 18K gold plated and handcrafted Indian jewellery.",
+    description: "A demi-fine jewellery brand offering anti-tarnish 18K gold plated and handcrafted Indian jewellery.",
     telephone: "+91-97244-59218",
     sameAs: [
       "https://www.instagram.com/satvastones",
       "https://www.facebook.com/satvastones",
       "https://pinterest.com/satvastones",
     ],
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Mumbai",
-      addressRegion: "Maharashtra",
-      addressCountry: "IN",
-    },
     priceRange: "₹₹",
     paymentAccepted: ["Cash on Delivery", "UPI", "Credit Card", "Net Banking"],
     currenciesAccepted: "INR",
@@ -140,11 +136,11 @@ export default function RootLayout({ children }) {
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteSchema) }}
         />
       </head>
       <body className={plusJakartaSans.className}>

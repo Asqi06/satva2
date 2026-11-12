@@ -2,29 +2,38 @@ import { NextResponse } from 'next/server';
 import { connectDb } from '../../../lib/db';
 import { Product } from '../../../models/Product';
 import { products as fallbackProducts } from '../../../data/products';
+import { requireAdmin } from '../../../lib/adminAuth';
+import { checkRateLimit, getClientKey } from '../../../lib/rateLimit';
 
 export async function GET(request) {
   try {
     await connectDb();
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
-    const search = searchParams.get('search');
-    const limit = Number(searchParams.get('limit')) || 100;
+    const search = searchParams.get('search')?.trim().slice(0, 80);
+    if (search) {
+      const rate = checkRateLimit(`product-search:${getClientKey(request)}`, 30, 60 * 1000);
+      if (!rate.allowed) return NextResponse.json({ success: false, error: 'Too many searches. Try again shortly.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
+    }
+    const limit = Math.min(150, Math.max(1, Number(searchParams.get('limit')) || 100));
 
-    const query = {};
+    const query = { isPublished: { $ne: false } };
+    const filters = [];
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (category && category !== 'all') {
-      query.$or = [
-        { category: new RegExp(category, 'i') },
-        { tags: new RegExp(category, 'i') },
-      ];
+      filters.push({ $or: [
+        { category: new RegExp(escapeRegex(category.slice(0, 50)), 'i') },
+        { tags: new RegExp(escapeRegex(category.slice(0, 50)), 'i') },
+      ] });
     }
     if (search) {
-      query.$or = [
-        { title: new RegExp(search, 'i') },
-        { name: new RegExp(search, 'i') },
-        { sku: new RegExp(search, 'i') },
-      ];
+      filters.push({ $or: [
+        { title: new RegExp(escapeRegex(search), 'i') },
+        { name: new RegExp(escapeRegex(search), 'i') },
+        { sku: new RegExp(escapeRegex(search), 'i') },
+      ] });
     }
+    if (filters.length) query.$and = filters;
 
     const dbProducts = await Product.find(query).limit(limit).lean();
 
@@ -57,12 +66,14 @@ export async function GET(request) {
   } catch (err) {
     console.error('API /api/products error:', err);
     // Return fallback gracefully
-    return NextResponse.json({ success: true, count: fallbackProducts.length, products: fallbackProducts, error: err.message });
+    return NextResponse.json({ success: true, count: fallbackProducts.length, products: fallbackProducts });
   }
 }
 
 export async function POST(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
 
@@ -112,6 +123,8 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
     const { id, ...updates } = body;
@@ -130,6 +143,8 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

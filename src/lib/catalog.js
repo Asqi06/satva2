@@ -2,7 +2,7 @@ import { connectDb } from './db.js';
 import { Product } from '../models/Product.js';
 import { products as staticProducts } from '../data/products.js';
 
-function normalizeDbProduct(p, index = 0) {
+function normalizeDbProduct(p) {
   const title = p.title || p.name || 'Demi-Fine Jewellery';
   const rawCat = (p.category || '').toLowerCase();
   const rawSubcat = (p.subcategory || '').toLowerCase();
@@ -10,7 +10,9 @@ function normalizeDbProduct(p, index = 0) {
   const tags = Array.isArray(p.tags) ? p.tags.map((t) => String(t).toLowerCase()) : [];
 
   const isAntiTarnish =
-    p.isAntiTarnish !== false ||
+    p.isAntiTarnish === true ||
+    rawCat.includes('anti-tarnish') ||
+    tags.some((t) => t.includes('anti-tarnish') || t.includes('waterproof')) ||
     rawTitle.includes('anti-tarnish') ||
     rawTitle.includes('anti tarnish') ||
     rawTitle.includes('waterproof') ||
@@ -27,6 +29,7 @@ function normalizeDbProduct(p, index = 0) {
     tags.some((t) => t.includes('korean'));
 
   const isIndian =
+    rawCat.includes('indian') ||
     rawCat.includes('traditional') ||
     rawTitle.includes('jhumka') ||
     rawTitle.includes('chandbali') ||
@@ -35,7 +38,8 @@ function normalizeDbProduct(p, index = 0) {
     rawTitle.includes('temple') ||
     rawTitle.includes('oxidised') ||
     rawTitle.includes('boho') ||
-    rawTitle.includes('bangle set');
+    rawTitle.includes('bangle set') ||
+    tags.some((t) => t.includes('indian'));
 
   // Determine subcategory
   let subcategory = 'jewellery';
@@ -91,7 +95,7 @@ function normalizeDbProduct(p, index = 0) {
   }
   if (isKorean) normalizedTags.add('korean');
   if (isIndian) normalizedTags.add('indian');
-  normalizedTags.add('western');
+  normalizedTags.add(category);
   if (subcategory) normalizedTags.add(subcategory);
 
   const mainImage = p.image || p.images?.[0]?.secureUrl || '';
@@ -109,23 +113,20 @@ function normalizeDbProduct(p, index = 0) {
   const price = Number(p.price) || 199;
   const mrp = Number(p.mrp || p.oldPrice || p.compareAtPrice || price * 2);
 
-  // Give real MongoDB Atlas products primary popularity so they lead bestsellers
-  const baseSold = p.isFeatured ? 2800 : 1200;
-  const soldCount =
-    Number(p.soldQuantity) > 0
-      ? Number(p.soldQuantity)
-      : baseSold + ((index * 37) % 600);
+  const soldCount = Number(p.soldQuantity || p.soldCount) || 0;
 
   return {
     id: p._id.toString(),
     mongoId: p._id.toString(),
     slug: p.slug || p._id.toString(),
+    updatedAt: p.updatedAt || undefined,
     title,
     price,
     mrp: mrp > price ? mrp : price * 2,
-    rating: Number(p.rating || p.ratingAverage || 4.8),
-    reviews: Number(p.reviewsCount || p.ratingCount || 42),
+    rating: Number(p.rating || p.ratingAverage) || null,
+    reviews: Number(p.reviewsCount || p.ratingCount) || 0,
     badge: p.badge || (p.isFeatured ? 'BESTSELLER' : isAntiTarnish ? 'WATERPROOF' : 'DEMI-FINE'),
+    isFeatured: Boolean(p.isFeatured),
     category,
     rawCategory: p.category,
     subcategory,
@@ -158,7 +159,7 @@ export async function getLiveCatalog() {
       .lean();
 
     if (dbProducts && dbProducts.length > 0) {
-      return dbProducts.map((p, i) => normalizeDbProduct(p, i));
+      return dbProducts.map(normalizeDbProduct);
     }
 
     return staticProducts;
@@ -180,14 +181,14 @@ export async function getLiveProductByIdOrSlug(idOrSlug) {
     await connectDb();
     let query;
     if (strId.match(/^[0-9a-fA-F]{24}$/)) {
-      query = { $or: [{ _id: strId }, { slug: strId }] };
+      query = { isPublished: { $ne: false }, $or: [{ _id: strId }, { slug: strId }] };
     } else {
-      query = { slug: strId };
+      query = { slug: strId, isPublished: { $ne: false } };
     }
 
     const dbProd = await Product.findOne(query).lean();
     if (dbProd) {
-      return normalizeDbProduct(dbProd, 0);
+      return normalizeDbProduct(dbProd);
     }
   } catch (err) {
     console.error('getLiveProductByIdOrSlug DB error:', err?.message);
@@ -231,7 +232,9 @@ export async function getLiveProductsByCategory(category) {
  */
 export async function getLiveBestsellers(limit = 8) {
   const all = await getLiveCatalog();
-  return [...all].sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0)).slice(0, limit);
+  return [...all]
+    .sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0) || Number(b.isFeatured) - Number(a.isFeatured))
+    .slice(0, limit);
 }
 
 /**

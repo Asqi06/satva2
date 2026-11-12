@@ -5,6 +5,7 @@ import Footer from '../../../components/Footer';
 import TrustStrip from '../../../components/TrustStrip';
 import WhatsAppWidget from '../../../components/WhatsAppWidget';
 import { notFound } from 'next/navigation';
+import { serializeJsonLd } from '../../../lib/jsonLd';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,15 +39,14 @@ export async function generateMetadata({ params }) {
       "18k gold plated surgical steel",
       "skin safe jewellery",
       "satvastones",
-      "palmonas alternatives",
     ],
     alternates: {
-      canonical: `https://satvastones.com/products/${product.id}`,
+      canonical: `/products/${product.slug || product.id}`,
     },
     openGraph: {
       title: `${product.title} | Satvastones Demi-Fine Jewelry`,
       description: `Waterproof 18k gold over medical-grade 316L surgical steel. 100% shower-safe, sweat-safe, and nickel-free.`,
-      url: `https://satvastones.com/products/${product.id}`,
+      url: `https://satvastones.com/products/${product.slug || product.id}`,
       type: "website",
       locale: "en_IN",
       siteName: "Satvastones",
@@ -115,7 +115,7 @@ export default async function ProductPage({ params }) {
     },
     offers: {
       "@type": "Offer",
-      url: `https://satvastones.com/products/${product.id}`,
+      url: `https://satvastones.com/products/${product.slug || product.id}`,
       priceCurrency: "INR",
       price: Number(product.price).toFixed(2),
       priceValidUntil: "2027-12-31",
@@ -167,43 +167,6 @@ export default async function ProductPage({ params }) {
         },
       },
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating || "4.9",
-      reviewCount: product.reviewsCount || 184,
-      bestRating: "5",
-      worstRating: "1",
-    },
-    review: [
-      {
-        "@type": "Review",
-        author: {
-          "@type": "Person",
-          name: "Aditi Sharma",
-        },
-        datePublished: "2026-10-18",
-        reviewRating: {
-          "@type": "Rating",
-          ratingValue: "5",
-          bestRating: "5",
-        },
-        reviewBody: "Been wearing this chain every single day for 2 months including daily hot showers and gym workouts. Zero fading, zero green marks on skin. Better finish than pieces I bought from Palmonas for 3x the price.",
-      },
-      {
-        "@type": "Review",
-        author: {
-          "@type": "Person",
-          name: "Meera Nair",
-        },
-        datePublished: "2026-10-24",
-        reviewRating: {
-          "@type": "Rating",
-          ratingValue: "5",
-          bestRating: "5",
-        },
-        reviewBody: "Super lightweight and looks like genuine 18k solid gold. Dispatched via Bluedart in 2 days. Definitely ordering the matching bracelet.",
-      },
-    ],
   };
 
   // Automated 3-Tier Breadcrumb Schema
@@ -227,7 +190,7 @@ export default async function ProductPage({ params }) {
         "@type": "ListItem",
         position: 3,
         name: product.title,
-        item: `https://satvastones.com/products/${product.id}`,
+        item: `https://satvastones.com/products/${product.slug || product.id}`,
       },
     ],
   };
@@ -236,11 +199,11 @@ export default async function ProductPage({ params }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <Header />
       <main>

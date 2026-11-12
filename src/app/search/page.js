@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: "Search Demi-Fine Jewellery | Satvastones Atelier",
   description: "Search waterproof, anti-tarnish chains, Korean minimalist hoops, and handcrafted Indian jewellery.",
+  robots: { index: false, follow: true },
 };
 
 export default async function SearchPage() {

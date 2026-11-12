@@ -6,6 +6,8 @@ Required (server-only unless prefixed `NEXT_PUBLIC_`):
 MONGODB_URI
 
 AUTH_SECRET
+ADMIN_PASSWORD
+ADMIN_SEED_EMAIL
 
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
@@ -28,7 +30,7 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 NEXT_PUBLIC_GA_ID
 ```
 
-Optional: `ADMIN_SEED_EMAIL` (one-time owner bootstrap, unset after use — see AUTH.md + `npm run seed:admin`).
+`ADMIN_PASSWORD` is required for administrator sign-in. `ADMIN_SEED_EMAIL` optionally restricts sign-in to one administrator email.
 
 Optional: `CRON_SECRET` (Vercel Cron bearer for `/api/cron/*`; generate with `openssl rand -hex 32`).
 

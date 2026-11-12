@@ -104,7 +104,6 @@ export default function CartClient() {
                       fill
                       sizes="80px"
                       style={{ objectFit: 'cover' }}
-                      unoptimized={item.image.includes('cloudinary.com')}
                     />
                   ) : (
                     <span>{item.subcategory || item.finish}</span>
@@ -113,7 +112,7 @@ export default function CartClient() {
 
                 <div className="item-description-block">
                   <h3 className="item-title">
-                    <Link href={`/products/${item.id}`}>{item.title}</Link>
+                    <Link href={`/products/${item.slug || item.id}`}>{item.title}</Link>
                   </h3>
                   <span className="item-finish-meta">Finish: {item.finish}</span>
                   <div className="item-prices-display">

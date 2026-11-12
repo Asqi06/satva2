@@ -147,7 +147,6 @@ export default function MiniBagDrawer() {
                       fill
                       sizes="60px"
                       style={{ objectFit: 'cover' }}
-                      unoptimized={item.image.includes('cloudinary.com')}
                     />
                   ) : (
                     <span className="drawer-thumb-sub">{item.subcategory || 'Jewellery'}</span>

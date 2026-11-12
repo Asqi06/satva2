@@ -23,7 +23,6 @@ export const metadata = {
     "18k gold plated jewellery",
     "korean jewellery online",
     "daily wear mangalsutra",
-    "palmonas alternatives india",
     "skin safe jewellery",
     "satvastones",
   ],
@@ -133,7 +132,6 @@ export default async function Home() {
                       fill
                       sizes="(max-width: 768px) 64px, 80px"
                       className="category-tile-img"
-                      unoptimized={cat.image?.includes('cloudinary.com')}
                     />
                   ) : (
                     <span className="category-tile-initial">{cat.name.charAt(0)}</span>

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { connectDb } from '../../../../lib/db';
-import { verifyRazorpaySignature } from '../../../../lib/razorpay';
+import { getRazorpayClient, verifyRazorpaySignature } from '../../../../lib/razorpay';
+import { priceOrder } from '../../../../lib/orderPricing';
 import mongoose from 'mongoose';
+import { checkRateLimit, getClientKey } from '../../../../lib/rateLimit';
 
 export async function POST(request) {
   try {
+    const rate = checkRateLimit(`payment-verify:${getClientKey(request)}`, 10, 10 * 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ success: false, error: 'Too many payment verification attempts.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
+    if (Number(request.headers.get('content-length') || 0) > 128 * 1024) return NextResponse.json({ success: false, error: 'Request is too large.' }, { status: 413 });
     const body = await request.json();
     const {
       razorpay_order_id,
@@ -37,8 +42,28 @@ export async function POST(request) {
       );
     }
 
+    const pricedOrder = await priceOrder({ items, couponCode, paymentMethod: 'upi' });
+    const razorpay = getRazorpayClient();
+    const [payment, razorpayOrder] = await Promise.all([
+      razorpay.payments.fetch(razorpay_payment_id),
+      razorpay.orders.fetch(razorpay_order_id),
+    ]);
+    const expectedPaise = Math.round(pricedOrder.total * 100);
+    if (
+      payment.order_id !== razorpay_order_id || payment.status !== 'captured' ||
+      payment.amount !== expectedPaise || razorpayOrder.amount !== expectedPaise ||
+      Math.round(Number(amount) * 100) !== expectedPaise || payment.currency !== 'INR'
+    ) {
+      return NextResponse.json({ success: false, error: 'Payment amount does not match the current cart total.' }, { status: 400 });
+    }
+
     // Connect to MongoDB Atlas
     await connectDb();
+
+    const existingOrder = await mongoose.connection.db.collection('orders').findOne({ paymentId: razorpay_payment_id });
+    if (existingOrder) {
+      return NextResponse.json({ success: false, error: 'This payment has already been recorded.' }, { status: 409 });
+    }
 
     const orderNumber = `SAT-${Math.floor(1000 + Math.random() * 9000)}`;
     const trackingId = `BD-${Math.floor(10000000 + Math.random() * 90000000)}-IN`;
@@ -81,17 +106,13 @@ export async function POST(request) {
       customerName,
       customerPhone,
       guestEmail: customerEmail,
-      items: (items || []).map((it) => ({
-        id: String(it.id),
-        title: it.title,
-        price: it.price,
-        qty: it.quantity || 1,
-        finish: it.finish || '18K Gold',
-        options: it.finish ? [it.finish] : [],
-      })),
-      amount: Number(amount || 0),
-      discountAmount: Number(discountAmount || 0),
-      couponCode: couponCode || '',
+      items: pricedOrder.items,
+      subtotal: pricedOrder.subtotal,
+      shipping: pricedOrder.shippingFee,
+      amount: pricedOrder.total,
+      total: pricedOrder.total,
+      discountAmount: pricedOrder.discountAmount,
+      couponCode: pricedOrder.couponCode,
       status: 'Paid',
       paymentMethod: 'Razorpay',
       trackingId,
@@ -113,8 +134,8 @@ export async function POST(request) {
   } catch (err) {
     console.error('API /api/checkout/verify error:', err);
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to verify and record order.' },
-      { status: 500 }
+      { success: false, error: /cart|product|coupon|order|invalid|stock|minimum/i.test(err.message || '') ? err.message : 'Failed to verify and record order.' },
+      { status: /cart|product|coupon|order|invalid|stock|minimum/i.test(err.message || '') ? 400 : 500 }
     );
   }
 }

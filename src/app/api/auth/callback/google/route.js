@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import {
   createCustomerToken,
   syncGoogleUser,
@@ -9,18 +10,26 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
+  const cookieStore = await cookies();
   const code = requestUrl.searchParams.get('code');
   const error = requestUrl.searchParams.get('error');
   const stateRaw = requestUrl.searchParams.get('state');
+  const expectedState = cookieStore.get('satva_oauth_state')?.value;
 
   let returnUrl = '/account';
   let dynamicRedirectUri = '';
 
+  if (!stateRaw || !expectedState || stateRaw !== expectedState) {
+    const response = NextResponse.redirect(new URL('/account?auth_error=Invalid+OAuth+state', request.url));
+    response.cookies.delete('satva_oauth_state');
+    return response;
+  }
+
   if (stateRaw) {
     try {
       const stateObj = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
-      if (stateObj.returnUrl) returnUrl = stateObj.returnUrl;
-      if (stateObj.redirectUri) dynamicRedirectUri = stateObj.redirectUri;
+      if (typeof stateObj.returnUrl === 'string' && stateObj.returnUrl.startsWith('/') && !stateObj.returnUrl.startsWith('//') && !stateObj.returnUrl.includes('\\')) returnUrl = stateObj.returnUrl;
+      if (typeof stateObj.redirectUri === 'string') dynamicRedirectUri = stateObj.redirectUri;
     } catch {}
   }
 
@@ -42,13 +51,7 @@ export async function GET(request) {
   }
 
   // Fallback redirectUri if not in state
-  if (!dynamicRedirectUri) {
-    const proto =
-      request.headers.get('x-forwarded-proto') ||
-      (request.headers.get('host')?.includes('localhost') ? 'http' : 'https');
-    const host = request.headers.get('host');
-    dynamicRedirectUri = `${proto}://${host}/api/auth/callback/google`;
-  }
+  dynamicRedirectUri = new URL('/api/auth/callback/google', process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin).toString();
 
   try {
     // 1. Exchange authorization code for tokens
@@ -66,7 +69,7 @@ export async function GET(request) {
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
-      console.error('Failed to exchange code with Google:', tokenData);
+      console.error('Failed to exchange Google authorization code.');
       return NextResponse.redirect(
         new URL(`${returnUrl}?auth_error=Failed+to+exchange+Google+token`, request.url)
       );
@@ -80,8 +83,8 @@ export async function GET(request) {
     });
 
     const profile = await profileRes.json();
-    if (!profileRes.ok || !profile.email) {
-      console.error('Failed to fetch userinfo from Google:', profile);
+    if (!profileRes.ok || !profile.email || profile.email_verified !== true) {
+      console.error('Failed to fetch verified Google profile.');
       return NextResponse.redirect(
         new URL(`${returnUrl}?auth_error=Failed+to+retrieve+profile+from+Google`, request.url)
       );
@@ -113,6 +116,7 @@ export async function GET(request) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
+    response.cookies.delete('satva_oauth_state');
 
     // Set client-accessible user profile cookie for instant synchronous hydration
     response.cookies.set({

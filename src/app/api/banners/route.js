@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectDb } from '../../../lib/db';
 import { Banner } from '../../../models/Banner';
 import { DEFAULT_PROMO_BANNERS } from '../../../data/promotions';
+import { requireAdmin } from '../../../lib/adminAuth';
 
 export async function GET() {
   try {
@@ -9,7 +10,7 @@ export async function GET() {
     const dbBanners = await Banner.find({}).sort({ sortOrder: 1, createdAt: -1 }).lean();
 
     if (dbBanners && dbBanners.length > 0) {
-      const formatted = dbBanners.map((b) => ({
+      const formatted = dbBanners.filter((b) => (b.isActive ?? b.active ?? true)).map((b) => ({
         id: b._id.toString(),
         mongoId: b._id.toString(),
         title: b.title || 'Campaign Banner',
@@ -31,6 +32,8 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
 
@@ -66,6 +69,8 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const body = await request.json();
     const { id, ...updates } = body;
@@ -103,6 +108,8 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const unauthorized = await requireAdmin();
+    if (unauthorized) return unauthorized;
     await connectDb();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

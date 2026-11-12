@@ -4,9 +4,13 @@ import mongoose from 'mongoose';
 
 export const CUSTOMER_COOKIE_NAME = 'satva_customer_session';
 
-const getSecret = () =>
-  process.env.AUTH_SECRET ||
-  'satvastones-demi-fine-atelier-customer-secret-key-2026';
+const getSecret = () => {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('AUTH_SECRET must be configured with at least 32 characters.');
+  }
+  return secret;
+};
 
 /**
  * Creates a signed customer session token (valid 30 days).

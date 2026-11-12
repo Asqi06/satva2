@@ -307,6 +307,7 @@ export function CartProvider({ children }) {
         ...prev,
         {
           id: item.id,
+          slug: item.slug,
           title: item.title,
           price: item.price,
           mrp: item.mrp || item.price * 2,

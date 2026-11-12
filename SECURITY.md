@@ -4,7 +4,8 @@
 
 - Never commit secrets (`.env`, keys, credentials). Only `.env.example` is committed.
 - Server-only secrets must never use `NEXT_PUBLIC_` prefix.
-- Secrets used: `MONGODB_URI`, `AUTH_SECRET`, `GOOGLE_CLIENT_SECRET`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `CLOUDINARY_API_SECRET`, `RESEND_API_KEY`.
+- Secrets used: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PASSWORD`, `GOOGLE_CLIENT_SECRET`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `CLOUDINARY_API_SECRET`, `RESEND_API_KEY`.
+- Never provide source-code credential fallbacks. Rotate any credential exposed in source or Git history; removing a fallback does not revoke it.
 
 ## Authorization
 

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import ProductCard from './ProductCard';
+import { serializeJsonLd } from '../lib/jsonLd';
 import { X } from 'lucide-react';
 import './CollectionPage.css';
 
@@ -66,7 +67,7 @@ export default function CollectionPage({
     itemListElement: filteredProducts.slice(0, 24).map((prod, idx) => ({
       "@type": "ListItem",
       position: idx + 1,
-      url: `https://satvastones.com/products/${prod.id}`,
+      url: `https://satvastones.com/products/${prod.slug || prod.id}`,
       name: prod.title,
       image: prod.image || "https://satvastones.com/logo.png",
     })),
@@ -96,11 +97,11 @@ export default function CollectionPage({
       {/* Automated Structured Data for Google Collection SERP */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
 
       {/* Editorial Header */}

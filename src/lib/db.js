@@ -10,11 +10,11 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb://SatvaStones:Satva1357..@ac-7qos0y9-shard-00-00.k0atuca.mongodb.net:27017,ac-7qos0y9-shard-00-01.k0atuca.mongodb.net:27017,ac-7qos0y9-shard-00-02.k0atuca.mongodb.net:27017/satvastones?retryWrites=true&w=majority&appName=SatvaStones&authSource=admin&replicaSet=atlas-11t6hn-shard-0&tls=true";
-
 export async function connectDb() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI must be configured in the server environment.');
+  }
   if (cached.conn) {
     return cached.conn;
   }

@@ -42,6 +42,7 @@ export async function GET() {
             ],
           })
           .sort({ createdAt: -1 })
+          .limit(100)
           .toArray();
 
         const totalSpend = orders.reduce((sum, o) => sum + Number(o.amount || o.total || 0), 0);

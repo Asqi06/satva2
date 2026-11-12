@@ -4,11 +4,14 @@ import {
   syncGoogleUser,
   CUSTOMER_COOKIE_NAME,
 } from '@/lib/customerAuth';
+import { checkRateLimit, getClientKey } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
+    const rate = checkRateLimit(`google-login:${getClientKey(request)}`, 10, 10 * 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ success: false, error: 'Too many sign-in attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(rate.retryAfter) } });
     const body = await request.json().catch(() => ({}));
     const { credential } = body;
 
@@ -25,8 +28,7 @@ export async function POST(request) {
     );
     const tokenInfo = await verifyRes.json();
 
-    if (!verifyRes.ok || !tokenInfo.email) {
-      console.error('Google id_token verification failed:', tokenInfo);
+    if (!verifyRes.ok || !tokenInfo.email || tokenInfo.email_verified !== 'true') {
       return NextResponse.json(
         { success: false, error: 'Invalid Google credential token.' },
         { status: 401 }
@@ -35,7 +37,7 @@ export async function POST(request) {
 
     // Verify audience matches our Client ID
     const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId && tokenInfo.aud && tokenInfo.aud !== clientId) {
+    if (!clientId || tokenInfo.aud !== clientId) {
       return NextResponse.json(
         { success: false, error: 'Token audience does not match configured Google Client ID.' },
         { status: 403 }

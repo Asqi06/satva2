@@ -17,7 +17,6 @@ export const metadata = {
     "sweatproof jewellery india",
     "18k gold plated stainless steel",
     "demi fine everyday jewellery",
-    "palmonas alternatives india",
     "shower safe jewellery india",
     "hypoallergenic daily jewellery",
   ],
