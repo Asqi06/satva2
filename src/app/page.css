@@ -70,31 +70,30 @@
 
 /* 1. Category Strip */
 .home-category-strip {
-  padding: 56px 0 40px;
+  padding: 72px 0 54px;
 }
 
 .category-tiles-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
 }
 
 .category-tile-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background-color: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xs);
-  padding: 18px 10px;
-  transition: border-color var(--transition-quick), box-shadow var(--transition-quick), transform var(--transition-quick);
+  align-items: stretch;
+  text-align: left;
+  padding: 0 0 12px;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  transition: border-color var(--transition-quick);
   touch-action: manipulation;
 }
 
 .category-tile-card:hover {
-  border-color: var(--line-strong);
-  box-shadow: var(--shadow-subtle);
+  border-color: var(--gold);
 }
 
 .category-tile-card:active {
@@ -102,19 +101,18 @@
 }
 
 .category-tile-cover {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+  width: 100%;
+  aspect-ratio: 1.28;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-  border: 1px solid var(--line);
+  margin-bottom: 14px;
+  border: 0;
   background: var(--canvas-subtle);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+  box-shadow: none;
+  transition: background-color var(--transition-base);
 }
 
 .category-tile-img {
@@ -139,16 +137,17 @@
 }
 
 .category-tile-name {
-  font-family: var(--font-sans);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.1rem, 1.45vw, 1.45rem);
+  font-weight: 500;
   color: var(--ink);
-  margin-bottom: 2px;
+  margin: 0 12px 4px;
 }
 
 .category-tile-desc {
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   color: var(--ink-tertiary);
+  margin: 0 12px;
 }
 
 /* 2. Bestsellers Band */
@@ -428,7 +427,7 @@
   }
   .category-tiles-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
   .home-category-strip {
     padding: 48px 0 32px;
@@ -442,7 +441,7 @@
 
 @media (max-width: 768px) {
   .home-category-strip {
-    padding: 32px 0 20px;
+    padding: 36px 0 28px;
   }
   .home-bestsellers-band,
   .craftsmanship-narrative-section,
@@ -454,30 +453,42 @@
   }
   .section-title-centered,
   .section-title-split {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+  }
+  .section-title-centered h2,
+  .section-title-split h2 {
+    font-size: clamp(1.65rem, 7vw, 2.15rem);
+    line-height: 1.12;
+  }
+  .section-title-centered p,
+  .section-title-split p {
+    font-size: 0.84rem;
+    line-height: 1.5;
   }
   .home-products-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 16px 10px;
   }
   .category-tiles-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
   }
   .category-tile-card {
-    padding: 12px 6px;
+    padding: 0 0 10px;
   }
   .category-tile-cover {
-    width: 58px;
-    height: 58px;
-    margin-bottom: 8px;
+    width: 100%;
+    aspect-ratio: 1.12;
+    margin-bottom: 10px;
   }
   .category-tile-name {
-    font-size: 0.74rem;
+    margin: 0 8px 3px;
+    font-size: 1.05rem;
     line-height: 1.25;
   }
   .category-tile-desc {
-    font-size: 0.62rem;
+    margin: 0 8px;
+    font-size: 0.65rem;
   }
   .craftsmanship-block {
     grid-template-columns: 1fr;
@@ -486,6 +497,11 @@
   .journal-cards-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+  .home-collection-spotlight,
+  .heritage-editorial-spotlight > .container {
+    padding-top: 36px;
+    padding-bottom: 36px;
   }
   .voucher-card-inner {
     flex-direction: column;
@@ -504,16 +520,11 @@
 
 @media (max-width: 480px) {
   .home-products-grid {
-    gap: 8px;
+    gap: 14px 8px;
   }
   .category-tiles-grid {
-    gap: 8px;
+    gap: 16px 10px;
   }
-  .category-tile-cover {
-    width: 52px;
-    height: 52px;
-  }
-  .category-tile-name {
-    font-size: 0.7rem;
-  }
+  .category-tile-name { margin-left: 4px; margin-right: 4px; font-size: 0.92rem; }
+  .category-tile-desc { margin-left: 4px; margin-right: 4px; font-size: 0.62rem; }
 }

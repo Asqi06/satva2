@@ -4,7 +4,6 @@ import Header from '../components/Header';
 import HeroBanner from '../components/HeroBanner';
 import TrustStrip from '../components/TrustStrip';
 import ProductCard from '../components/ProductCard';
-import CompleteTheLook from '../components/CompleteTheLook';
 import WhatsAppWidget from '../components/WhatsAppWidget';
 import Footer from '../components/Footer';
 import { getLiveBestsellers, getLiveProductsByCategory, getHomepageCategories } from '../lib/catalog';
@@ -100,25 +99,12 @@ export default async function Home() {
         {/* 2. 5-Pillar Standards Strip */}
         <TrustStrip />
 
-        {/* 2.5 Editorial SEO Primary H1 Heading */}
-        <section className="container" style={{ textAlign: 'center', paddingTop: '40px', paddingBottom: '12px' }}>
-          <span className="editorial-kicker" style={{ display: 'block', marginBottom: '8px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold)', fontSize: '0.78rem', fontWeight: 600 }}>
-            Atelier Standards
-          </span>
-          <h1 style={{ fontSize: 'clamp(1.8rem, 3.8vw, 2.6rem)', fontFamily: 'var(--font-editorial)', fontWeight: 500, letterSpacing: '-0.02em', maxWidth: '840px', margin: '0 auto 12px', lineHeight: 1.2 }}>
-            Everyday 18K Gold Anti-Tarnish & Demi-Fine Jewellery
-          </h1>
-          <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--ink-secondary)', fontSize: '0.96rem' }}>
-            Solid 316L surgical stainless steel bonded with 18k real gold via vacuum PVD. 100% waterproof, sweatproof, and hypoallergenic for daily living.
-          </p>
-        </section>
-
         {/* 3. Category Tiles */}
-        <section className="container home-category-strip" aria-label="Explore by category">
+        <section className="container home-category-strip" id="categories" aria-label="Explore by category">
           <div className="section-title-centered">
-            <span className="editorial-kicker">Catalog</span>
-            <h2>Shop by category</h2>
-            <p>From shower-safe chains to handcrafted heritage pieces</p>
+            <span className="editorial-kicker">Find your everyday favourite</span>
+            <h2>Explore the collections</h2>
+            <p>From shower-safe staples to handcrafted heritage pieces</p>
           </div>
 
           <div className="category-tiles-grid">
@@ -128,9 +114,9 @@ export default async function Home() {
                   {cat.image ? (
                     <Image
                       src={cat.image}
-                      alt={cat.name}
+                      alt=""
                       fill
-                      sizes="(max-width: 768px) 64px, 80px"
+                      sizes="(max-width: 680px) 44vw, (max-width: 1024px) 30vw, 22vw"
                       className="category-tile-img"
                     />
                   ) : (
@@ -172,10 +158,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 5. AOV Booster: The Layering Edit */}
-        <CompleteTheLook liveProducts={bestsellers} />
-
-        {/* 6. Material Integrity & Craftsmanship Narrative */}
+        {/* 5. Material Integrity & Craftsmanship Narrative */}
         <section className="craftsmanship-narrative-section" aria-label="Our craftsmanship">
           <div className="container">
             <div className="craftsmanship-block">
@@ -243,7 +226,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 7. Korean Minimalist Edit */}
+        {/* 6. Korean Minimalist Edit */}
         <section className="container home-collection-spotlight" aria-label="Korean collection">
           <div className="section-title-split">
             <div>
@@ -263,7 +246,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 8. Modern Indian Heritage Spotlight */}
+        {/* 7. Modern Indian Heritage Spotlight */}
         <section className="heritage-editorial-spotlight" aria-label="Indian heritage collection">
           <div className="container">
             <div className="section-title-split">
@@ -285,7 +268,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 9. Editorial Journal Guides */}
+        {/* 8. Editorial Journal Guides */}
         <section className="home-journal-band" aria-label="Jewelry guides and articles">
           <div className="container">
             <div className="section-title-centered">
@@ -319,7 +302,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 10. First-Order Quiet Voucher Strip */}
+        {/* 9. First-Order Quiet Voucher Strip */}
         <section className="container first-order-voucher-band" aria-label="Client welcome">
           <div className="voucher-card-inner">
             <div className="voucher-copy">

@@ -51,20 +51,41 @@
 
 @media (max-width: 768px) {
   .atelier-trust-strip {
-    padding: 16px 0;
+    padding: 14px 0;
   }
   .trust-strip-inner {
-    display: flex;
-    overflow-x: auto;
-    gap: 18px;
-    padding-bottom: 6px;
-    scrollbar-width: none;
-  }
-  .trust-strip-inner::-webkit-scrollbar {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 10px;
   }
   .trust-pillar-cell {
-    min-width: 220px;
-    flex-shrink: 0;
+    min-width: 0;
+    gap: 8px;
   }
+  .trust-pillar-cell:last-child {
+    grid-column: 1 / -1;
+    width: min(100%, 250px);
+    justify-self: center;
+  }
+  .trust-icon-frame {
+    width: 28px;
+    height: 28px;
+  }
+  .trust-icon-frame svg {
+    width: 15px;
+    height: 15px;
+  }
+  .trust-title {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+  .trust-caption {
+    font-size: 0.64rem;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 360px) {
+  .trust-strip-inner { grid-template-columns: 1fr; }
+  .trust-pillar-cell:last-child { grid-column: auto; width: auto; }
 }
