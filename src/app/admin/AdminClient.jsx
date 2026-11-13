@@ -299,18 +299,11 @@ export default function AdminClient({ initialAuthenticated = false, initialAdmin
       .finally(() => setCustomersLoading(false));
   };
 
-  // Fetch live products, banners, orders, customers, and coupons from MongoDB Atlas on mount
+  // Resolve an existing session before requesting any admin-only resources.
   useEffect(() => {
-    const safeJson = (res) => {
-      if (!res.ok) return null;
-      const ct = res.headers.get('content-type') || '';
-      return ct.includes('application/json') ? res.json() : null;
-    };
-
-    // Check admin session if not passed initially
     if (!initialAuthenticated) {
       fetch('/api/admin/auth')
-        .then(safeJson)
+        .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.authenticated) {
             setIsAuthenticated(true);
@@ -322,6 +315,17 @@ export default function AdminClient({ initialAuthenticated = false, initialAdmin
         })
         .catch(() => {});
     }
+  }, [initialAuthenticated]);
+
+  // Only load protected admin data after the server confirms the session or login succeeds.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const safeJson = (res) => {
+      if (!res.ok) return null;
+      const ct = res.headers.get('content-type') || '';
+      return ct.includes('application/json') ? res.json() : null;
+    };
 
     // 1. Live Products
     fetch('/api/products')
@@ -368,7 +372,7 @@ export default function AdminClient({ initialAuthenticated = false, initialAdmin
         }
       })
       .catch(() => {});
-  }, [initialAuthenticated]);
+  }, [isAuthenticated]);
 
   // Filtered Products for Catalog Table
   const filteredCatalogProducts = useMemo(() => {
@@ -702,8 +706,6 @@ export default function AdminClient({ initialAuthenticated = false, initialAdmin
         setAdminEmail(data.user?.email || authEmail);
         setAuthPassword('');
         setAuthError('');
-        fetchOrders();
-        fetchCustomers();
       } else {
         setAuthError(data.error || 'Access denied. Master password incorrect.');
       }
